@@ -28,10 +28,10 @@ BACKUPS = RUNTIME / 'backups'
 def base_python():
     """Interpreter of the light application environment (runtime/python)."""
     if sys.platform == 'win32':
-        candidate = RUNTIME / 'python' / 'Scripts' / 'python.exe'
+        candidates = (RUNTIME / 'python' / 'Scripts' / 'python.exe', RUNTIME / 'python' / 'python.exe')   # venv, or portable build
     else:
-        candidate = RUNTIME / 'python' / 'bin' / 'python'
-    return candidate if candidate.exists() else Path(sys.executable)
+        candidates = (RUNTIME / 'python' / 'bin' / 'python',)
+    return next((c for c in candidates if c.exists()), Path(sys.executable))
 
 
 def engine_python(name):

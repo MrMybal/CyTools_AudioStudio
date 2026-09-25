@@ -43,7 +43,7 @@ CyTools_AudioStudio/
 | `engines.json`, `setup_engine.py` | engine environment declaration and installer |
 | `models/catalog.json`, `models/piper-voices.json` | model catalogue (8 models + 177 Piper voices) |
 | `maintenance.py` | GitHub updates: application releases, engine sources, rollback |
-| `scripts/` | `build_model_catalog.py`, `migrate_legacy.py`, `merge_locales.py`, `validate_mcp.py` |
+| `scripts/` | `build_model_catalog.py`, `migrate_legacy.py`, `merge_locales.py`, `validate_mcp.py`, `build_release.py` (application stream + portable Windows build with a private Python), `publish_release.py` (GitHub release from `GITHUB_TOKEN`) |
 | `tests/` | unittest suite (fixtures only, no GPU) |
 
 ## What the git repository contains
@@ -255,6 +255,16 @@ and as pedalboard / JUCE it depends on. Engines (PyTorch stacks, vendored Fish S
 sources) and model weights are not part of the application code and keep their own licences,
 listed in `app/licenses.json` and shown in the Options tab; the Models tab asks for acceptance
 before downloading a gated or non-commercial model.
+
+## Releases
+
+`app/scripts/build_release.py` writes `runtime/build/release/v<version>/`: `cytools-app.zip` (+ `.sha256`,
+the stream read by `maintenance.py`: entries under `app/`, no bytecode, no data), the launcher, and the
+portable build `CyTools_AudioStudio-<version>-win64.zip` whose `runtime/python` is the official Python
+NuGet package with `requirements.txt` and the pinned SDK installed in a temporary folder (never the
+developer's venv). The launcher and `paths.base_python()` accept both layouts (`runtime/python/Scripts/`
+for a venv, `runtime/python/` for the portable build). `publish_release.py` creates the GitHub release
+`v<version>` and uploads the assets with a token read from `GITHUB_TOKEN` only.
 
 ## Limits
 

@@ -52,7 +52,19 @@ guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md](app/README
   on the CPU.
 - Model weights are **not** in this repository; they are downloaded from the Models tab.
 
-## Installation
+## Portable build (no Python to install)
+
+Each [release](https://github.com/MrMybal/CyTools_AudioStudio/releases) ships
+`CyTools_AudioStudio-<version>-win64.zip`: unzip it anywhere (a path without accents is safest) and
+double-click `CyTools_AudioStudio.exe`. The archive contains the launcher, the application, the
+documentation and a private Python 3.11 (`runtime/python`, official python.org NuGet build) with
+the interface, the CLI, MCP, the effects and VST3 hosting already installed — about 210 MB. The
+generation engines (PyTorch, Piper) and the model weights are downloaded by the application from
+the Models tab (Git must be on the PATH for the engine sources). The same release also carries
+`cytools-app.zip` + `.sha256`, the application stream that the Updates tab installs in place, and
+the launcher alone. `SHA256SUMS.txt` lists every asset.
+
+## Installation from source
 
 ```powershell
 git clone https://github.com/MrMybal/CyTools_AudioStudio.git
@@ -95,6 +107,8 @@ runtime/                  private Python, engines, vendored sources, updates, ba
 ```
 
 Tests (fixtures only, no GPU): `cd app && ..\runtime\python\Scripts\python.exe -m unittest discover -s tests`.
+Release assets are built by `app/scripts/build_release.py` and published by `app/scripts/publish_release.py`
+(token from `GITHUB_TOKEN` only).
 Evidence of what was actually executed lives in `data/reports/VALIDATION.md` of an installation and
 is summarised in [app/Docs/CapabilityCoverage.md](app/Docs/CapabilityCoverage.md).
 

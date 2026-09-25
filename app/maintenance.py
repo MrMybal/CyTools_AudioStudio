@@ -55,8 +55,12 @@ def write_json(path, value):
 
 
 def runtime_python():
-    candidate = RUNTIME / 'python' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
-    return str(candidate if candidate.exists() else sys.executable)
+    names = ('Scripts/python.exe', 'python.exe') if os.name == 'nt' else ('bin/python',)     # venv, or portable build
+    for name in names:
+        candidate = RUNTIME / 'python' / name
+        if candidate.exists():
+            return str(candidate)
+    return sys.executable
 
 
 def engine_sources():
