@@ -1,0 +1,30 @@
+# CyTools_AudioStudio — what git does not carry.
+# Excluding from git never deletes anything on disk: models, jobs and sessions stay where they are.
+
+# Model weights, engine environments and everything produced at runtime
+data/*
+!data/README.md
+runtime/
+
+# Built launcher (rebuild with app/build_launcher.ps1)
+*.exe
+app/launcher.obj
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
+
+# Local secrets (tokens live in the system keyring, never in files)
+.env
+*.token

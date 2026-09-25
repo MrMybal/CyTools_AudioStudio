@@ -1,0 +1,11 @@
+# gitleaks false positives: Piper voice keys such as "xx_XX-name-medium" match the generic-api-key rule.
+# Every entry below is a "key" field of app/models/piper-voices.json (voice identifier, not a secret).
+app/models/piper-voices.json:generic-api-key:11695
+app/models/piper-voices.json:generic-api-key:3053
+app/models/piper-voices.json:generic-api-key:5856
+app/models/piper-voices.json:generic-api-key:5911
+app/models/piper-voices.json:generic-api-key:6952
+app/models/piper-voices.json:generic-api-key:8582
+app/models/piper-voices.json:generic-api-key:9435
+app/models/piper-voices.json:generic-api-key:9490
+app/models/piper-voices.json:generic-api-key:9982

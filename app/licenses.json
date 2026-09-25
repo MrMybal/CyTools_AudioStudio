@@ -1,0 +1,100 @@
+[
+  {
+    "kind": "Application",
+    "name": "CyTools_AudioStudio - application code (app/)",
+    "license": "GPL-3.0-only",
+    "url": "https://github.com/MrMybal/CyTools_AudioStudio",
+    "notes": "Copyright Cyberalien. Free software under the GNU GPL v3 (LICENSE at the root); model weights and engines keep their own licences listed below."
+  },
+  {
+    "kind": "SDK",
+    "name": "CyToolsCore - runtime, jobs, transports (CLI, MCP), scaffold",
+    "license": "GPL-3.0-only",
+    "url": "https://github.com/MrMybal/CyToolsCore",
+    "notes": "The application imports cytools_core; the SDK is public under the GPL-3.0 (pedalboard / JUCE are GPL-3.0 as well)."
+  },
+  {
+    "kind": "Engine",
+    "name": "pedalboard (Spotify) - native effects and VST3 hosting, built on JUCE",
+    "license": "GPL-3.0",
+    "url": "https://github.com/spotify/pedalboard",
+    "notes": "JUCE is used under its GPL terms through pedalboard. VST3 plugins loaded by the user keep their own licences."
+  },
+  {
+    "kind": "Engine",
+    "name": "PortAudio (through python-sounddevice) - playback and recording",
+    "license": "MIT",
+    "url": "https://github.com/spatialaudio/python-sounddevice",
+    "notes": "Bundled PortAudio build without ASIO (the Steinberg ASIO SDK licence is not held)."
+  },
+  {
+    "kind": "Engine",
+    "name": "Procedural SFX synthesizer",
+    "license": "GPL-3.0-only (Tool code)",
+    "url": "",
+    "notes": "Ported from CyTools_AudioGen; numpy/scipy only, no model."
+  },
+  {
+    "kind": "Engine",
+    "name": "AudioLDM pipeline (diffusers)",
+    "license": "Apache-2.0 (diffusers code)",
+    "url": "https://github.com/huggingface/diffusers",
+    "notes": "Weights cvssp/audioldm-s-full-v2 are CC-BY-NC-SA-4.0 (non-commercial)."
+  },
+  {
+    "kind": "Engine",
+    "name": "ACE-Step 1.5 (vendored source, runtime/sources/ACE-Step-1.5)",
+    "license": "MIT",
+    "url": "https://github.com/ace-step/ACE-Step-1.5",
+    "notes": "Pinned revision ca1e85fe9430; checkpoints ACE-Step/Ace-Step1.5 are MIT."
+  },
+  {
+    "kind": "Engine",
+    "name": "Piper (piper-tts 1.8.0, ONNX Runtime)",
+    "license": "MIT (piper-tts), MIT (onnxruntime)",
+    "url": "https://github.com/OHF-Voice/piper1-gpl",
+    "notes": "Each voice has its own MODEL_CARD; the acceptance box in the Models tab refers to it. The espeak-ng phonemizer used by Piper is GPL-3.0."
+  },
+  {
+    "kind": "Engine",
+    "name": "Qwen3-TTS (qwen-tts 0.1.1)",
+    "license": "Apache-2.0",
+    "url": "https://github.com/QwenLM/Qwen3-TTS",
+    "notes": "Weights Qwen/Qwen3-TTS-12Hz-* are Apache-2.0."
+  },
+  {
+    "kind": "Engine",
+    "name": "Fish Speech (vendored source, runtime/sources/fish-speech)",
+    "license": "Apache-2.0 (code)",
+    "url": "https://github.com/fishaudio/fish-speech",
+    "notes": "Pinned revision 214da3cd841b. Weights fishaudio/s2-pro are under the Fish Audio Research License: non-commercial, personal acceptance required."
+  },
+  {
+    "kind": "Engine",
+    "name": "PyTorch 2.8.0 + CUDA 12.8 wheels",
+    "license": "BSD-3-Clause",
+    "url": "https://pytorch.org",
+    "notes": "Installed privately in runtime/engines/torch; the NVIDIA driver is a system component."
+  },
+  {
+    "kind": "Dependency",
+    "name": "pyloudnorm (ITU-R BS.1770 loudness)",
+    "license": "MIT",
+    "url": "https://github.com/csteinmetz1/pyloudnorm",
+    "notes": ""
+  },
+  {
+    "kind": "Dependency",
+    "name": "PyAV (FFmpeg bindings) - AAC/M4A and other container decoding",
+    "license": "BSD-3-Clause (PyAV); FFmpeg LGPL/GPL components as bundled",
+    "url": "https://github.com/PyAV-Org/PyAV",
+    "notes": "Check the FFmpeg build flags of the wheel before commercial redistribution."
+  },
+  {
+    "kind": "Dependency",
+    "name": "Dear ImGui / imgui-bundle",
+    "license": "MIT",
+    "url": "https://github.com/pthom/imgui_bundle",
+    "notes": ""
+  }
+]

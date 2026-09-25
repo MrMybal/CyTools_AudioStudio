@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "python": ">=3.11,<3.13",
+  "engines": {
+    "torch": {
+      "label": "PyTorch CUDA engine (music, voices, AI processing)",
+      "directory": "runtime/engines/torch",
+      "torch": {
+        "packages": ["torch==2.8.0+cu128", "torchaudio==2.8.0+cu128", "torchvision==0.23.0+cu128"],
+        "index": "https://download.pytorch.org/whl/cu128",
+        "cpu": {
+          "packages": ["torch==2.8.0", "torchaudio==2.8.0", "torchvision==0.23.0"],
+          "index": "https://download.pytorch.org/whl/cpu"
+        }
+      },
+      "requirements": "requirements-engine-torch.txt",
+      "sources": {
+        "fish-speech": {
+          "repository": "https://github.com/fishaudio/fish-speech.git",
+          "revision": "214da3cd841bda85da2496b96cd3c4d7edb1337e",
+          "license": "Apache-2.0 (code); model weights under the Fish Audio Research License",
+          "requiredFile": "fish_speech/models/text2semantic/inference.py"
+        },
+        "ACE-Step-1.5": {
+          "repository": "https://github.com/ace-step/ACE-Step-1.5.git",
+          "revision": "ca1e85fe9430179831e6bc6be790c332190a3866",
+          "license": "MIT",
+          "requiredFile": "acestep/inference.py"
+        }
+      },
+      "verify": ["torch", "torchaudio", "transformers", "diffusers", "qwen_tts", "dac", "vector_quantize_pytorch", "torchao", "numba", "librosa", "soundfile", "fish_speech", "acestep"],
+      "backends": ["qwen3tts", "fishspeech", "audioldm", "acestep"],
+      "estimatedBytes": 12000000000
+    },
+    "piper": {
+      "label": "Piper ONNX engine (CPU voices)",
+      "directory": "runtime/engines/piper",
+      "requirements": "requirements-engine-piper.txt",
+      "verify": ["piper", "onnxruntime"],
+      "backends": ["piper"],
+      "estimatedBytes": 600000000
+    }
+  }
+}

@@ -1,0 +1,1163 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-22T01:49:26+00:00",
+  "models": [
+    {
+      "id": "audioldm-s-full-v2",
+      "backend": "audioldm",
+      "family": "sfx",
+      "name": "AudioLDM-S Full v2",
+      "variant": "",
+      "directory": "data/models/audioldm/feeb3d14203495a4b6ac0893cbdedb2159b4819c",
+      "source": {
+        "kind": "huggingface",
+        "repository": "cvssp/audioldm-s-full-v2",
+        "revision": "feeb3d14203495a4b6ac0893cbdedb2159b4819c",
+        "gated": false,
+        "url": "https://huggingface.co/cvssp/audioldm-s-full-v2"
+      },
+      "files": [
+        {
+          "path": "model_index.json",
+          "size": 462,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "scheduler/scheduler_config.json",
+          "size": 439,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "text_encoder/config.json",
+          "size": 843,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "text_encoder/model.safetensors",
+          "size": 501241456,
+          "sha256": "c92b5a2bee69ff5dd05820d9e0a5cddbc9c9b9dd19a6cb3214f0cf4f29a4d1b0",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "tokenizer/merges.txt",
+          "size": 456356,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "tokenizer/special_tokens_map.json",
+          "size": 280,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "tokenizer/tokenizer.json",
+          "size": 2108746,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "tokenizer/tokenizer_config.json",
+          "size": 424,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "size": 798293,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "unet/config.json",
+          "size": 1300,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "unet/diffusion_pytorch_model.safetensors",
+          "size": 740228912,
+          "sha256": "fc30d5b5a3bb8d08672736efb1fff10755ba7024dace39b2dcb579a105aa2a5a",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "vae/config.json",
+          "size": 534,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "vae/diffusion_pytorch_model.safetensors",
+          "size": 221530316,
+          "sha256": "42f64f7565b23eabde68c9694e39f18b8bba5f7a14f477e7ed4b51e0ea7de8a5",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "vocoder/config.json",
+          "size": 654,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "vocoder/model.safetensors",
+          "size": 221079092,
+          "sha256": "d9dc6513c30a5b86c2497712690c04fe74b4aa79fdab6d490b34fcb4e24c590c",
+          "sizeCheckOnly": false
+        }
+      ],
+      "downloadBytes": 1687448107,
+      "license": {
+        "name": "CC-BY-NC-SA-4.0",
+        "url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+        "requiresAcceptance": true,
+        "commercialUse": "forbidden",
+        "notes": "Non-commercial, share-alike. Public repository, no account needed; the user must still read and accept the licence before the download starts."
+      },
+      "legacy": {
+        "tool": "CyTools_AudioGen",
+        "path": "data/models/audioldm/feeb3d14203495a4b6ac0893cbdedb2159b4819c"
+      },
+      "resources": {
+        "vramBytes": 2700000000,
+        "ramBytes": 3500000000
+      },
+      "default": true,
+      "notes": "Diffusers pipeline (text-to-audio, 16 kHz). Only the LFS weights carry an upstream SHA-256; the small JSON/text files are checked by exact size. Resources are the peaks measured by CyTools_AudioGen (decimal GB)."
+    },
+    {
+      "id": "acestep-1.5",
+      "backend": "acestep",
+      "family": "music",
+      "name": "ACE-Step 1.5",
+      "variant": "",
+      "directory": "data/models/acestep",
+      "source": {
+        "kind": "huggingface",
+        "repository": "ACE-Step/Ace-Step1.5",
+        "revision": "19671f406d603126926c1b7e2adc169acbcade22",
+        "gated": false,
+        "url": "https://huggingface.co/ACE-Step/Ace-Step1.5"
+      },
+      "files": [
+        {
+          "path": "Qwen3-Embedding-0.6B/added_tokens.json",
+          "size": 707,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "Qwen3-Embedding-0.6B/chat_template.jinja",
+          "size": 4116,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "Qwen3-Embedding-0.6B/config.json",
+          "size": 1359,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "Qwen3-Embedding-0.6B/merges.txt",
+          "size": 1671853,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "Qwen3-Embedding-0.6B/model.safetensors",
+          "size": 1191586416,
+          "sha256": "0437e45c94563b09e13cb7a64478fc406947a93cb34a7e05870fc8dcd48e23fd",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "Qwen3-Embedding-0.6B/special_tokens_map.json",
+          "size": 613,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "Qwen3-Embedding-0.6B/tokenizer.json",
+          "size": 11423705,
+          "sha256": "def76fb086971c7867b829c23a26261e38d9d74e02139253b38aeb9df8b4b50a",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "Qwen3-Embedding-0.6B/tokenizer_config.json",
+          "size": 5404,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "Qwen3-Embedding-0.6B/vocab.json",
+          "size": 2776833,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "acestep-5Hz-lm-1.7B/added_tokens.json",
+          "size": 2217787,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "acestep-5Hz-lm-1.7B/chat_template.jinja",
+          "size": 4168,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "acestep-5Hz-lm-1.7B/config.json",
+          "size": 1385,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "acestep-5Hz-lm-1.7B/merges.txt",
+          "size": 1671853,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "acestep-5Hz-lm-1.7B/model.safetensors",
+          "size": 3708521528,
+          "sha256": "f161689da73e5ecefa28ff780d51c2d92a00f056d021d7933c779ed5c6cd7db8",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "acestep-5Hz-lm-1.7B/special_tokens_map.json",
+          "size": 1824199,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "acestep-5Hz-lm-1.7B/tokenizer.json",
+          "size": 24321939,
+          "sha256": "35af56c3f5cb3ea2cc578aa28a8937770981d504f183ac5c8c38baf4bbd4af4d",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "acestep-5Hz-lm-1.7B/tokenizer_config.json",
+          "size": 14072925,
+          "sha256": "6cd70cdd89425971794f5235562edcc608b0629a6c4686ae51a8b8c8b8ba5e95",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "acestep-5Hz-lm-1.7B/vocab.json",
+          "size": 2776833,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "acestep-v15-turbo/config.json",
+          "size": 1968,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "acestep-v15-turbo/configuration_acestep_v15.py",
+          "size": 13130,
+          "sha256": null,
+          "sizeCheckOnly": false,
+          "presenceOnly": true
+        },
+        {
+          "path": "acestep-v15-turbo/model.safetensors",
+          "size": 4787825604,
+          "sha256": "3f6e0797fad420a39bd33979eb6e840e30989e34a3794e843d23b60ec6e422d7",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "acestep-v15-turbo/modeling_acestep_v15_turbo.py",
+          "size": 96036,
+          "sha256": null,
+          "sizeCheckOnly": false,
+          "presenceOnly": true
+        },
+        {
+          "path": "acestep-v15-turbo/silence_latent.pt",
+          "size": 3841215,
+          "sha256": "a778e9dd942f5e8b2c09c55370782d318834432b03dabbcdf70e6ed49ad6358b",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "vae/config.json",
+          "size": 425,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "vae/diffusion_pytorch_model.safetensors",
+          "size": 337431388,
+          "sha256": "da17edb604c40deaf09e9b24974e590d1ca83a374070e5d0884cfa4bed9a99b0",
+          "sizeCheckOnly": false
+        }
+      ],
+      "downloadBytes": 10092093389,
+      "license": {
+        "name": "MIT",
+        "url": "https://huggingface.co/ACE-Step/Ace-Step1.5",
+        "requiresAcceptance": false,
+        "commercialUse": "allowed",
+        "notes": "MIT as declared on the model card of the pinned revision."
+      },
+      "legacy": {
+        "tool": "CyTools_ACE-Step1.5",
+        "path": "data/models"
+      },
+      "resources": {
+        "vramBytes": 17179869184,
+        "ramBytes": 13421772800
+      },
+      "default": true,
+      "notes": "Four components stored flat inside the directory: acestep-v15-turbo, vae, Qwen3-Embedding-0.6B, acestep-5Hz-lm-1.7B. VRAM is the peak with the 5 Hz language-model planner (about 10 GiB without it); RAM is the peak working set with the planner. The two .py files are presence-only.",
+      "components": [
+        "acestep-v15-turbo",
+        "vae",
+        "Qwen3-Embedding-0.6B",
+        "acestep-5Hz-lm-1.7B"
+      ]
+    },
+    {
+      "id": "fishspeech-s2-pro",
+      "backend": "fishspeech",
+      "family": "voice",
+      "name": "Fish Speech S2 Pro",
+      "variant": "",
+      "directory": "data/models/fishspeech/s2-pro",
+      "source": {
+        "kind": "huggingface",
+        "repository": "fishaudio/s2-pro",
+        "revision": "1de9996b6be38b745688de084d87a5633f714e4e",
+        "gated": false,
+        "url": "https://huggingface.co/fishaudio/s2-pro"
+      },
+      "files": [
+        {
+          "path": "LICENSE.md",
+          "size": 10360,
+          "sha256": "aa7d9206e9d710590987a3636934f643529c00cd490323594e6206aaa0c32d80",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "chat_template.jinja",
+          "size": 4116,
+          "sha256": "87a2728cb8dc9fe424d624542f6060ec05a1d285ebbec578bb078900e33396b5",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "codec.pth",
+          "size": 1871099728,
+          "sha256": "74fc41c5a7151c6f350af8bd7e5d6e3accfcc7f3dfbfac23afd35af07052bb2f",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "config.json",
+          "size": 1863,
+          "sha256": "261b519a2a9576710fc8533a77297fae007f0e7b3aa28a217f8352b7f32fe993",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "model-00001-of-00002.safetensors",
+          "size": 4986872984,
+          "sha256": "c4218e8ac93be83b35eee30b4f94cb2e9b5ecff40f3e21611438d2f4f8804aad",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "model-00002-of-00002.safetensors",
+          "size": 4136876104,
+          "sha256": "76738d23465deaac431433232c0762908cc99a6eddc3d49f67307d92680827be",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "model.safetensors.index.json",
+          "size": 32686,
+          "sha256": "c8cb9974d3d17663a95dba1d6c3ea531fc42d377c0dff946f3a01a0ec48d45a3",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "special_tokens_map.json",
+          "size": 101864,
+          "sha256": "c2ff18fde6e43b7408435bc8ed079af74531befba549358a97cbc59ce606bc6b",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "tokenizer.json",
+          "size": 12217872,
+          "sha256": "f24e08099d45a8adf3f52f5f0b03276e433bb9d689bb15fcbcc48ce58744588b",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "tokenizer_config.json",
+          "size": 860832,
+          "sha256": "b8d149343ae425b0da67e6708686aceb51be7815d9792f265fc12ff04d5e9856",
+          "sizeCheckOnly": false
+        }
+      ],
+      "downloadBytes": 11008078409,
+      "license": {
+        "name": "Fish Audio Research License",
+        "url": "https://huggingface.co/fishaudio/s2-pro/blob/1de9996b6be38b745688de084d87a5633f714e4e/LICENSE.md",
+        "requiresAcceptance": true,
+        "commercialUse": "forbidden",
+        "notes": "Research / non-commercial; commercial use needs a separate agreement with Fish Audio. The user must accept the licence personally in the interface. A Hugging Face token is only a fallback when the server answers 401/403; it never appears in argv, jobs or logs."
+      },
+      "legacy": {
+        "tool": "CyTools_FishSpeechS2Pro",
+        "path": "data/models/s2-pro"
+      },
+      "resources": {
+        "vramBytes": 21474836480,
+        "ramBytes": 17179869184
+      },
+      "default": false,
+      "notes": "Text-to-speech with voice cloning (two safetensors shards + codec.pth). Every file carries an upstream SHA-256. The repository answered public resolve URLs without a token when the old tool installed it; the licence still requires personal acceptance. VRAM is the value declared by CyTools_FishSpeechS2Pro, not a measured peak."
+    },
+    {
+      "id": "qwen3tts-0.6B-Base",
+      "backend": "qwen3tts",
+      "family": "voice",
+      "name": "Qwen3-TTS 12Hz 0.6B Base",
+      "variant": "0.6B-Base",
+      "directory": "data/models/qwen3tts/0.6B-Base",
+      "source": {
+        "kind": "huggingface",
+        "repository": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "revision": "5d83992436eae1d760afd27aff78a71d676296fc",
+        "gated": false,
+        "url": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base"
+      },
+      "files": [
+        {
+          "path": "config.json",
+          "size": 4494,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "4e923f500f5c3eeb78d44072e7049b28817c2e04"
+        },
+        {
+          "path": "generation_config.json",
+          "size": 245,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "1872b16d4535564abf2db5d6debe6cddd82b7f2e"
+        },
+        {
+          "path": "merges.txt",
+          "size": 1671839,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "20024bfe7c83998e9aeaf98a0cd6a2ce6306c2f0"
+        },
+        {
+          "path": "model.safetensors",
+          "size": 1829344272,
+          "sha256": "180b3b10eb1c9f1b4db7806d5475bae3071c0243c299d49926bab1da3b6946f6",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "preprocessor_config.json",
+          "size": 127,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "0525dd953bb9241912f7147666f0d535165d5d4f"
+        },
+        {
+          "path": "speech_tokenizer/config.json",
+          "size": 2336,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "06cc8dc4c5ec8a1929086b71b98c313020d9268b"
+        },
+        {
+          "path": "speech_tokenizer/configuration.json",
+          "size": 76,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "ab58e2eaf53cd14a1a2a7527d9261ceea93a24cd"
+        },
+        {
+          "path": "speech_tokenizer/model.safetensors",
+          "size": 682293092,
+          "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "speech_tokenizer/preprocessor_config.json",
+          "size": 234,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "ba40914f4f49ab98a8ca545d4892ef7291a39592"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "size": 7344,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "6ff9fd60cc623bb54bbd603cbd418c97a11528d7"
+        },
+        {
+          "path": "vocab.json",
+          "size": 2776833,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "4783fe10ac3adce15ac8f358ef5462739852c569"
+        }
+      ],
+      "downloadBytes": 2516100892,
+      "license": {
+        "name": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0",
+        "requiresAcceptance": false,
+        "commercialUse": "allowed",
+        "notes": "Public repository, Apache-2.0 as declared in the pinned listing."
+      },
+      "legacy": {
+        "tool": "CyTools_Qwen3-TTS",
+        "path": "data/models/0.6B-Base"
+      },
+      "resources": {
+        "vramBytes": 5368709120,
+        "ramBytes": 6442450944
+      },
+      "default": false,
+      "notes": "Voice cloning from a reference recording. Files listed from the pinned Hugging Face API listing: LFS files carry an upstream SHA-256, the others a git blob SHA-1 (gitBlobSha1) and are size-checked."
+    },
+    {
+      "id": "qwen3tts-0.6B-CustomVoice",
+      "backend": "qwen3tts",
+      "family": "voice",
+      "name": "Qwen3-TTS 12Hz 0.6B CustomVoice",
+      "variant": "0.6B-CustomVoice",
+      "directory": "data/models/qwen3tts/0.6B-CustomVoice",
+      "source": {
+        "kind": "huggingface",
+        "repository": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+        "revision": "85e237c12c027371202489a0ec509ded67b5e4b5",
+        "gated": false,
+        "url": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
+      },
+      "files": [
+        {
+          "path": "config.json",
+          "size": 4908,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "5e8d5fc100536984e3a89bd87ef08e59e322b29b"
+        },
+        {
+          "path": "generation_config.json",
+          "size": 245,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "1872b16d4535564abf2db5d6debe6cddd82b7f2e"
+        },
+        {
+          "path": "merges.txt",
+          "size": 1671839,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "20024bfe7c83998e9aeaf98a0cd6a2ce6306c2f0"
+        },
+        {
+          "path": "model.safetensors",
+          "size": 1811626576,
+          "sha256": "bc3c7e785eb961179c25450d1acff03f839e0002f2f3a5aeb67b5735c0fa2adb",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "preprocessor_config.json",
+          "size": 127,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "0525dd953bb9241912f7147666f0d535165d5d4f"
+        },
+        {
+          "path": "speech_tokenizer/config.json",
+          "size": 2336,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "06cc8dc4c5ec8a1929086b71b98c313020d9268b"
+        },
+        {
+          "path": "speech_tokenizer/configuration.json",
+          "size": 76,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "ab58e2eaf53cd14a1a2a7527d9261ceea93a24cd"
+        },
+        {
+          "path": "speech_tokenizer/model.safetensors",
+          "size": 682293092,
+          "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "speech_tokenizer/preprocessor_config.json",
+          "size": 234,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "ba40914f4f49ab98a8ca545d4892ef7291a39592"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "size": 7344,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "6ff9fd60cc623bb54bbd603cbd418c97a11528d7"
+        },
+        {
+          "path": "vocab.json",
+          "size": 2776833,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "4783fe10ac3adce15ac8f358ef5462739852c569"
+        }
+      ],
+      "downloadBytes": 2498383610,
+      "license": {
+        "name": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0",
+        "requiresAcceptance": false,
+        "commercialUse": "allowed",
+        "notes": "Public repository, Apache-2.0 as declared in the pinned listing."
+      },
+      "legacy": {
+        "tool": "CyTools_Qwen3-TTS",
+        "path": "data/models/0.6B-CustomVoice"
+      },
+      "resources": {
+        "vramBytes": 5368709120,
+        "ramBytes": 6442450944
+      },
+      "default": false,
+      "notes": "Preset speakers with instruction control. Files listed from the pinned Hugging Face API listing: LFS files carry an upstream SHA-256, the others a git blob SHA-1 (gitBlobSha1) and are size-checked."
+    },
+    {
+      "id": "qwen3tts-1.7B-Base",
+      "backend": "qwen3tts",
+      "family": "voice",
+      "name": "Qwen3-TTS 12Hz 1.7B Base",
+      "variant": "1.7B-Base",
+      "directory": "data/models/qwen3tts/1.7B-Base",
+      "source": {
+        "kind": "huggingface",
+        "repository": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+        "revision": "fd4b254389122332181a7c3db7f27e918eec64e3",
+        "gated": false,
+        "url": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base"
+      },
+      "files": [
+        {
+          "path": "config.json",
+          "size": 4494,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "81b57e8e790c07e8fa7f82d8bdfd7574d485c396"
+        },
+        {
+          "path": "generation_config.json",
+          "size": 245,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "1872b16d4535564abf2db5d6debe6cddd82b7f2e"
+        },
+        {
+          "path": "merges.txt",
+          "size": 1671839,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "20024bfe7c83998e9aeaf98a0cd6a2ce6306c2f0"
+        },
+        {
+          "path": "model.safetensors",
+          "size": 3857413744,
+          "sha256": "38fc7fc51c5e776e840414b6fd443962e9411b9654888fd7913e4da643cb857c",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "preprocessor_config.json",
+          "size": 127,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "0525dd953bb9241912f7147666f0d535165d5d4f"
+        },
+        {
+          "path": "speech_tokenizer/config.json",
+          "size": 2336,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "06cc8dc4c5ec8a1929086b71b98c313020d9268b"
+        },
+        {
+          "path": "speech_tokenizer/configuration.json",
+          "size": 76,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "ab58e2eaf53cd14a1a2a7527d9261ceea93a24cd"
+        },
+        {
+          "path": "speech_tokenizer/model.safetensors",
+          "size": 682293092,
+          "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "speech_tokenizer/preprocessor_config.json",
+          "size": 234,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "ba40914f4f49ab98a8ca545d4892ef7291a39592"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "size": 7344,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "6ff9fd60cc623bb54bbd603cbd418c97a11528d7"
+        },
+        {
+          "path": "vocab.json",
+          "size": 2776833,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "4783fe10ac3adce15ac8f358ef5462739852c569"
+        }
+      ],
+      "downloadBytes": 4544170364,
+      "license": {
+        "name": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0",
+        "requiresAcceptance": false,
+        "commercialUse": "allowed",
+        "notes": "Public repository, Apache-2.0 as declared in the pinned listing."
+      },
+      "legacy": {
+        "tool": "CyTools_Qwen3-TTS",
+        "path": "data/models/1.7B-Base"
+      },
+      "resources": {
+        "vramBytes": 8589934592,
+        "ramBytes": 10737418240
+      },
+      "default": false,
+      "notes": "Voice cloning from a reference recording. Files listed from the pinned Hugging Face API listing: LFS files carry an upstream SHA-256, the others a git blob SHA-1 (gitBlobSha1) and are size-checked."
+    },
+    {
+      "id": "qwen3tts-1.7B-CustomVoice",
+      "backend": "qwen3tts",
+      "family": "voice",
+      "name": "Qwen3-TTS 12Hz 1.7B CustomVoice",
+      "variant": "1.7B-CustomVoice",
+      "directory": "data/models/qwen3tts/1.7B-CustomVoice",
+      "source": {
+        "kind": "huggingface",
+        "repository": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+        "revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+        "gated": false,
+        "url": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
+      },
+      "files": [
+        {
+          "path": "config.json",
+          "size": 4908,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "95d74b20b7485f5dfa09d05988d6c606ec226811"
+        },
+        {
+          "path": "generation_config.json",
+          "size": 245,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "1872b16d4535564abf2db5d6debe6cddd82b7f2e"
+        },
+        {
+          "path": "merges.txt",
+          "size": 1671839,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "20024bfe7c83998e9aeaf98a0cd6a2ce6306c2f0"
+        },
+        {
+          "path": "model.safetensors",
+          "size": 3833402552,
+          "sha256": "38b1d5971bdbd982b561cccec982669a53b0537c3cf5e9bd4778ed07bb2f5137",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "preprocessor_config.json",
+          "size": 127,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "0525dd953bb9241912f7147666f0d535165d5d4f"
+        },
+        {
+          "path": "speech_tokenizer/config.json",
+          "size": 2336,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "06cc8dc4c5ec8a1929086b71b98c313020d9268b"
+        },
+        {
+          "path": "speech_tokenizer/configuration.json",
+          "size": 76,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "ab58e2eaf53cd14a1a2a7527d9261ceea93a24cd"
+        },
+        {
+          "path": "speech_tokenizer/model.safetensors",
+          "size": 682293092,
+          "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "speech_tokenizer/preprocessor_config.json",
+          "size": 234,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "ba40914f4f49ab98a8ca545d4892ef7291a39592"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "size": 7344,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "6ff9fd60cc623bb54bbd603cbd418c97a11528d7"
+        },
+        {
+          "path": "vocab.json",
+          "size": 2776833,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "4783fe10ac3adce15ac8f358ef5462739852c569"
+        }
+      ],
+      "downloadBytes": 4520159586,
+      "license": {
+        "name": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0",
+        "requiresAcceptance": false,
+        "commercialUse": "allowed",
+        "notes": "Public repository, Apache-2.0 as declared in the pinned listing."
+      },
+      "legacy": {
+        "tool": "CyTools_Qwen3-TTS",
+        "path": "data/models/1.7B-CustomVoice"
+      },
+      "resources": {
+        "vramBytes": 8589934592,
+        "ramBytes": 10737418240
+      },
+      "default": true,
+      "notes": "Preset speakers with instruction control. Files listed from the pinned Hugging Face API listing: LFS files carry an upstream SHA-256, the others a git blob SHA-1 (gitBlobSha1) and are size-checked."
+    },
+    {
+      "id": "qwen3tts-1.7B-VoiceDesign",
+      "backend": "qwen3tts",
+      "family": "voice",
+      "name": "Qwen3-TTS 12Hz 1.7B VoiceDesign",
+      "variant": "1.7B-VoiceDesign",
+      "directory": "data/models/qwen3tts/1.7B-VoiceDesign",
+      "source": {
+        "kind": "huggingface",
+        "repository": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+        "revision": "5ecdb67327fd37bb2e042aab12ff7391903235d3",
+        "gated": false,
+        "url": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
+      },
+      "files": [
+        {
+          "path": "config.json",
+          "size": 4421,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "2c2c027c574a85c0d5a5d48e3cfed1a8a051ff9d"
+        },
+        {
+          "path": "generation_config.json",
+          "size": 245,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "1872b16d4535564abf2db5d6debe6cddd82b7f2e"
+        },
+        {
+          "path": "merges.txt",
+          "size": 1671839,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "20024bfe7c83998e9aeaf98a0cd6a2ce6306c2f0"
+        },
+        {
+          "path": "model.safetensors",
+          "size": 3833402552,
+          "sha256": "391e8db219f292c515297cdceeb43e4eae67cdde35fa57e79a6a8a532fca0522",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "preprocessor_config.json",
+          "size": 127,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "0525dd953bb9241912f7147666f0d535165d5d4f"
+        },
+        {
+          "path": "speech_tokenizer/config.json",
+          "size": 2336,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "06cc8dc4c5ec8a1929086b71b98c313020d9268b"
+        },
+        {
+          "path": "speech_tokenizer/configuration.json",
+          "size": 76,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "ab58e2eaf53cd14a1a2a7527d9261ceea93a24cd"
+        },
+        {
+          "path": "speech_tokenizer/model.safetensors",
+          "size": 682293092,
+          "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "speech_tokenizer/preprocessor_config.json",
+          "size": 234,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "ba40914f4f49ab98a8ca545d4892ef7291a39592"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "size": 7344,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "6ff9fd60cc623bb54bbd603cbd418c97a11528d7"
+        },
+        {
+          "path": "vocab.json",
+          "size": 2776833,
+          "sha256": null,
+          "sizeCheckOnly": true,
+          "gitBlobSha1": "4783fe10ac3adce15ac8f358ef5462739852c569"
+        }
+      ],
+      "downloadBytes": 4520159099,
+      "license": {
+        "name": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0",
+        "requiresAcceptance": false,
+        "commercialUse": "allowed",
+        "notes": "Public repository, Apache-2.0 as declared in the pinned listing."
+      },
+      "legacy": {
+        "tool": "CyTools_Qwen3-TTS",
+        "path": "data/models/1.7B-VoiceDesign"
+      },
+      "resources": {
+        "vramBytes": 8589934592,
+        "ramBytes": 10737418240
+      },
+      "default": false,
+      "notes": "Voice described in natural language. Files listed from the pinned Hugging Face API listing: LFS files carry an upstream SHA-256, the others a git blob SHA-1 (gitBlobSha1) and are size-checked."
+    },
+    {
+      "id": "llm-qwen3-1.7b",
+      "backend": "llm",
+      "family": "text",
+      "name": "Qwen3-1.7B (text annotation assistant)",
+      "variant": "1.7B",
+      "directory": "data/models/llm/qwen3-1.7b",
+      "source": {
+        "kind": "huggingface",
+        "repository": "Qwen/Qwen3-1.7B",
+        "revision": "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+        "gated": false,
+        "url": "https://huggingface.co/Qwen/Qwen3-1.7B"
+      },
+      "files": [
+        {
+          "path": "LICENSE",
+          "size": 11343,
+          "sha256": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "config.json",
+          "size": 726,
+          "sha256": "1ddb5b89ebc90dcb417a45c213d818577e65976454d29385c8f6140771d95197",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "generation_config.json",
+          "size": 239,
+          "sha256": "2325da0f15bb848e018c5ae071b7943332e9f871d6b60e2ed22ca97d4cb993d2",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "merges.txt",
+          "size": 1671853,
+          "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "model-00001-of-00002.safetensors",
+          "size": 3441185608,
+          "sha256": "169ad53ec313c3a34b06c0809216e4fc072cce444a5d4ff2b59690d064130ed5",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "model-00002-of-00002.safetensors",
+          "size": 622329984,
+          "sha256": "912becff8d60672aa8628ef08c05898d9adf17c2ad4ae3caf99b065622fdeff9",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "model.safetensors.index.json",
+          "size": 25605,
+          "sha256": "0d660e94b165eb912669a5249dff44b83188c4777a07ddb9611fb78d91b0578d",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "tokenizer.json",
+          "size": 11422654,
+          "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "tokenizer_config.json",
+          "size": 9732,
+          "sha256": "d5d09f07b48c3086c508b30d1c9114bd1189145b74e982a265350c923acd8101",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "vocab.json",
+          "size": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "sizeCheckOnly": false
+        }
+      ],
+      "downloadBytes": 4079434577,
+      "license": {
+        "name": "Apache-2.0",
+        "url": "https://huggingface.co/Qwen/Qwen3-1.7B/blob/main/LICENSE",
+        "requiresAcceptance": false,
+        "commercialUse": "allowed",
+        "notes": "Optional: writes TTS annotations from plain text. The AI client driving the Tool can annotate itself instead."
+      },
+      "legacy": {
+        "tool": "CyTools_AudioLibrary",
+        "path": "data/models/qwen3-1.7b/2025-04",
+        "copied": true
+      },
+      "resources": {
+        "vramBytes": 5368709120,
+        "ramBytes": 9663676416
+      },
+      "default": true,
+      "notes": "Copied from CyTools_AudioLibrary (still used there), not moved."
+    },
+    {
+      "id": "whisper-large-v3-turbo",
+      "backend": "whisper",
+      "family": "text",
+      "name": "Whisper large-v3 turbo (transcription)",
+      "variant": "large-v3-turbo",
+      "directory": "data/models/whisper/large-v3-turbo",
+      "source": {
+        "kind": "huggingface",
+        "repository": "openai/whisper-large-v3-turbo",
+        "revision": "41f01f3fe87f28c78e2fbf8b568835947dd65ed9",
+        "gated": false,
+        "url": "https://huggingface.co/openai/whisper-large-v3-turbo"
+      },
+      "files": [
+        {
+          "path": "added_tokens.json",
+          "size": 34648,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "config.json",
+          "size": 1256,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "generation_config.json",
+          "size": 3772,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "merges.txt",
+          "size": 493869,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "model.safetensors",
+          "size": 1617824864,
+          "sha256": "542566a422ae4f3fd23f1ba11add198fca01bbf82e66e6a2857b3f608b1eb9d1",
+          "sizeCheckOnly": false
+        },
+        {
+          "path": "normalizer.json",
+          "size": 52666,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "preprocessor_config.json",
+          "size": 340,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "special_tokens_map.json",
+          "size": 2186,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "tokenizer.json",
+          "size": 2710337,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "tokenizer_config.json",
+          "size": 282843,
+          "sha256": null,
+          "sizeCheckOnly": true
+        },
+        {
+          "path": "vocab.json",
+          "size": 1036558,
+          "sha256": null,
+          "sizeCheckOnly": true
+        }
+      ],
+      "downloadBytes": 1622443339,
+      "license": {
+        "name": "MIT",
+        "url": "https://huggingface.co/openai/whisper-large-v3-turbo",
+        "requiresAcceptance": false,
+        "commercialUse": "allowed",
+        "notes": "Transcribes reference recordings for voice cloning (and any audio). Optional."
+      },
+      "legacy": null,
+      "resources": {
+        "vramBytes": 3221225472,
+        "ramBytes": 4294967296
+      },
+      "default": true,
+      "notes": "Speech recognition, 99 languages, timestamps."
+    }
+  ]
+}

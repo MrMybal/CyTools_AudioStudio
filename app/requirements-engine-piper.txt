@@ -1,0 +1,5 @@
+# Piper ONNX engine environment (runtime/engines/piper): CPU text-to-speech.
+piper-tts==1.8.0
+onnxruntime==1.30.0
+numpy>=1.26,<3
+soundfile>=0.12.1,<1
