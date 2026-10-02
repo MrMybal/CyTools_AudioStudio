@@ -59,6 +59,10 @@ class App:
         self.preview_player = None
         self.frames = 0
         self.automation_write = False
+        self.pending_drops = []
+        self.id_conflicts = {}          # frame -> number of widgets ImGui reported with a conflicting ID
+        self.drop_ready = False
+        self.drop_error = ''
         self.editor = EditorPanel(self)
         self.inserts = InsertsPanel(self)
         self.workflows = WorkflowPanel(self)
@@ -84,6 +88,91 @@ class App:
 
     def select_tab(self, name):
         self.requested_tab = name
+
+    # ------------------------------------------------------------------ files dropped from the desktop
+    AUDIO_SUFFIXES = {'.wav', '.flac', '.ogg', '.mp3', '.m4a', '.aac', '.aiff', '.aif', '.opus', '.wma'}
+
+    def on_files_dropped(self, paths):
+        """GLFW drop callback (main thread): queued and handled at the next frame."""
+        self.pending_drops.extend(str(p) for p in paths)
+
+    def handle_drops(self, mouse=None):
+        """Audio files -> new tracks at the time under the mouse (below the hovered track), or into the
+        dialog's convolution effect when dropped on it; a session folder / session.json opens it; a
+        workflow .json loads into the Workflows tab."""
+        if not self.pending_drops:
+            return []
+        paths, self.pending_drops = list(self.pending_drops), []
+        mouse = mouse or native.get_mouse_pos()
+        handled = []
+        audio = [p for p in paths if Path(p).suffix.lower() in self.AUDIO_SUFFIXES and Path(p).is_file()]
+        for path in paths:
+            candidate = Path(path)
+            index = candidate if candidate.name == 'session.json' else candidate / 'session.json'
+            if index.is_file():
+                try:
+                    self.load_document(index)
+                    handled.append(('session', path))
+                    self.editor.message = tr('Session loaded: ') + str(index.parent)
+                except Exception as exc:
+                    self.jobs.error = tr('Session load failed: ') + str(exc)
+            elif candidate.suffix.lower() == '.json' and candidate.is_file():
+                try:
+                    self.workflows.load(candidate)
+                    self.select_tab('Workflows')
+                    handled.append(('workflow', path))
+                except Exception as exc:
+                    self.jobs.error = str(exc)
+        if not audio:
+            return handled
+        geometry = self.timeline.drop_geometry
+        target = self.inserts.drop_target_node()
+        if target is not None and geometry is not None and mouse.y > geometry['y1']:
+            target['params']['impulse_response'] = audio[0]
+            self.document.touch()
+            handled.append(('impulse_response', audio[0]))
+            self.editor.message = tr('Impulse response set: ') + Path(audio[0]).name
+            return handled
+        document = self.document
+        seconds, insert_after = document.cursor, None
+        if geometry is not None and geometry['x0'] <= mouse.x <= geometry['x1'] and geometry['y0'] <= mouse.y <= geometry['y1']:
+            if mouse.x >= geometry['lane_x0']:
+                seconds = max(0.0, geometry['start'] + (mouse.x - geometry['lane_x0']) / geometry['lane_width'] * geometry['span'])
+            for track_id, top, bottom in geometry['rows']:
+                if top <= mouse.y < bottom:
+                    insert_after = track_id
+        for path in audio:
+            hovered = document.track(insert_after) if insert_after else None
+            if hovered is not None and hovered.frames == 0:
+                # an empty track (the + button) takes the sound and keeps its inserts
+                try:
+                    samples, rate = audio_io.load(path)
+                    document.fill_track(hovered, samples, rate, offset_seconds=seconds, source=path)
+                    hovered.name = Path(path).stem if hovered.name.startswith('Track ') else hovered.name
+                    handled.append(('track', path))
+                    continue
+                except Exception as exc:
+                    self.jobs.error = f'{Path(path).name}: {exc}'
+                    continue
+            try:
+                track = document.import_file(path, offset_seconds=seconds)
+            except Exception as exc:
+                self.jobs.error = f'{Path(path).name}: {exc}'
+                continue
+            if insert_after is not None:
+                position = next((i for i, t in enumerate(document.tracks) if t.id == insert_after), None)
+                if position is not None:
+                    document.tracks.remove(track)
+                    document.tracks.insert(position + 1, track)
+                    document.selected_track = position + 1
+                    insert_after = track.id
+            handled.append(('track', path))
+        if handled:
+            self.select_tab('Editor')
+            self.editor.message = tr('Dropped: ') + ', '.join(Path(p).name for kind, p in handled if kind == 'track') + ' @ ' + '%.2f s' % seconds
+            if self.timeline.view[1] < document.duration:
+                self.timeline.fit(document)
+        return handled
 
     def open_folder(self, folder):
         try:
@@ -228,7 +317,17 @@ class App:
     # ------------------------------------------------------------------ frame
     def draw(self):
         self.frames += 1
+        from gui.knobs import Plot
+        Plot.new_frame()
+        try:
+            count = int(native.get_current_context().debug_draw_id_conflicts_count)
+            if count:
+                self.id_conflicts[self.frames] = count
+        except Exception:
+            pass
         self.jobs.poll()
+        if self.pending_drops:
+            self.handle_drops()
         if self.preview_player is not None and not self.preview_player.playing:
             self.stop_preview()
         event = self.dialogs.poll() if self.dialogs.purpose == 'batch' else None
@@ -318,9 +417,13 @@ def _editor_scenario(app, test_file, scenario):
         scenario['gainApplied'] = {'framesBefore': before, 'framesAfter': document.tracks[0].frames}
     elif frame == 9 and document.tracks:
         before = document.tracks[0].frames
-        app.editor.effect_index = list(effects.REGISTRY).index('reverb')
-        app.editor.effect_values = {'room_size': 0.9, 'wet_level': 0.6}
-        app.editor._apply_effect(effects.get('reverb'), whole_track=False)
+        from audiostudio.dsp.tail import trim, TailSettings
+
+        def reverb(audio, rate):
+            extended = np.concatenate([audio, np.zeros((audio.shape[0], int(rate * 5)), np.float32)], axis=1)
+            out = effects.apply_effect('reverb', extended, rate, {'room_size': 0.9, 'wet_level': 0.6})
+            return trim(out, rate, TailSettings(True, -60.0, 5.0, 0.1), audio.shape[1])
+        document.apply('Reverb', reverb)
         scenario['reverbApplied'] = {'framesBefore': before, 'framesAfter': document.tracks[0].frames, 'tailFrames': document.tracks[0].frames - before}
     elif frame == 12 and document.tracks:
         label = document.undo()
@@ -367,7 +470,8 @@ def main():
     runner.fps_idling.enable_idling = False
     smoke = '--smoke-test' in sys.argv
     interactions = '--ui-test-interactions' in sys.argv
-    if interactions:
+    all_effects = '--ui-test-all-effects' in sys.argv
+    if interactions or all_effects:
         runner.use_imgui_test_engine = True
     test_tab = next((a.split('=', 1)[1] for a in sys.argv if a.startswith('--ui-test-tab=')), None)
     with create_runtime(Path(jobs_dir)) as runtime:
@@ -417,15 +521,18 @@ def main():
         test_file = next((a.split('=', 1)[1] for a in sys.argv if a.startswith('--ui-test-file=')), None)
         scenario = {}
         recorder = None
-        if interactions:
+        if interactions or all_effects:
             from gui import interaction_tests
-            recorder = interaction_tests.Recorder()
+            recorder = interaction_tests.Recorder('ui-all-effects.json' if all_effects else 'ui-interactions.json')
 
             def register_tests():
                 engine = hello_imgui.get_imgui_test_engine()
                 io = native.test_engine.get_io(engine)
                 io.config_run_speed = native.test_engine.TestRunSpeed.fast
-                interaction_tests.register(app, runner, recorder)
+                if all_effects:
+                    interaction_tests.register_all_effects(app, runner, recorder)
+                else:
+                    interaction_tests.register(app, runner, recorder)
             runner.callbacks.register_tests = register_tests
 
         def gui():
@@ -460,7 +567,8 @@ def main():
             if (smoke or test_tab) and app.frames > 12:
                 reports = DATA / 'reports'
                 reports.mkdir(parents=True, exist_ok=True)
-                (reports / f"ui-smoke-{test_tab or 'editor'}.json").write_text(json.dumps({'frames': app.frames, 'tab': test_tab or 'Editor', 'tracks': len(app.document.tracks), 'closed': True}), 'utf-8')
+                (reports / f"ui-smoke-{test_tab or 'editor'}.json").write_text(json.dumps({'frames': app.frames, 'tab': test_tab or 'Editor', 'tracks': len(app.document.tracks), 'closed': True,
+                                                                                            'idConflictFrames': len(app.id_conflicts)}), 'utf-8')
                 runner.app_shall_exit = True
 
         def capture_config():
@@ -487,6 +595,19 @@ def main():
                 v['seed'] = params.get('seed', v['seed'])
                 app.requested_tab = 'Generate'
         configure_generation(runtime, capture_config, restore_config)
+
+        def install_file_drop():
+            # imgui-bundle ships GLFW as a shared library that the glfw package reuses: callbacks are safe
+            try:
+                import glfw
+                from imgui_bundle import glfw_utils
+                window = glfw_utils.glfw_window_hello_imgui()
+                app._drop_callback = lambda _window, paths: app.on_files_dropped(list(paths))
+                glfw.set_drop_callback(window, app._drop_callback)
+                app.drop_ready = True
+            except Exception as exc:
+                app.drop_error = str(exc)
+        runner.callbacks.post_init = install_file_drop
         runner.callbacks.show_gui = gui
         try:
             run(runner)

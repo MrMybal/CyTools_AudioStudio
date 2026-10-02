@@ -101,7 +101,7 @@ class Track:
     def snapshot(self):
         return {'audio': self.audio.copy(), 'offset': self.offset, 'gain_db': self.gain_db, 'pan': self.pan, 'mute': self.mute, 'solo': self.solo,
                 'name': self.name, 'start': self.start, 'length': self.length, 'fade_in': self.fade_in, 'fade_out': self.fade_out,
-                'inserts': copy.deepcopy(self.inserts), 'automation': {k: lane.copy() for k, lane in self.automation.items()}}
+                'inserts': copy.deepcopy([n for n in self.inserts if not n.get('_preview')]), 'automation': {k: lane.copy() for k, lane in self.automation.items()}}
 
     def restore(self, state):
         self.audio = state['audio']
@@ -319,6 +319,27 @@ class Document:
         track = Track(uuid.uuid4().hex[:8], name, audio, self.seconds_to_frame(offset_seconds), colour=COLOURS[len(self.tracks) % len(COLOURS)], source=source)
         self.tracks.append(track)
         self.selected_track = len(self.tracks) - 1
+        self.touch()
+        return track
+
+    def add_empty_track(self, name=None, channels=2):
+        """A track without audio yet: for inserts, recording, dropped or generated sounds."""
+        name = name or 'Track %d' % (len(self.tracks) + 1)
+        return self.add_track(np.zeros((channels, 0), np.float32), name)
+
+    def fill_track(self, track, audio, samplerate, offset_seconds=0.0, source=''):
+        """Put audio in a track (an empty one, typically) while keeping its inserts and automation."""
+        audio = np.ascontiguousarray(np.asarray(audio, dtype=np.float32))
+        if audio.ndim == 1:
+            audio = audio[np.newaxis, :]
+        if int(samplerate) != self.samplerate:
+            audio = audio_io.resample(audio, int(samplerate), self.samplerate)
+        self.edit('Fill track', [track.id])
+        track.audio = audio[:2]
+        track.start, track.length = 0, -1
+        track.offset = max(0, self.seconds_to_frame(offset_seconds))
+        track.source = str(source)
+        track.invalidate()
         self.touch()
         return track
 
@@ -624,6 +645,20 @@ class Document:
         self.touch()
         return True
 
+    def reorder_insert(self, owner, node_id, index):
+        """Move an insert to a position of its chain (drag and drop)."""
+        current = next((i for i, n in enumerate(owner.inserts) if n['id'] == node_id), None)
+        if current is None:
+            return False
+        index = max(0, min(int(index), len(owner.inserts) - 1))
+        if index == current:
+            return False
+        self._edit_owner('Reorder inserts', owner)
+        node = owner.inserts.pop(current)
+        owner.inserts.insert(index, node)
+        self.touch()
+        return True
+
     def insert_node(self, owner, node_id):
         return next((n for n in owner.inserts if n['id'] == node_id), None)
 
@@ -647,7 +682,7 @@ class Document:
         from ..dsp import effects
         for owner in list(self.tracks) + [self.master]:
             for node in owner.inserts:
-                if not node.get('enabled', True):
+                if not node.get('enabled', True) or node.get('_preview'):
                     continue
                 if node['kind'] == 'vst3':
                     return True
@@ -801,7 +836,7 @@ class Document:
             index['tracks'].append({'id': track.id, 'name': track.name, 'file': file, 'offset': track.offset, 'gain_db': track.gain_db, 'pan': track.pan,
                                     'mute': track.mute, 'solo': track.solo, 'colour': list(track.colour), 'source': track.source, 'height': track.height,
                                     'start': track.start, 'length': track.length, 'fadeIn': track.fade_in, 'fadeOut': track.fade_out,
-                                    'inserts': [{k: v for k, v in n.items() if not k.startswith('_')} for n in track.inserts],
+                                    'inserts': [{k: v for k, v in n.items() if not k.startswith('_')} for n in track.inserts if not n.get('_preview')],
                                     'automation': {k: lane.to_dict() for k, lane in track.automation.items()}, 'automationView': track.automation_view})
         for stale in folder.glob('*.wav'):
             if stale.name not in keep:

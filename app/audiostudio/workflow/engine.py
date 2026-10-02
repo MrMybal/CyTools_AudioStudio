@@ -80,7 +80,7 @@ def render(audio, samplerate, workflow, progress=None, cancel=None, model_runner
     reports = []
     # A length-changing node (time stretch, trim) breaks the "original length" reference:
     # the tail extension is added only when at least one stateful node exists.
-    stateful = any(n['kind'] == 'vst3' or (n['kind'] == 'effect' and effects.get(n['effect']).build is not None) for n in nodes)
+    stateful = any(n['kind'] == 'vst3' or (n['kind'] == 'effect' and effects.get(n['effect']).stateful) for n in nodes)
     current = extend(audio, rate, tail) if stateful else audio
     cache = plugin_cache or PluginCache()
     total = max(1, len(nodes))
@@ -94,7 +94,10 @@ def render(audio, samplerate, workflow, progress=None, cancel=None, model_runner
         if node['kind'] == 'effect':
             spec = effects.get(node['effect'])
             values = spec.normalize(node.get('params'))
-            if spec.apply is not None:
+            if spec.processor is not None:
+                # block processors (dynamics, EQ, IR reverbs...) render exactly as they do in track inserts
+                current = spec.processor(values, rate).process_all(current)
+            elif spec.apply is not None:
                 current = spec.apply(current, rate, values)
                 if node['effect'] == 'resample':
                     ratio = int(values['target_rate']) / rate

@@ -14,7 +14,8 @@ from audiostudio.dsp import effects
 from audiostudio.workflow import model as workflow_model
 from audiostudio.editor.renderer import Renderer
 from .effect_ui import EffectUI
-from .widgets import Row, status_line
+from .widgets import Row, status_line, search_combo
+from .search import effect_haystack, plugin_haystack
 
 LIST_WIDTH = 250.0
 
@@ -29,6 +30,7 @@ class InsertsPanel:
         self.plugin_index = 0
         self.effect_ui = EffectUI(app)
         self.message = ''
+        self.editor_rect = None
         self._effects = None
 
     def tr(self, text):
@@ -62,6 +64,20 @@ class InsertsPanel:
         if not self.show_master:
             self.document.selected_track = next((i for i, t in enumerate(self.document.tracks) if t.id == owner.id), self.document.selected_track)
         self.app.editor.show_inserts = True
+
+    def follow(self, owner):
+        """A click on a track (or on the master) shows its chain, without opening the panel."""
+        self.show_master = owner is self.document.master
+        self.owner_id = None if self.show_master else owner.id
+
+    def drop_target_node(self):
+        """The selected insert of the shown chain when it takes a file (convolution impulse response)."""
+        owner = self.owner()
+        node = self.selected_node(owner) if owner is not None else None
+        spec = effects.REGISTRY.get(node.get('effect')) if node and node['kind'] == 'effect' else None
+        if spec is not None and any(p.kind == 'string' and p.id == 'impulse_response' for p in spec.params):
+            return node
+        return None
 
     def selected_node(self, owner):
         node_id = self.selected.get(owner.id)
@@ -150,19 +166,24 @@ class InsertsPanel:
             return
         # ---------------------------------------------------------------- left: chain
         imgui.begin_child('##chain-list', (LIST_WIDTH, 0), imgui.ChildFlags_.borders)
-        if imgui.radio_button(tr('Track') + '##inserts-track', not self.show_master):
+        owner_colour = (0.98, 0.62, 0.2, 1.0) if owner is document.master else (*owner.colour, 1.0)
+        imgui.text_colored(owner_colour, (tr('Master bus') if owner is document.master else tr('Track') + ': ' + owner.name)[:30])
+        if imgui.is_item_hovered():
+            imgui.set_tooltip(tr('Effects belong to one track or to the master. Click a track (or the master lane) to show its chain.'))
+        if imgui.radio_button(tr('This track') + '##inserts-track', not self.show_master):
             self.show_master = False
             self.owner_id = None
         imgui.same_line()
         if imgui.radio_button(tr('Master') + '##inserts-master', self.show_master):
             self.show_master = True
-        imgui.same_line()
-        imgui.text_disabled(owner.name[:18])
         imgui.separator()
         remove = None
         move = None
+        drop = None
         selected_id = self.selected.get(owner.id)
         for index, node in enumerate(owner.inserts):
+            if node.get('_preview'):
+                continue                              # the Effect... dialog's audition insert is not part of the chain
             imgui.push_id(node['id'])
             changed, enabled = imgui.checkbox('##on', bool(node.get('enabled', True)))
             if changed:
@@ -177,6 +198,17 @@ class InsertsPanel:
                 imgui.push_style_color(imgui.Col_.text, (1.0, 0.5, 0.4, 1.0))
             if imgui.selectable(f'{index + 1}. {title}###select', selected_id == node['id'], 0, (LIST_WIDTH - 110, 0))[0]:
                 self.selected[owner.id] = node['id']
+            if imgui.begin_drag_drop_source():
+                imgui.set_drag_drop_payload_py_id('audiostudio-insert', index)
+                imgui.text(title)
+                imgui.end_drag_drop_source()
+            if imgui.begin_drag_drop_target():
+                payload = imgui.accept_drag_drop_payload_py_id('audiostudio-insert')
+                if payload is not None:
+                    dragged = owner.inserts[payload.data_id]['id'] if 0 <= payload.data_id < len(owner.inserts) else None
+                    if dragged is not None:
+                        drop = (dragged, index)
+                imgui.end_drag_drop_target()
             if error:
                 imgui.pop_style_color()
                 if imgui.is_item_hovered():
@@ -193,35 +225,29 @@ class InsertsPanel:
             imgui.pop_id()
         if not owner.inserts:
             imgui.text_disabled(tr('(no insert)'))
+        else:
+            imgui.push_style_color(imgui.Col_.text, imgui.get_style().color_(imgui.Col_.text_disabled))
+            imgui.text_wrapped(tr('Drag an insert onto another to reorder the chain.'))
+            imgui.pop_style_color()
         if remove is not None:
             document.remove_insert(owner, remove)
             renderer.forget(remove)
         if move is not None:
             document.move_insert(owner, move[0], move[1])
+        if drop is not None:
+            document.reorder_insert(owner, drop[0], drop[1])
         imgui.separator()
         specs = self.realtime_effects()
-        imgui.push_item_width(LIST_WIDTH - 70)
-        preview = tr(specs[self.effect_index].name) if specs else ''
-        if imgui.begin_combo('##add-effect', preview):
-            category = None
-            for index, spec in enumerate(specs):
-                if spec.category != category:
-                    category = spec.category
-                    imgui.separator_text(tr(category))
-                if imgui.selectable(tr(spec.name) + '##' + spec.id, index == self.effect_index)[0]:
-                    self.effect_index = index
-                if spec.help and imgui.is_item_hovered():
-                    imgui.set_tooltip(tr(spec.help))
-            imgui.end_combo()
-        imgui.pop_item_width()
+        _, self.effect_index = search_combo('add-effect', self.effect_index, [tr(s.name) for s in specs], LIST_WIDTH - 70,
+                                            haystacks=[effect_haystack(s, tr) for s in specs], groups=[tr(s.category) for s in specs],
+                                            tooltips=[tr(s.help) if s.help else '' for s in specs], tr=tr)
         imgui.same_line()
         if imgui.button(tr('Add') + '###Add insert effect') and specs:
             self.add_effect(owner, specs[self.effect_index].id)
         catalogue = self.app.workflows.plugin_catalogue
-        imgui.push_item_width(LIST_WIDTH - 70)
         labels = [f"{p.get('name')} ({p.get('manufacturer', '')})" for p in catalogue] or [tr('(scan plugins in the Plugins tab)')]
-        _, self.plugin_index = imgui.combo('##add-plugin', min(self.plugin_index, max(0, len(labels) - 1)), labels)
-        imgui.pop_item_width()
+        _, self.plugin_index = search_combo('add-plugin', min(self.plugin_index, max(0, len(labels) - 1)), labels, LIST_WIDTH - 70,
+                                            haystacks=[plugin_haystack(p) for p in catalogue] or None, tr=tr)
         imgui.same_line()
         if imgui.button(tr('Add') + '###Add insert plugin') and catalogue:
             self.add_plugin(owner, catalogue[self.plugin_index])
@@ -244,6 +270,8 @@ class InsertsPanel:
         imgui.same_line()
         # ---------------------------------------------------------------- right: selected insert
         imgui.begin_child('##insert-editor', (0, 0), imgui.ChildFlags_.borders)
+        position, size = imgui.get_window_pos(), imgui.get_window_size()
+        self.editor_rect = (position.x, position.y, position.x + size.x, position.y + size.y)     # for scripted hover sweeps
         node = self.selected_node(owner)
         if node is None:
             imgui.text_disabled(tr('Add an effect or a VST3 plugin to this chain.'))

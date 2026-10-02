@@ -76,6 +76,53 @@ def draw_plugin_params(description, values, tr=lambda t: t, max_shown=64):
     return changed_any
 
 
+_search_texts = {}
+combo_rects = {}          # key -> screen rectangle of the last drawn search combo
+
+
+def search_combo(key, index, labels, width, haystacks=None, groups=None, tooltips=None, tr=lambda t: t):
+    """Combo whose popup starts with a search field (accent / case insensitive, every word must match).
+
+    Enter picks the first match. ``groups`` draws category separators when the search is empty.
+    Returns (changed, index)."""
+    from .search import matches
+    labels = list(labels)
+    preview = labels[index] if 0 <= index < len(labels) else ''
+    changed = False
+    origin = imgui.get_cursor_screen_pos()
+    combo_rects[key] = (origin.x, origin.y, origin.x + width, origin.y + imgui.get_frame_height())   # for scripted tests
+    imgui.push_item_width(width)
+    if imgui.begin_combo('##' + key, preview, imgui.ComboFlags_.height_large):
+        if imgui.is_window_appearing():
+            _search_texts[key] = ''
+            imgui.set_keyboard_focus_here()
+        imgui.push_item_width(-1)
+        enter, text = imgui.input_text_with_hint('##search-' + key, tr('Search...'), _search_texts.get(key, ''), imgui.InputTextFlags_.enter_returns_true)
+        imgui.pop_item_width()
+        _search_texts[key] = text
+        group, first = None, None
+        for i, label in enumerate(labels):
+            if not matches(text, haystacks[i] if haystacks else label):
+                continue
+            if first is None:
+                first = i
+            if groups and not text.strip() and groups[i] != group:
+                group = groups[i]
+                imgui.separator_text(str(group))
+            if imgui.selectable(label + '##pick' + str(i), i == index)[0]:
+                index, changed = i, True
+            if tooltips and tooltips[i] and imgui.is_item_hovered():
+                imgui.set_tooltip(tooltips[i])
+        if first is None:
+            imgui.text_disabled(tr('No match'))
+        elif enter:
+            index, changed = first, True
+            imgui.close_current_popup()
+        imgui.end_combo()
+    imgui.pop_item_width()
+    return changed, index
+
+
 class Dialogs:
     """Non-blocking portable file dialogs polled every frame."""
 

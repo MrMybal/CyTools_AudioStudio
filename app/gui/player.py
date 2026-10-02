@@ -60,7 +60,7 @@ class Player:
         self.output_device = settings.get('outputDevice')     # index or None = default
         self.input_device = settings.get('inputDevice')
         self.buffer_size = int(settings.get('bufferSize', 1024)) if int(settings.get('bufferSize', 1024)) in BUFFER_SIZES else 1024
-        self.renderer = Renderer(document)
+        self.renderer = Renderer(document, live=True)
         self.peak = (0.0, 0.0)
         self.load = 0.0                                      # callback time / block time
         self.recording = None                                # list of blocks while recording
@@ -184,7 +184,7 @@ class Player:
     def reset_renderer(self):
         """Fresh processor states (after a session load or a big structural change)."""
         with self.lock:
-            self.renderer = Renderer(self.document)
+            self.renderer = Renderer(self.document, live=True)
 
     # ------------------------------------------------------------------ recording
     def start_recording(self, channels=2):

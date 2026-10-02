@@ -117,7 +117,7 @@ class EffectUI:
         use_log = log if log is not None else (param.unit == 'Hz' and lo > 0)
         fmt = '%d' if param.kind == 'int' else ('%.0f' if hi - lo >= 200 else ('%.1f' if hi - lo >= 20 else '%.2f'))
         if param.unit:
-            fmt += ' ' + param.unit
+            fmt += ' ' + param.unit.replace('%', '%%')      # a '%' unit must not break the format
         changed, value = knob(label + '##' + param.id, float(current), lo, hi, fmt, log=use_log, size=size,
                               tooltip=tr(param.help) if param.help else '', default=float(param.default), automated=automated)
         if imgui.is_item_activated():
@@ -152,7 +152,9 @@ class EffectUI:
         imgui.same_line(0, 2)
         level_meter(in_peaks[1], meter_w, height, label=tr('in'))
         imgui.same_line()
-        scope_w = max(120.0, width - (meter_w * 4 + 90))
+        available = max(240.0, width - (meter_w * 4 + 100))
+        scope_w = available * 0.58
+        spectrum_w = available - scope_w - imgui.get_style().item_spacing.x
         plot = Plot(scope_w, height, (0, SCOPE_FRAMES), (-1.0, 1.0))
         plot.draw.add_line((plot.x0, plot.py(0)), (plot.x1, plot.py(0)), text_col(0.15))
         if tap is not None:
@@ -167,6 +169,22 @@ class EffectUI:
         if plot.hovered:
             imgui.set_tooltip(tr('Waveform entering (grey) and leaving (colour) this effect'))
         imgui.same_line()
+        # spectrometer: what the effect does to the frequencies, live
+        spectrum_plot = Plot(spectrum_w, height, (20.0, 20000.0), (-90.0, 0.0), log_x=True)
+        freqs, db_in = self.spectrum(node, renderer, 'input', slot='header')
+        _, db_out = self.spectrum(node, renderer, 'output', slot='header')
+        self.draw_spectrum_in(spectrum_plot, freqs, db_in, text_col(0.16))
+        ar, ag, ab = accent()
+        spectrum_plot.line(freqs, db_out, col(ar, ag, ab, 0.95), 1.2)
+        for value in (100, 1000, 10000):
+            x = spectrum_plot.px(value)
+            spectrum_plot.draw.add_line((x, spectrum_plot.y0), (x, spectrum_plot.y1), text_col(0.10))
+            spectrum_plot.draw.add_text((x + 2, spectrum_plot.y1 - imgui.get_text_line_height()), text_col(0.45), freq_label(value))
+        spectrum_plot.end()
+        if spectrum_plot.hovered:
+            mouse = imgui.get_mouse_pos()
+            imgui.set_tooltip(tr('Spectrum entering (grey) and leaving (colour) this effect') + '   %s Hz' % freq_label(round(spectrum_plot.x_at(mouse.x))))
+        imgui.same_line()
         level_meter(out_peaks[0], meter_w, height)
         imgui.same_line(0, 2)
         level_meter(out_peaks[1], meter_w, height, label=tr('out'))
@@ -174,8 +192,10 @@ class EffectUI:
 
     SPECTRUM_POINTS = 200
 
-    def spectrum(self, node, renderer, which='output'):
-        """Smoothed magnitude spectrum in dB on 200 log-spaced bands over 20 Hz .. 20 kHz."""
+    def spectrum(self, node, renderer, which='output', slot=''):
+        """Smoothed magnitude spectrum in dB on 200 log-spaced bands over 20 Hz .. 20 kHz.
+
+        ``slot`` separates the smoothing state of two displays of the same node (header, EQ view)."""
         tap = renderer.taps.get(node['id'])
         sr = float(self.document.samplerate)
         size = 4096
@@ -195,11 +215,11 @@ class EffectUI:
             if a < spectrum.shape[0]:
                 pooled[index] = spectrum[a:b].max()
         db = 20.0 * np.log10(pooled + 1e-7)
-        previous = self.spectra.get((node['id'], which))
+        previous = self.spectra.get((node['id'], which, slot))
         if previous is not None and previous.shape == db.shape:
             db = np.maximum(db, previous - 3.0)         # slow fall, instant rise
             db = 0.6 * previous + 0.4 * db
-        self.spectra[(node['id'], which)] = db
+        self.spectra[(node['id'], which, slot)] = db
         return centres, db
 
     def draw_spectrum_in(self, plot, freqs, db, colour=None):

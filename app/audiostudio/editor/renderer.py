@@ -49,8 +49,9 @@ class Tap:
 
 
 class Renderer:
-    def __init__(self, document, plugin_loader=None):
+    def __init__(self, document, plugin_loader=None, live=False):
         self.document = document
+        self.live = live          # the player's renderer also runs the Effect... dialog's audition insert
         self.processors = {}      # node id -> {'signature', 'processor', 'params'}
         self.taps = {}            # node id -> Tap
         self.errors = {}          # node id -> message
@@ -225,7 +226,7 @@ class Renderer:
     def run_chain(self, owner, nodes, block, start, frames):
         seconds = start / float(self.document.samplerate)
         for node in nodes:
-            if not node.get('enabled', True):
+            if not node.get('enabled', True) or (node.get('_preview') and not self.live):
                 continue
             processor = self.processor_for(node)
             if processor is None:
@@ -273,7 +274,7 @@ class Renderer:
             if not audible and not track.inserts:
                 self.track_peaks[track.id] = (0.0, 0.0)
                 continue
-            if track.inserts:
+            if track.inserts and (self.live or any(not n.get('_preview') for n in track.inserts)):
                 block = self.run_chain(track, track.inserts, block, start, frames)
             gains = self._gain_pan(track, start, frames, ignore_pan=mono)
             if gains is None:

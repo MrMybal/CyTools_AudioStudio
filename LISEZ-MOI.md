@@ -28,13 +28,24 @@ Onglets :
   lecture, Ctrl+Z/Y, Ctrl+X/C/V, Suppr, Début, Échap, H (main), F (panneau FX).
   **Inserts** : le bouton **FX** d'une piste (ou du **Master**, dernière ligne) ouvre le panneau du
   bas : chaîne d'effets et de plugins VST3 de cette piste, activés/contournés, réordonnés, avec
-  l'interface de l'effet sélectionné (mesures d'entrée/sortie, forme d'onde temps réel, courbe de
+  l'interface de l'effet sélectionné (mesures d'entrée/sortie, forme d'onde et spectromètre temps
+  réel de ce qui entre et sort de l'effet, courbe de
   transfert et réduction de gain du compresseur, spectre et points déplaçables de l'EQ, bandes du
   compresseur multibande, décroissance de la réverbération, échos du délai, LFO, goniomètre,
   analyseur...). Tout s'entend pendant la lecture. Le side-chain (ducking, gate déclenché, porteuse
   du vocoder) se choisit dans l'insert. Presets par effet et par plugin, « Depuis le workflow » /
   « Vers le workflow », « Figer » (rend la chaîne dans le clip, queue comprise). L'export du mixage
   passe par les inserts, l'automation et le master et prolonge le rendu jusqu'au silence.
+  **Les effets appartiennent à une piste ou au master**, jamais à tout l'éditeur : un clic sur une
+  piste (ou sur la ligne Master) affiche sa chaîne dans le panneau FX ; ajouter, retirer, contourner,
+  glisser pour réordonner, figer dans le clip, ou envoyer vers l'onglet Workflows.
+  **Glisser-déposer** : un son déposé depuis l'Explorateur devient une piste à l'instant sous la
+  souris (sous la piste survolée), ou remplit une piste vide créée avec le bouton **+** sous les
+  pistes (ses inserts sont conservés) ; un dossier de session l'ouvre, un workflow .json le charge, une
+  réponse impulsionnelle déposée sur l'effet de convolution est utilisée par lui. Les inserts et les
+  éléments de chaîne se réordonnent par glisser-déposer.
+  **Recherche** : chaque liste d'effets ou de plugins a un champ de recherche (sans accents ni
+  majuscules, sur le nom, la catégorie et la description ; Entrée = premier résultat).
   **Automation** : le bouton **A** d'une piste (ou du master) choisit la courbe affichée (volume,
   panoramique, muet, tout paramètre d'insert ; clic droit sur un bouton d'effet = sa courbe).
   Clic sur la piste = nouveau point, glisser = déplacer, double-clic ou clic droit sur un point =

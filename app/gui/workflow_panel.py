@@ -7,7 +7,8 @@ from audiostudio.paths import WORKFLOWS
 from audiostudio.dsp import effects
 from audiostudio.workflow import model as workflow_model
 from audiostudio.vst import host as vst_host
-from .widgets import draw_effect_params, draw_plugin_params, status_line
+from .widgets import draw_effect_params, draw_plugin_params, status_line, search_combo
+from .search import effect_haystack, plugin_haystack
 
 
 class WorkflowPanel:
@@ -113,18 +114,16 @@ class WorkflowPanel:
         _, tail['hold_seconds'] = imgui.slider_float(tr('Hold after last sound (s)'), float(tail['hold_seconds']), 0.0, 5.0, '%.2f')
         imgui.pop_item_width()
         imgui.separator_text(tr('Add a node'))
-        names = [spec.name for spec in effects.REGISTRY.values()]
-        imgui.push_item_width(220)
-        _, self.effect_index = imgui.combo('##addeffect', self.effect_index, [tr(n) for n in names])
-        imgui.pop_item_width()
+        specs = list(effects.REGISTRY.values())
+        _, self.effect_index = search_combo('addeffect', self.effect_index, [tr(s.name) for s in specs], 220,
+                                            haystacks=[effect_haystack(s, tr) for s in specs], groups=[tr(s.category) for s in specs], tr=tr)
         imgui.same_line()
         if imgui.button(tr('Add effect')):
             self.add_effect(list(effects.REGISTRY)[self.effect_index])
         imgui.same_line()
-        imgui.push_item_width(260)
         plugin_labels = [f"{p.get('name')} ({p.get('manufacturer', '')})" for p in self.plugin_catalogue] or [tr('(scan plugins in the Plugins tab)')]
-        _, self.plugin_index = imgui.combo('##addplugin', min(self.plugin_index, max(0, len(plugin_labels) - 1)), plugin_labels)
-        imgui.pop_item_width()
+        _, self.plugin_index = search_combo('addplugin', min(self.plugin_index, max(0, len(plugin_labels) - 1)), plugin_labels, 260,
+                                            haystacks=[plugin_haystack(p) for p in self.plugin_catalogue] or None, tr=tr)
         imgui.same_line()
         if imgui.button(tr('Add VST3')) and self.plugin_catalogue:
             self.add_plugin(self.plugin_catalogue[self.plugin_index])

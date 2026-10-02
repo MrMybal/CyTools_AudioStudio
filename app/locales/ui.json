@@ -14914,5 +14914,197 @@
   "Les mises à jour sont lues depuis ce dépôt GitHub (celui livré dans release.json, sauf si vous le changez). Une release doit contenir cytools-app.zip et son .sha256 ; elle remplace app/ seulement, jamais data/.": {
     "en": "Releases are read from this GitHub repository (the one shipped in release.json unless you change it). A release must ship cytools-app.zip and its .sha256; it replaces app/ only, never data/.",
     "fr": "Les mises à jour sont lues depuis ce dépôt GitHub (celui livré dans release.json, sauf si vous le changez). Une release doit contenir cytools-app.zip et son .sha256 ; elle remplace app/ seulement, jamais data/."
+  },
+  "Opens the interface of the chosen effect; it is heard live on the selected track, then applied to the selection with its tail.": {
+    "en": "Opens the interface of the chosen effect; it is heard live on the selected track, then applied to the selection with its tail.",
+    "fr": "Ouvre l'interface de l'effet choisi ; il s'entend en direct sur la piste sélectionnée, puis s'applique à la sélection avec sa queue."
+  },
+  "Ouvre l'interface de l'effet choisi ; il s'entend en direct sur la piste sélectionnée, puis s'applique à la sélection avec sa queue.": {
+    "en": "Opens the interface of the chosen effect; it is heard live on the selected track, then applied to the selection with its tail.",
+    "fr": "Ouvre l'interface de l'effet choisi ; il s'entend en direct sur la piste sélectionnée, puis s'applique à la sélection avec sa queue."
+  },
+  "Listen (loop selection)": {
+    "en": "Listen (loop selection)",
+    "fr": "Écouter (sélection en boucle)"
+  },
+  "Écouter (sélection en boucle)": {
+    "en": "Listen (loop selection)",
+    "fr": "Écouter (sélection en boucle)"
+  },
+  "Plays the selection in a loop through the effect; turn the knobs while listening.": {
+    "en": "Plays the selection in a loop through the effect; turn the knobs while listening.",
+    "fr": "Joue la sélection en boucle à travers l'effet ; tournez les boutons pendant l'écoute."
+  },
+  "Joue la sélection en boucle à travers l'effet ; tournez les boutons pendant l'écoute.": {
+    "en": "Plays the selection in a loop through the effect; turn the knobs while listening.",
+    "fr": "Joue la sélection en boucle à travers l'effet ; tournez les boutons pendant l'écoute."
+  },
+  "No track: open a file or generate a sound first.": {
+    "en": "No track: open a file or generate a sound first.",
+    "fr": "Aucune piste : ouvrez d'abord un fichier ou générez un son."
+  },
+  "Aucune piste : ouvrez d'abord un fichier ou générez un son.": {
+    "en": "No track: open a file or generate a sound first.",
+    "fr": "Aucune piste : ouvrez d'abord un fichier ou générez un son."
+  },
+  "This effect works on the whole selection at once: use Preview selection to hear it.": {
+    "en": "This effect works on the whole selection at once: use Preview selection to hear it.",
+    "fr": "Cet effet travaille sur toute la sélection d'un coup : utilisez Pré-écouter la sélection pour l'entendre."
+  },
+  "Cet effet travaille sur toute la sélection d'un coup : utilisez Pré-écouter la sélection pour l'entendre.": {
+    "en": "This effect works on the whole selection at once: use Preview selection to hear it.",
+    "fr": "Cet effet travaille sur toute la sélection d'un coup : utilisez Pré-écouter la sélection pour l'entendre."
+  },
+  "Effect chain": {
+    "en": "Effect chain",
+    "fr": "Chaîne d'effets"
+  },
+  "Chaîne d'effets": {
+    "en": "Effect chain",
+    "fr": "Chaîne d'effets"
+  },
+  "Apply chain to selection": {
+    "en": "Apply chain to selection",
+    "fr": "Appliquer la chaîne à la sélection"
+  },
+  "Appliquer la chaîne à la sélection": {
+    "en": "Apply chain to selection",
+    "fr": "Appliquer la chaîne à la sélection"
+  },
+  "Plays the selection in a loop through the chain; turn the knobs while listening.": {
+    "en": "Plays the selection in a loop through the chain; turn the knobs while listening.",
+    "fr": "Joue la sélection en boucle à travers la chaîne ; tournez les boutons pendant l'écoute."
+  },
+  "Joue la sélection en boucle à travers la chaîne ; tournez les boutons pendant l'écoute.": {
+    "en": "Plays the selection in a loop through the chain; turn the knobs while listening.",
+    "fr": "Joue la sélection en boucle à travers la chaîne ; tournez les boutons pendant l'écoute."
+  },
+  "Save chain as workflow": {
+    "en": "Save chain as workflow",
+    "fr": "Enregistrer la chaîne comme workflow"
+  },
+  "Enregistrer la chaîne comme workflow": {
+    "en": "Save chain as workflow",
+    "fr": "Enregistrer la chaîne comme workflow"
+  },
+  "Chain copied to the Workflows tab (save it there)": {
+    "en": "Chain copied to the Workflows tab (save it there)",
+    "fr": "Chaîne copiée dans l'onglet Workflows (enregistrez-la là-bas)"
+  },
+  "Chaîne copiée dans l'onglet Workflows (enregistrez-la là-bas)": {
+    "en": "Chain copied to the Workflows tab (save it there)",
+    "fr": "Chaîne copiée dans l'onglet Workflows (enregistrez-la là-bas)"
+  },
+  "Drag to reorder.": {
+    "en": "Drag to reorder.",
+    "fr": "Glisser pour réordonner."
+  },
+  "Glisser pour réordonner.": {
+    "en": "Drag to reorder.",
+    "fr": "Glisser pour réordonner."
+  },
+  "This effect works on the whole selection at once: it is applied with the chain but not heard live.": {
+    "en": "This effect works on the whole selection at once: it is applied with the chain but not heard live.",
+    "fr": "Cet effet travaille sur toute la sélection d'un coup : il est appliqué avec la chaîne mais ne s'entend pas en direct."
+  },
+  "Cet effet travaille sur toute la sélection d'un coup : il est appliqué avec la chaîne mais ne s'entend pas en direct.": {
+    "en": "This effect works on the whole selection at once: it is applied with the chain but not heard live.",
+    "fr": "Cet effet travaille sur toute la sélection d'un coup : il est appliqué avec la chaîne mais ne s'entend pas en direct."
+  },
+  "Opens an effect chain starting with the chosen effect: heard live on the selected track, then applied to the selection with its tail.": {
+    "en": "Opens an effect chain starting with the chosen effect: heard live on the selected track, then applied to the selection with its tail.",
+    "fr": "Ouvre une chaîne d'effets commençant par l'effet choisi : écoutée en direct sur la piste sélectionnée, puis appliquée à la sélection avec sa queue."
+  },
+  "Ouvre une chaîne d'effets commençant par l'effet choisi : écoutée en direct sur la piste sélectionnée, puis appliquée à la sélection avec sa queue.": {
+    "en": "Opens an effect chain starting with the chosen effect: heard live on the selected track, then applied to the selection with its tail.",
+    "fr": "Ouvre une chaîne d'effets commençant par l'effet choisi : écoutée en direct sur la piste sélectionnée, puis appliquée à la sélection avec sa queue."
+  },
+  "Drag an insert onto another to reorder the chain.": {
+    "en": "Drag an insert onto another to reorder the chain.",
+    "fr": "Glissez un insert sur un autre pour réordonner la chaîne."
+  },
+  "Glissez un insert sur un autre pour réordonner la chaîne.": {
+    "en": "Drag an insert onto another to reorder the chain.",
+    "fr": "Glissez un insert sur un autre pour réordonner la chaîne."
+  },
+  "Impulse response set: ": {
+    "en": "Impulse response set: ",
+    "fr": "Réponse impulsionnelle définie : "
+  },
+  "Réponse impulsionnelle définie : ": {
+    "en": "Impulse response set: ",
+    "fr": "Réponse impulsionnelle définie : "
+  },
+  "Dropped: ": {
+    "en": "Dropped: ",
+    "fr": "Déposé : "
+  },
+  "Déposé : ": {
+    "en": "Dropped: ",
+    "fr": "Déposé : "
+  },
+  "Search...": {
+    "en": "Search...",
+    "fr": "Rechercher..."
+  },
+  "Rechercher...": {
+    "en": "Search...",
+    "fr": "Rechercher..."
+  },
+  "No match": {
+    "en": "No match",
+    "fr": "Aucun résultat"
+  },
+  "Aucun résultat": {
+    "en": "No match",
+    "fr": "Aucun résultat"
+  },
+  "Add an empty track": {
+    "en": "Add an empty track",
+    "fr": "Ajouter une piste vide"
+  },
+  "Ajouter une piste vide": {
+    "en": "Add an empty track",
+    "fr": "Ajouter une piste vide"
+  },
+  "Empty track added: record, drop or generate a sound into it, or add inserts.": {
+    "en": "Empty track added: record, drop or generate a sound into it, or add inserts.",
+    "fr": "Piste vide ajoutée : enregistrez, déposez ou générez un son dedans, ou ajoutez des inserts."
+  },
+  "Piste vide ajoutée : enregistrez, déposez ou générez un son dedans, ou ajoutez des inserts.": {
+    "en": "Empty track added: record, drop or generate a sound into it, or add inserts.",
+    "fr": "Piste vide ajoutée : enregistrez, déposez ou générez un son dedans, ou ajoutez des inserts."
+  },
+  "Spectrum entering (grey) and leaving (colour) this effect": {
+    "en": "Spectrum entering (grey) and leaving (colour) this effect",
+    "fr": "Spectre entrant (gris) et sortant (couleur) de cet effet"
+  },
+  "Spectre entrant (gris) et sortant (couleur) de cet effet": {
+    "en": "Spectrum entering (grey) and leaving (colour) this effect",
+    "fr": "Spectre entrant (gris) et sortant (couleur) de cet effet"
+  },
+  "Master bus": {
+    "en": "Master bus",
+    "fr": "Bus master"
+  },
+  "Bus master": {
+    "en": "Master bus",
+    "fr": "Bus master"
+  },
+  "This track": {
+    "en": "This track",
+    "fr": "Cette piste"
+  },
+  "Cette piste": {
+    "en": "This track",
+    "fr": "Cette piste"
+  },
+  "Effects belong to one track or to the master. Click a track (or the master lane) to show its chain.": {
+    "en": "Effects belong to one track or to the master. Click a track (or the master lane) to show its chain.",
+    "fr": "Les effets appartiennent à une piste ou au master. Cliquez sur une piste (ou sur la ligne Master) pour afficher sa chaîne."
+  },
+  "Les effets appartiennent à une piste ou au master. Cliquez sur une piste (ou sur la ligne Master) pour afficher sa chaîne.": {
+    "en": "Effects belong to one track or to the master. Click a track (or the master lane) to show its chain.",
+    "fr": "Les effets appartiennent à une piste ou au master. Cliquez sur une piste (ou sur la ligne Master) pour afficher sa chaîne."
   }
 }

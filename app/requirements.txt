@@ -5,6 +5,7 @@
 #   pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@442f537"
 cytools-core[mcp]==0.9.0
 imgui-bundle==1.92.900
+glfw>=2.7,<3                 # file drops from the desktop (uses the GLFW library shipped with imgui-bundle)
 numpy>=1.26,<3
 scipy>=1.11,<2
 soundfile>=0.12.1,<1

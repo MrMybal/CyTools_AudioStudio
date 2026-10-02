@@ -96,7 +96,10 @@ def knob(label, value, minimum, maximum, fmt='%.2f', log=False, size=KNOB_SIZE, 
         draw.add_circle_filled((origin.x + width - 5, origin.y + 5), 3.5, col(1.0, 0.6, 0.2), 12)
     text = label.split('##')[0]
     draw.add_text((origin.x + (width - imgui.calc_text_size(text).x) / 2, origin.y + size + 2), text_col(0.9), text)
-    shown = fmt % value if '%' in fmt else fmt
+    try:
+        shown = fmt % value if '%' in fmt else fmt
+    except (TypeError, ValueError):
+        shown = '%.3g' % value
     draw.add_text((origin.x + (width - imgui.calc_text_size(shown).x) / 2, origin.y + size + text_h + 2), text_col(0.7), shown)
     if hovered and tooltip:
         imgui.set_tooltip(tooltip)
@@ -164,7 +167,16 @@ def horizontal_meter(peak_l, peak_r, width=140.0, height=8.0, floor=-60.0):
 # ----------------------------------------------------------------------------- plots
 
 class Plot:
-    """A plot area: maps x in [x_min, x_max] (optionally log) and y in [y_min, y_max] to pixels."""
+    """A plot area: maps x in [x_min, x_max] (optionally log) and y in [y_min, y_max] to pixels.
+
+    Each plot of a frame gets its own widget identifier (a serial reset by ``Plot.new_frame``), so
+    several plots in one interface never share an ID."""
+
+    _serial = 0
+
+    @classmethod
+    def new_frame(cls):
+        cls._serial = 0
 
     def __init__(self, width, height, x_range, y_range, log_x=False):
         self.origin = imgui.get_cursor_screen_pos()
@@ -173,7 +185,8 @@ class Plot:
         self.y_min, self.y_max = float(y_range[0]), float(y_range[1])
         self.log_x = log_x
         self.draw = imgui.get_window_draw_list()
-        imgui.invisible_button('##plot', (self.width, self.height))
+        Plot._serial += 1
+        imgui.invisible_button('##plot%d' % Plot._serial, (self.width, self.height))
         self.hovered = imgui.is_item_hovered()
         self.active = imgui.is_item_active()
         self.x0, self.y0 = self.origin.x, self.origin.y

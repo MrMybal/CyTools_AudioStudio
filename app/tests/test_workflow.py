@@ -228,5 +228,19 @@ class RenderEngineTests(unittest.TestCase):
             self.assertGreater(result.tail_seconds, 0.0)
 
 
+
+class ProcessorNodeTests(unittest.TestCase):
+    def test_block_processors_render_in_workflows_with_a_tail(self):
+        from audiostudio.workflow import engine
+        audio = np.zeros((2, 9600), np.float32)                             # 0.2 s: the 1 s reverb must ring past the end
+        audio[:, :200] = 0.8
+        document = model.new_workflow('chain', nodes=[model.new_node('effect', effect='compressor', params={'threshold_db': -10.0}),
+                                                      model.new_node('effect', effect='ir_reverb', params={'decay_seconds': 1.0, 'mix': 0.5})],
+                                       tail={'enabled': True, 'threshold_db': -60.0, 'max_seconds': 5.0, 'hold_seconds': 0.1})
+        result = engine.render(audio, 48000, document)
+        self.assertGreater(result.audio.shape[1], audio.shape[1])          # the reverb tail was kept
+        self.assertGreater(result.tail_seconds, 0.1)
+        self.assertEqual([n['kind'] for n in result.nodes], ['effect', 'effect'])
+
 if __name__ == '__main__':
     unittest.main()

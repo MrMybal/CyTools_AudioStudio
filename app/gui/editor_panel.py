@@ -10,7 +10,7 @@ from imgui_bundle import imgui
 from audiostudio.paths import SESSIONS, DATA
 from audiostudio.dsp import effects
 from audiostudio import audio_io
-from .widgets import draw_effect_params, status_line, Row
+from .widgets import status_line, Row
 from .timeline import clock
 
 SESSION_FILTER = ['AudioStudio session', '*.json']
@@ -37,6 +37,12 @@ class EditorPanel:
         self.pending_import = []
         self.show_inserts = True
         self.inserts_height = 300.0
+        self.preview_node = None             # selected effect of the dialog chain
+        self.preview_chain = []              # temporary inserts that let the Effect... dialog be heard live
+        self.preview_track = None
+        self.chain_index = 0
+        self.add_index = 0
+        self.dialog_rect = None
         self.splitting = None
         self.exporting = None                 # thread while an export renders
         self.export_progress = 0.0
@@ -98,18 +104,17 @@ class EditorPanel:
         self._transport()
         imgui.separator()
         avail = imgui.get_content_region_avail().y
-        reserved = 90.0 + (150.0 if self.effect_open else 0.0)
+        reserved = 90.0
         if self.show_inserts:
-            self.inserts_height = float(np.clip(self.inserts_height, 160.0, max(160.0, avail - reserved - 160.0)))
+            self.inserts_height = float(np.clip(self.inserts_height, 200.0, max(200.0, avail - reserved - 160.0)))
             reserved += self.inserts_height + 8
         self.app.timeline.draw(document, player, tr, height=max(160.0, avail - reserved), app=self.app)
         if self.show_inserts:
+            # effects always belong to a track or to the master bus: the FX panel shows the chain of one of them
             self._splitter()
             self.app.inserts.draw(self.inserts_height)
         imgui.separator()
         self._edit_row()
-        if self.effect_open:
-            self._effect_dialog()
         if self.exporting is not None:
             imgui.progress_bar(float(self.export_progress), (260, 0), tr('Exporting...'))
         elif self.message:
@@ -303,73 +308,3 @@ class EditorPanel:
         imgui.pop_item_width()
         if row.button('Insert silence', tr):
             document.insert_silence(max(0.0, self.silence_seconds))
-        row.text('|', disabled=True)
-        names = [spec.name for spec in effects.REGISTRY.values()]
-        changed, self.effect_index = row.combo('effect', self.effect_index, [tr(n) for n in names], 180)
-        if changed:
-            self.effect_values = {}
-        if row.button('Effect...', tr):
-            self.effect_open = not self.effect_open
-        if row.button('Apply workflow to selection', tr):
-            self.app.apply_current_workflow(all_tracks=False)
-        if imgui.is_item_hovered():
-            imgui.set_tooltip(tr('Renders the workflow of the Workflows tab over the selection (or the whole track) with tail rendering, in the DSP worker.'))
-
-    def _effect_dialog(self):
-        tr = self.tr
-        spec = list(effects.REGISTRY.values())[self.effect_index]
-        imgui.begin_child('##effect-dialog', (0, 150), True)
-        imgui.text(tr(spec.name) + ' - ' + tr(spec.category))
-        if spec.help:
-            imgui.text_wrapped(tr(spec.help))
-        draw_effect_params(spec, self.effect_values, tr)
-        if imgui.button(tr('Apply to selection')):
-            self._apply_effect(spec, whole_track=False)
-        imgui.same_line()
-        if imgui.button(tr('Apply to whole track')):
-            self._apply_effect(spec, whole_track=True)
-        imgui.same_line()
-        if imgui.button(tr('Preview selection')):
-            self._preview_effect(spec)
-        imgui.same_line()
-        if imgui.button(tr('Close')):
-            self.effect_open = False
-        imgui.end_child()
-
-    def _apply_effect(self, spec, whole_track):
-        values = spec.normalize(self.effect_values)
-        stateful = spec.build is not None
-        document = self.document
-
-        def function(audio, rate):
-            if stateful:
-                # Give the effect room to decay, then let the document overlap the tail.
-                extended = np.concatenate([audio, np.zeros((audio.shape[0], int(rate * 5)), np.float32)], axis=1)
-                out = effects.apply_effect(spec.id, extended, rate, values)
-                from audiostudio.dsp.tail import trim, TailSettings
-                return trim(out, rate, TailSettings(True, -60.0, 5.0, 0.1), audio.shape[1])
-            return effects.apply_effect(spec.id, audio, rate, values)
-        try:
-            if document.apply(spec.name, function, all_tracks=imgui.get_io().key_shift, whole_track=whole_track):
-                self.message = self.tr('Applied ') + self.tr(spec.name)
-        except Exception as exc:
-            self.app.jobs.error = f'{spec.name}: {exc}'
-
-    def _preview_effect(self, spec):
-        """Render the selection with the effect into a temporary document and play it."""
-        document = self.document
-        track = document.current_track()
-        if track is None:
-            return
-        start, stop = document.selection_frames(track)
-        a, b = max(0, start - track.offset), min(track.frames, stop - track.offset)
-        if b <= a:
-            return
-        block = np.ascontiguousarray(track.audio[:, a:b])
-        values = spec.normalize(self.effect_values)
-        try:
-            rendered = effects.apply_effect(spec.id, np.concatenate([block, np.zeros((block.shape[0], document.samplerate * 3), np.float32)], axis=1) if spec.build else block, document.samplerate, values)
-        except Exception as exc:
-            self.app.jobs.error = f'{spec.name}: {exc}'
-            return
-        self.app.preview_audio(rendered, document.samplerate)

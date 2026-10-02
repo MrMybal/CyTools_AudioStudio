@@ -19,9 +19,10 @@ te = imgui.test_engine
 
 
 class Recorder:
-    def __init__(self):
+    def __init__(self, filename='ui-interactions.json'):
         self.results = []
         self.done = False
+        self.filename = filename
 
     def check(self, name, condition, detail=''):
         self.results.append({'check': name, 'ok': bool(condition), 'detail': str(detail)[:400]})
@@ -30,7 +31,7 @@ class Recorder:
         self.results.append({'check': name, 'ok': True, 'skipped': True, 'detail': str(reason)[:400]})
 
     def save(self):
-        path = DATA / 'reports' / 'ui-interactions.json'
+        path = DATA / 'reports' / self.filename
         path.parent.mkdir(parents=True, exist_ok=True)
         summary = {'passed': sum(r['ok'] and not r.get('skipped') for r in self.results), 'failed': sum(not r['ok'] for r in self.results),
                    'skipped': sum(bool(r.get('skipped')) for r in self.results), 'checks': self.results}
@@ -74,6 +75,14 @@ def _item_exists(ctx, ref):
 
 
 def _scenario(app, ctx, recorder):
+    try:
+        _scenario_steps(app, ctx, recorder)
+    finally:
+        recorder.check('no widget ID conflict reported by ImGui during the session', not app.id_conflicts,
+                       f'{len(app.id_conflicts)} frame(s) with conflicts, first at frame {min(app.id_conflicts) if app.id_conflicts else None}')
+
+
+def _scenario_steps(app, ctx, recorder):
     document = app.document
     app.requested_tab = 'Editor'
     wait(ctx, 4)
@@ -218,6 +227,117 @@ def _scenario(app, ctx, recorder):
         recorder.check('undo restores the insert', document.undo() is not None and len(a.inserts) == 1, [n['effect'] for n in a.inserts])
         a.inserts.clear()
 
+    # --- effects belong to a track or to the master: clicking a track shows its own chain
+    from audiostudio.dsp import effects as registry
+    app.editor.show_inserts = True
+    d = fixture(document, 'delta', 1.0, 550, offset=0.2)
+    heights = {t.id: t.height for t in document.tracks}
+    for t in document.tracks:
+        t.height = 60.0                              # every lane visible, even in a small window
+    app.timeline.fit(document)
+    wait(ctx, 4)
+    ctx.item_click(f'**/{d.id}/lane')
+    wait(ctx, 3)
+    recorder.check('clicking a track shows that track\'s chain in the FX panel', app.inserts.owner() is d, getattr(app.inserts.owner(), 'name', None))
+    specs = app.inserts.realtime_effects()
+    app.inserts.effect_index = next(i for i, spec in enumerate(specs) if spec.id == 'compressor')
+    before_a, before_master = len(a.inserts), len(document.master.inserts)
+    wait(ctx, 2)
+    ctx.item_click('**/Add insert effect')
+    wait(ctx, 3)
+    recorder.check('an effect added there belongs to that track only', [n['effect'] for n in d.inserts] == ['compressor'] and len(a.inserts) == before_a and len(document.master.inserts) == before_master,
+                   ([n['effect'] for n in d.inserts], len(a.inserts), len(document.master.inserts)))
+    ctx.item_click(f'**/{a.id}/lane')
+    wait(ctx, 3)
+    recorder.check('clicking another track shows its own chain (not the previous one)', app.inserts.owner() is a and not any(n['effect'] == 'compressor' for n in a.inserts), getattr(app.inserts.owner(), 'name', None))
+    ctx.item_click('**/master/master-lane')
+    wait(ctx, 3)
+    recorder.check('clicking the master lane shows the master chain', app.inserts.owner() is document.master, getattr(app.inserts.owner(), 'name', None))
+    document.remove_track(d.id)
+    for t in document.tracks:
+        t.height = heights.get(t.id, t.height)
+    document.selected_track = document.tracks.index(a)
+    app.inserts.follow(a)
+    wait(ctx, 3)
+
+    # --- files dropped from the desktop (the OS drop is simulated by calling the GLFW callback target)
+    recorder.check('the GLFW file-drop callback is installed', app.drop_ready, app.drop_error or 'ok')
+    import tempfile
+    from audiostudio import audio_io
+    drop_folder = Path(tempfile.mkdtemp(prefix='audiostudio-drop-'))
+    dropped = drop_folder / 'dropped-sound.wav'
+    audio_io.save(dropped, np.zeros((1, 4800), np.float32) + 0.1, document.samplerate, fmt='wav', subtype='FLOAT')
+    geometry = app.timeline.drop_geometry
+    rows = geometry['rows'] if geometry else []
+    target_row = next((r for r in rows if r[0] == a.id), None)
+    if geometry and target_row:
+        x = geometry['lane_x0'] + geometry['lane_width'] * 0.5
+        y = (target_row[1] + target_row[2]) / 2
+        expected = geometry['start'] + geometry['span'] * 0.5
+        count = len(document.tracks)
+        app.on_files_dropped([str(dropped)])
+        handled = app.handle_drops(mouse=imgui.ImVec2(x, y))
+        wait(ctx, 3)
+        new = document.tracks[document.tracks.index(a) + 1] if len(document.tracks) > count else None
+        recorder.check('a dropped sound becomes a track below the hovered one, at the time under the mouse',
+                       new is not None and new.name == 'dropped-sound' and abs(document.frame_to_seconds(new.offset) - expected) < 0.05,
+                       (handled, new.name if new else None, document.frame_to_seconds(new.offset) if new else None, expected))
+        if new is not None:
+            document.remove_track(new.id)
+    else:
+        recorder.check('a dropped sound becomes a track below the hovered one, at the time under the mouse', False, 'no geometry')
+
+    # --- search by text in the effect pickers
+    app.inserts.show(a)
+    wait(ctx, 3)
+    for query, expected, name in (('vocod', 'vocoder', 'typing in the effect picker and pressing Enter selects the match'),
+                                  ('hall plate', 'ir_reverb', 'a multi-word search narrows to the one matching effect')):
+        try:
+            from gui import widgets as ui_widgets
+            rect = ui_widgets.combo_rects.get('add-effect')
+            if rect is None:
+                raise RuntimeError('the effect picker was not drawn')
+            ctx.mouse_move_to_pos(imgui.ImVec2((rect[0] + rect[2]) / 2, (rect[1] + rect[3]) / 2))
+            ctx.mouse_click(0)                                               # opens the picker; its search field takes the keyboard
+            wait(ctx, 3)
+            ctx.key_chars(query)
+            wait(ctx, 2)
+            typed = ui_widgets._search_texts.get('add-effect')
+            ctx.key_press(imgui.Key.enter)
+            wait(ctx, 3)
+            picked = app.inserts.realtime_effects()[app.inserts.effect_index].id
+            recorder.check(name, picked == expected, (picked, typed, ctx.is_error()))
+        except Exception as exc:
+            recorder.check(name, False, exc)
+        finally:
+            ctx.key_press(imgui.Key.escape)                                  # never leave a popup open for the next checks
+            wait(ctx, 2)
+
+    # --- + button: an empty track, then a dropped sound fills it (keeping its inserts)
+    count = len(document.tracks)
+    ctx.item_click('**/Add track')
+    wait(ctx, 3)
+    empty = document.tracks[-1] if len(document.tracks) == count + 1 else None
+    recorder.check('the + button adds an empty track', empty is not None and empty.frames == 0, [t.name for t in document.tracks])
+    if empty is not None:
+        from audiostudio.workflow import model as workflow_model
+        document.add_insert(empty, workflow_model.new_node('effect', effect='gain', params={'gain_db': -3.0}))
+        wait(ctx, 3)
+        geometry = app.timeline.drop_geometry
+        row = next((r for r in geometry['rows'] if r[0] == empty.id), None) if geometry else None
+        import tempfile
+        from audiostudio import audio_io
+        sound = Path(tempfile.mkdtemp(prefix='audiostudio-fill-')) / 'fill-me.wav'
+        audio_io.save(sound, np.zeros((2, 9600), np.float32) + 0.2, document.samplerate, fmt='wav', subtype='FLOAT')
+        if row is not None:
+            app.on_files_dropped([str(sound)])
+            app.handle_drops(mouse=imgui.ImVec2(geometry['lane_x0'] + 10, (row[1] + row[2]) / 2))
+            wait(ctx, 3)
+        recorder.check('a sound dropped on the empty track fills it and keeps its inserts', empty.frames == 9600 and [n['effect'] for n in empty.inserts] == ['gain'] and len(document.tracks) == count + 1,
+                       (empty.frames, [n['effect'] for n in empty.inserts], len(document.tracks)))
+        document.remove_track(empty.id)
+        wait(ctx, 2)
+
     # --- master bus: FX button, gain slider
     ctx.item_click('**/master/master-FX')
     wait(ctx, 4)
@@ -307,7 +427,7 @@ def _scenario(app, ctx, recorder):
     width = imgui.get_main_viewport().size.x
     app.requested_tab = 'Editor'
     wait(ctx, 4)
-    for ref in ('**/Export mix', '**/Follow', '**/Apply workflow to selection', '**/Insert silence'):
+    for ref in ('**/Export mix', '**/Follow', '**/FX panel', '**/Insert silence'):
         info = ctx.item_info(ref, te.TestOpFlags_.no_error)
         inside = info is not None and info.id_ != 0 and info.rect_full.max.x <= width
         recorder.check('editor widget fully visible: ' + ref[3:], inside, f'{info.rect_full.max.x if info and info.id_ else None} <= {width}')
@@ -374,10 +494,87 @@ def _scenario(app, ctx, recorder):
     wait(ctx, 3)
 
 
-def _wait_jobs(app, ctx, seconds):
+def _wait_jobs(app, ctx, seconds, idle=1.5):
+    """Waits until no job has been running for ``idle`` seconds (a job may start right after another)."""
     started = time.time()
+    idle_since = None
     while time.time() - started < seconds:
         ctx.yield_()
-        if not app.jobs.running() and time.time() - started > 0.5:
+        if app.jobs.running():
+            idle_since = None
+        elif idle_since is None:
+            idle_since = time.time()
+        elif time.time() - idle_since >= idle:
             break
     wait(ctx, 5)
+
+
+def register_all_effects(app, runner, recorder):
+    engine = hello_imgui.get_imgui_test_engine()
+    test = te.register_test(engine, 'audiostudio', 'all-effects')
+
+    def run(ctx):
+        try:
+            _all_effects(app, ctx, recorder)
+        except Exception:
+            recorder.check('sweep raised no exception', False, traceback.format_exc())
+        finally:
+            recorder.done = True
+    test.test_func = run
+    te.queue_test(engine, test)
+
+
+def _hover_conflicts(ctx, rect, columns=10, rows=5):
+    """Moves the mouse over a grid of the rectangle; ImGui reports ID conflicts of hovered items."""
+    worst = 0
+    if rect is None:
+        return -1
+    x0, y0, x1, y1 = rect
+    for row in range(rows):
+        for column in range(columns):
+            ctx.mouse_move_to_pos(imgui.ImVec2(x0 + (column + 0.5) * (x1 - x0) / columns, y0 + (row + 0.5) * (y1 - y0) / rows))
+            ctx.yield_()
+            worst = max(worst, int(imgui.get_current_context().debug_draw_id_conflicts_count))
+    return worst
+
+
+def _all_effects(app, ctx, recorder):
+    """Every real-time effect interface is shown while playing and swept with the mouse."""
+    from audiostudio.dsp import effects
+    from audiostudio.workflow import model as workflow_model
+    document = app.document
+    app.requested_tab = 'Editor'
+    wait(ctx, 3)
+    track = fixture(document, 'sweep tone', 3.0, 220)
+    app.inserts.show(track)
+    document.selection = (0.0, 2.0)
+    app.player.loop = True
+    app.player.play(0.0)
+    wait(ctx, 3)
+    failures = []
+    specs = [spec for spec in effects.REGISTRY.values() if spec.realtime]
+    for spec in specs:
+        for node in list(track.inserts):
+            document.remove_insert(track, node['id'])
+        node = document.add_insert(track, workflow_model.new_node('effect', effect=spec.id))
+        app.inserts.selected[track.id] = node['id']
+        wait(ctx, 3)
+        conflicts = _hover_conflicts(ctx, app.inserts.editor_rect)
+        errors = dict(app.player.renderer.errors)
+        if conflicts or errors:
+            failures.append((spec.id, conflicts, errors))
+    recorder.check(f'{len(specs)} effect interfaces hovered while playing: no ID conflict, no render error', not failures, failures)
+    for node in list(track.inserts):
+        document.remove_insert(track, node['id'])
+    master = document.master
+    compressor = document.add_insert(master, workflow_model.new_node('effect', effect='compressor'))
+    document.add_insert(master, workflow_model.new_node('effect', effect='reverb'))
+    app.inserts.show(master)
+    app.inserts.selected[master.id] = compressor['id']
+    wait(ctx, 4)
+    conflicts = _hover_conflicts(ctx, app.inserts.editor_rect)
+    recorder.check('master chain interface hovered: no ID conflict', conflicts == 0, conflicts)
+    for node in list(master.inserts):
+        document.remove_insert(master, node['id'])
+    app.player.stop()
+    wait(ctx, 2)

@@ -11,13 +11,23 @@ guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md](app/README
   silence, split), undo / redo, recording from the microphone, playback through the default
   output, sessions saved as folders.
 - **Insert chains per track and on the master bus** with 106 native effects (92 of them real-time)
-  and VST3 plugins, each with its own interface: input / output meters and a live scope, transfer
+  and VST3 plugins, each with its own interface: input / output meters, a live scope and a live
+  spectrometer of the audio entering and leaving the effect, transfer
   curve and gain-reduction history for the dynamics, draggable bands over the live spectrum for the
   parametric EQ, crossovers for the multiband processors, decay envelope for the reverbs, echo taps
   for the delays, LFO views, goniometer, spectrum analyser, LUFS loudness meter, 16-step pattern
   editor, pitch-correction gauge. Everything is heard while playing.
 - **Automation lanes** for volume, pan, mute and any parameter of any insert (native effect or
   VST3), drawn over the track, edited with the mouse, or recorded live while playing.
+- **Effects belong to a track or to the master bus**, never to the whole editor: clicking a track
+  (or the master lane) shows its chain in the FX panel; add, remove, bypass, drag to reorder, bake it
+  into the clip, or send it to the Workflows tab.
+- **Drag and drop**: audio files dropped from the desktop become tracks at the time under the mouse
+  (below the hovered track), or fill an empty track created with the **+** button (its inserts are kept); a session folder opens it, a workflow file loads it, an impulse
+  response dropped on a convolution effect is used by it. Inserts and chain items are reordered by
+  dragging them.
+- **Search by text** in every effect and plugin picker (accent and case insensitive, name, category
+  and description; Enter picks the first match).
 - **Effects**: compressors (feed-forward, vintage opto / VCA / FET / vari-mu, multiband, dynamic EQ,
   de-esser, transient shaper, look-ahead maximizer, gate, expander), equalisers and filters
   (parametric, graphic, tilt, shelves, notch, ladder, auto-wah, formants, hum remover), reverbs

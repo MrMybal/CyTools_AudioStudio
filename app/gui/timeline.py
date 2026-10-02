@@ -62,6 +62,7 @@ class Timeline:
         self.auto_drag = None          # {'owner', 'key', 'index'}
         self.right_drag = None         # (mouse_x, dragged)
         self.overview_drag = None
+        self.drop_geometry = None      # last frame: where the lanes are, to place dropped files
         self._peak_cache = {}
 
     def fit(self, document):
@@ -323,8 +324,12 @@ class Timeline:
         hover_time = None
         version = document.version
         head_x = to_x(player.position) if (player.playing or player.is_recording) else -1e9
+        rows = []
+        self.drop_geometry = {'x0': origin.x, 'x1': origin.x + width, 'y0': origin.y, 'y1': origin.y + total_height, 'lane_x0': lane_x0,
+                              'lane_width': lane_width, 'start': start, 'span': span, 'rows': rows}
         for index, track in enumerate(list(document.tracks)):
             lane_height = float(track.height)
+            rows.append((track.id, y, y + lane_height))
             selected = index == document.selected_track
             imgui.push_id(track.id)
             # -- header
@@ -364,10 +369,11 @@ class Timeline:
             if imgui.small_button('v###Move track down'):
                 document.move_track(track.id, 1)
             imgui.same_line()
-            fx_active = bool(track.inserts)
+            chain_length = sum(1 for n in track.inserts if not n.get('_preview'))      # the Effect... audition insert is not counted
+            fx_active = chain_length > 0
             if fx_active:
                 imgui.push_style_color(imgui.Col_.button, (0.2, 0.5, 0.75, 1.0))
-            if imgui.small_button(('FX%d' % len(track.inserts) if fx_active else 'FX') + '###FX'):
+            if imgui.small_button(('FX%d' % chain_length if fx_active else 'FX') + '###FX'):
                 if app is not None:
                     app.inserts.show(track)
             if fx_active:
@@ -404,6 +410,8 @@ class Timeline:
             header_hovered = imgui.is_mouse_hovering_rect((child_origin.x, y), (child_origin.x + HEADER_WIDTH, y + lane_height))
             if header_hovered and imgui.is_mouse_clicked(imgui.MouseButton_.left):
                 document.selected_track = index
+                if app is not None:
+                    app.inserts.follow(track)
 
             # -- lane background, selection
             x0, y0, x1, y1 = lane_x0, y, lane_x0 + lane_width, y + lane_height - 2
@@ -461,6 +469,8 @@ class Timeline:
             editing_points = bool(track.automation_view) and not io.key_ctrl and not self.hand_tool
             if imgui.is_item_activated() and mouse.y >= body_top and not editing_points and not self.hand_tool:
                 document.selected_track = index
+                if app is not None:
+                    app.inserts.follow(track)
                 self.drag_start = float(max(0.0, to_t(mouse.x)))
                 self.dragged = False
                 self.drag_track = track.id
@@ -607,6 +617,14 @@ class Timeline:
             y += lane_height
         if remove_id is not None:
             document.remove_track(remove_id)
+        imgui.set_cursor_screen_pos((child_origin.x + 8, y + 4))
+        if imgui.button('+###Add track', (HEADER_WIDTH - 20, 0)):
+            track = document.add_empty_track()
+            if app is not None:
+                app.editor.message = tr('Empty track added: record, drop or generate a sound into it, or add inserts.')
+        if imgui.is_item_hovered():
+            imgui.set_tooltip(tr('Add an empty track'))
+        y += imgui.get_frame_height() + 8
         if not document.tracks:
             draw.add_text((lane_x0 + 12, child_origin.y + 12), colour(0.6, 0.6, 0.65), tr('No track. Open a file, record, or generate a sound.'))
 
@@ -693,6 +711,9 @@ class Timeline:
         imgui.set_cursor_screen_pos((x0, y0))
         imgui.invisible_button('master-lane', (lane_width, lane_height - 2))
         hovered = imgui.is_item_hovered()
+        master_header = imgui.is_mouse_hovering_rect((child_origin.x, y), (child_origin.x + HEADER_WIDTH, y + lane_height))
+        if app is not None and (imgui.is_item_activated() or (master_header and imgui.is_mouse_clicked(imgui.MouseButton_.left))):
+            app.inserts.follow(master)
         if master.automation_view:
             self._automation(document, master, draw, x0, y0, x1, y1, to_x, to_t, hovered, 'master-lane', tr)
         elif hovered:
