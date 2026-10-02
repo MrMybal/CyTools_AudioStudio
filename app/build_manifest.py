@@ -99,6 +99,24 @@ def operation(op_id, name, description, inputs, outputs, *, backends_=(), ram=25
     return spec
 
 
+# Operations that must never overlap (SDK 0.10 exclusiveGroups), whatever the concurrency policy:
+#   gpu           one model at a time on the graphics card (WorkerPool.make_exclusive evicts the others)
+#   engine_torch  / engine_piper: install_engine rewrites the environment the workers run in
+#   model_files   install / verify / remove touch the weights a generation is reading
+# The groups are logical names: VRAM reservations and device selection stay in resourceRequirements.
+_TORCH = ('gpu', 'engine_torch', 'model_files')
+_ALL_ENGINES = ('gpu', 'engine_torch', 'engine_piper')
+EXCLUSIVE_GROUPS = {
+    'generate_sfx': _TORCH, 'generate_music': _TORCH, 'remix_music': _TORCH, 'repaint_music': _TORCH, 'write_lyrics': _TORCH,
+    'voice_qwen3tts': _TORCH, 'voice_fishspeech': _TORCH, 'prepare_tts_text': _TORCH, 'transcribe_audio': _TORCH,
+    'voice_piper': ('engine_piper', 'model_files'),
+    'generate_voice': _ALL_ENGINES + ('model_files',),
+    'install_model': ('model_files',), 'verify_model': ('model_files',), 'remove_model': ('model_files',),
+    'install_engine': ('engine_torch', 'engine_piper'),
+    'diagnose_backend': _ALL_ENGINES, 'release_workers': _ALL_ENGINES,
+}
+
+
 # ----------------------------------------------------------------------------- shared fragments
 
 OUTPUT_FORMAT = ENUM('Output audio format', ['wav', 'flac', 'mp3', 'ogg', 'aac'], 'wav')
@@ -362,6 +380,12 @@ def build():
     ops.append(operation('diagnose_backend', 'Diagnose backend', 'Start the worker of a backend and report engine versions, CUDA availability and resident models.',
         OBJECT({'backend': ENUM('Backend', list(backends.BACKENDS), 'sfx_procedural')}, required=('backend',)), ANY, ram=512 * MiB, progress=False))
     ops.append(operation('release_workers', 'Release workers', 'Stop resident workers to free VRAM and RAM.', OBJECT({}), ANY, ram=64 * MiB, progress=False, cancel=False))
+    known = {op['id'] for op in ops}
+    unknown = sorted(set(EXCLUSIVE_GROUPS) - known)
+    if unknown:
+        raise SystemExit('EXCLUSIVE_GROUPS names operations that do not exist: ' + ', '.join(unknown))
+    for op in ops:
+        op['exclusiveGroups'] = list(EXCLUSIVE_GROUPS.get(op['id'], ()))
 
     tested = {}
     tested_path = APP / 'platform-tested.json'
@@ -377,7 +401,7 @@ def build():
     manifest = {
         'schemaVersion': 1, 'protocolVersion': '1.0', 'id': TOOL_ID, 'name': TOOL_NAME, 'version': __version__,
         'description': 'Audio studio: multitrack editor, effects and VST3 workflows with tail rendering, sound-effect, music and voice generation (procedural, AudioLDM, ACE-Step 1.5, Piper, Qwen3-TTS, Fish Speech S2 Pro), voice presets, mastering tools. Standalone Dear ImGui application, CLI and MCP on one runtime.',
-        'vendor': 'Cyberalien', 'author': 'Cyberalien', 'license': 'GPL-3.0-only (Tool code, see LICENSE). Engines and model weights keep their own licences: see backends and app/licenses.json.',
+        'vendor': 'Cyberalien', 'author': 'Cyberalien', 'license': 'GPL-3.0-only (Tool code, see LICENSE). CyToolsCore SDK: MIT (LICENCES/CyToolsCore-MIT.txt). Engines and model weights keep their own licences: see backends, app/licenses.json and LICENCES/.',
         'executable': 'runtime/python/Scripts/python.exe app/tool.py', 'categories': ['audio', 'generation', 'processing'],
         'tags': ['audio', 'editor', 'vst3', 'workflow', 'tts', 'music', 'sfx', 'mastering'],
         'capabilities': ['jobs', 'cancellation', 'progress', 'backends', 'models'],

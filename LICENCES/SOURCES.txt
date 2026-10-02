@@ -1,0 +1,40 @@
+CyTools_AudioStudio 0.1.1 - sources and references of the delivered components
+====================================================================================
+
+Product
+  Licence        GPL-3.0-only, full text in LICENSE at the root of the product
+  Source code    https://github.com/MrMybal/CyTools_AudioStudio
+  Components     LICENCES/ThirdParty-Notices.txt (same list as the Options tab, app/licenses.json)
+
+CyToolsCore SDK 0.10.1 (runtime, jobs, CLI / JSONL / HTTP / MCP transports, scaffold)
+  Licence        MIT, Copyright (c) 2026 Cyberalien; full text in LICENCES/CyToolsCore-MIT.txt
+  Scaffold       LICENCES/LICENSE-CyToolsCore.txt (also app/LICENSE-CyToolsCore.txt)
+  Repository     https://github.com/MrMybal/CyToolsCore
+  Revision       a8d200f2d0baaade1633e0683663b4506c595f74
+  Install        pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@a8d200f2d0baaade1633e0683663b4506c595f74"
+  Guides         creating a CyTool        https://github.com/MrMybal/CyToolsCore/blob/main/Docs/AgentGuide.md
+                 standalone delivery      https://github.com/MrMybal/CyToolsCore/blob/main/Docs/StandaloneDelivery.md
+                 updating a product       https://github.com/MrMybal/CyToolsCore/blob/main/Docs/UpdateExistingProducts.md
+                 licensing                https://github.com/MrMybal/CyToolsCore/blob/main/Docs/Licensing.md
+                 copies in this product   app/Docs/
+  The MIT licence of the SDK does not change the licence of this product: CyTools_AudioStudio
+  stays under the GPL-3.0 because of its own code and of pedalboard / JUCE.
+
+CyUEMCPSDK (Unreal Engine MCP SDK)
+  Repository     https://github.com/MrMybal/CyUEMCPSDK
+  Not included: this product has no Unreal Engine plugin and no assistant runtime.
+
+Python packages of runtime/python
+  The portable build lists every installed distribution, its licence and the licence files kept
+  inside the archive in LICENCES/PythonPackages.txt. An installation from source installs them
+  from PyPI with app/requirements.txt; each package keeps its licence files in
+  runtime/python/Lib/site-packages/<name>-<version>.dist-info/.
+  CPython itself: runtime/python/LICENSE.txt (portable build), https://docs.python.org/3.11/license.html
+
+Engines, vendored sources and model weights
+  They are not part of this archive. The application downloads them on request (Models tab,
+  app/setup_engine.py) from the sources listed in LICENCES/ThirdParty-Notices.txt,
+  app/engines.json and app/models/catalog.json; each one keeps its own licence, and a gated or
+  non-commercial model is only downloaded after the user accepted its terms.
+
+A link or the word MIT never replaces a licence text: keep this folder with every copy of the product.

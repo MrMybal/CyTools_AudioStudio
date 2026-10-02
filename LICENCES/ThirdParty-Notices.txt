@@ -1,0 +1,82 @@
+CyTools_AudioStudio 0.1.1 - third-party notices
+====================================================
+
+Components used by the application, with their licence and their source. Generated from
+app/licenses.json, the table shown in the Options tab. Full licence texts: LICENSE (product),
+LICENCES/CyToolsCore-MIT.txt (SDK), and for each Python package its own .dist-info folder
+(indexed in LICENCES/PythonPackages.txt of the portable build).
+
+[Application] CyTools_AudioStudio - application code (app/)
+  Licence: GPL-3.0-only
+  Source:  https://github.com/MrMybal/CyTools_AudioStudio
+  Notes:   Copyright Cyberalien. Free software under the GNU GPL v3 (LICENSE at the root;
+           pedalboard / JUCE are GPL-3.0 as well); model weights and engines keep their own
+           licences listed below. Sources and notices: LICENCES folder.
+
+[SDK] CyToolsCore 0.10.1 - runtime, jobs, transports (CLI, MCP), scaffold
+  Licence: MIT
+  Source:  https://github.com/MrMybal/CyToolsCore
+  Notes:   Copyright (c) 2026 Cyberalien. Full text in LICENCES/CyToolsCore-MIT.txt, scaffold
+           notice in LICENCES/LICENSE-CyToolsCore.txt, pinned revision in LICENCES/SOURCES.txt.
+           The MIT licence of the SDK does not change the GPL-3.0 licence of the application.
+
+[Engine] pedalboard (Spotify) - native effects and VST3 hosting, built on JUCE
+  Licence: GPL-3.0
+  Source:  https://github.com/spotify/pedalboard
+  Notes:   JUCE is used under its GPL terms through pedalboard. VST3 plugins loaded by the user
+           keep their own licences.
+
+[Engine] PortAudio (through python-sounddevice) - playback and recording
+  Licence: MIT
+  Source:  https://github.com/spatialaudio/python-sounddevice
+  Notes:   Bundled PortAudio build without ASIO (the Steinberg ASIO SDK licence is not held).
+
+[Engine] Procedural SFX synthesizer
+  Licence: GPL-3.0-only (Tool code)
+  Notes:   Ported from CyTools_AudioGen; numpy/scipy only, no model.
+
+[Engine] AudioLDM pipeline (diffusers)
+  Licence: Apache-2.0 (diffusers code)
+  Source:  https://github.com/huggingface/diffusers
+  Notes:   Weights cvssp/audioldm-s-full-v2 are CC-BY-NC-SA-4.0 (non-commercial).
+
+[Engine] ACE-Step 1.5 (vendored source, runtime/sources/ACE-Step-1.5)
+  Licence: MIT
+  Source:  https://github.com/ace-step/ACE-Step-1.5
+  Notes:   Pinned revision ca1e85fe9430; checkpoints ACE-Step/Ace-Step1.5 are MIT.
+
+[Engine] Piper (piper-tts 1.8.0, ONNX Runtime)
+  Licence: MIT (piper-tts), MIT (onnxruntime)
+  Source:  https://github.com/OHF-Voice/piper1-gpl
+  Notes:   Each voice has its own MODEL_CARD; the acceptance box in the Models tab refers to it.
+           The espeak-ng phonemizer used by Piper is GPL-3.0.
+
+[Engine] Qwen3-TTS (qwen-tts 0.1.1)
+  Licence: Apache-2.0
+  Source:  https://github.com/QwenLM/Qwen3-TTS
+  Notes:   Weights Qwen/Qwen3-TTS-12Hz-* are Apache-2.0.
+
+[Engine] Fish Speech (vendored source, runtime/sources/fish-speech)
+  Licence: Apache-2.0 (code)
+  Source:  https://github.com/fishaudio/fish-speech
+  Notes:   Pinned revision 214da3cd841b. Weights fishaudio/s2-pro are under the Fish Audio
+           Research License: non-commercial, personal acceptance required.
+
+[Engine] PyTorch 2.8.0 + CUDA 12.8 wheels
+  Licence: BSD-3-Clause
+  Source:  https://pytorch.org
+  Notes:   Installed privately in runtime/engines/torch; the NVIDIA driver is a system
+           component.
+
+[Dependency] pyloudnorm (ITU-R BS.1770 loudness)
+  Licence: MIT
+  Source:  https://github.com/csteinmetz1/pyloudnorm
+
+[Dependency] PyAV (FFmpeg bindings) - AAC/M4A and other container decoding
+  Licence: BSD-3-Clause (PyAV); FFmpeg LGPL/GPL components as bundled
+  Source:  https://github.com/PyAV-Org/PyAV
+  Notes:   Check the FFmpeg build flags of the wheel before commercial redistribution.
+
+[Dependency] Dear ImGui / imgui-bundle
+  Licence: MIT
+  Source:  https://github.com/pthom/imgui_bundle

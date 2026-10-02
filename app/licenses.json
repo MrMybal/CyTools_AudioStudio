@@ -4,14 +4,14 @@
     "name": "CyTools_AudioStudio - application code (app/)",
     "license": "GPL-3.0-only",
     "url": "https://github.com/MrMybal/CyTools_AudioStudio",
-    "notes": "Copyright Cyberalien. Free software under the GNU GPL v3 (LICENSE at the root); model weights and engines keep their own licences listed below."
+    "notes": "Copyright Cyberalien. Free software under the GNU GPL v3 (LICENSE at the root; pedalboard / JUCE are GPL-3.0 as well); model weights and engines keep their own licences listed below. Sources and notices: LICENCES folder."
   },
   {
     "kind": "SDK",
-    "name": "CyToolsCore - runtime, jobs, transports (CLI, MCP), scaffold",
-    "license": "GPL-3.0-only",
+    "name": "CyToolsCore 0.10.1 - runtime, jobs, transports (CLI, MCP), scaffold",
+    "license": "MIT",
     "url": "https://github.com/MrMybal/CyToolsCore",
-    "notes": "The application imports cytools_core; the SDK is public under the GPL-3.0 (pedalboard / JUCE are GPL-3.0 as well)."
+    "notes": "Copyright (c) 2026 Cyberalien. Full text in LICENCES/CyToolsCore-MIT.txt, scaffold notice in LICENCES/LICENSE-CyToolsCore.txt, pinned revision in LICENCES/SOURCES.txt. The MIT licence of the SDK does not change the GPL-3.0 licence of the application."
   },
   {
     "kind": "Engine",

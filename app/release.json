@@ -1,7 +1,7 @@
 {
   "toolId": "cy.tool.audiostudio",
-  "version": "0.1.0",
-  "runtime_abi": "audiostudio-cpython311-core090-imgui1.92.900-pedalboard0.9-v1",
-  "notes": "Updates come from the GitHub releases of \"repository\" (application stream: replaces app/ only). runtime/ (Python, engines, sources) and data/ (models, sessions, jobs, settings) are never part of a release. A release with another runtime_abi requires a full installation.",
+  "version": "0.1.1",
+  "runtime_abi": "audiostudio-cpython311-core0101-imgui1.92.900-pedalboard0.9-v1",
+  "notes": "Updates come from the GitHub releases of \"repository\" (application stream: replaces app/ and refreshes LICENCES/). runtime/ (Python, engines, sources) and data/ (models, sessions, jobs, settings) are never part of a release. A release with another runtime_abi requires a full installation.",
   "repository": "MrMybal/CyTools_AudioStudio"
 }

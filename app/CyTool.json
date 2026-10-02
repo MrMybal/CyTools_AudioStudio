@@ -3,11 +3,11 @@
   "protocolVersion": "1.0",
   "id": "cy.tool.audiostudio",
   "name": "CyTools_AudioStudio",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Audio studio: multitrack editor, effects and VST3 workflows with tail rendering, sound-effect, music and voice generation (procedural, AudioLDM, ACE-Step 1.5, Piper, Qwen3-TTS, Fish Speech S2 Pro), voice presets, mastering tools. Standalone Dear ImGui application, CLI and MCP on one runtime.",
   "vendor": "Cyberalien",
   "author": "Cyberalien",
-  "license": "GPL-3.0-only (Tool code, see LICENSE). Engines and model weights keep their own licences: see backends and app/licenses.json.",
+  "license": "GPL-3.0-only (Tool code, see LICENSE). CyToolsCore SDK: MIT (LICENCES/CyToolsCore-MIT.txt). Engines and model weights keep their own licences: see backends, app/licenses.json and LICENCES/.",
   "executable": "runtime/python/Scripts/python.exe app/tool.py",
   "categories": [
     "audio",
@@ -457,6 +457,19 @@
             "Portable release build (CyTools_AudioStudio-0.1.0-win64.zip, 211 MB, private Python 3.11.9 from the NuGet package): unzipped outside the project, its own python runs tool.py describe (41 operations) and the unit tests (OK, 6 skipped), the launcher started from C:\\ rendered the interface; cytools-app.zip passes the updater's extraction and verification",
             "Effect... chain dialog (live audition, drag reorder, apply with tail), desktop file drops (GLFW callback + handler), searchable pickers: interaction run 68/68 at 1500 and 1035 px"
           ]
+        },
+        {
+          "osVersion": "10.0.19044 (Windows 10 Enterprise LTSC 2021)",
+          "device": "CPU paths only (DSP worker, editor renderer, CLI, MCP); no GPU generation was rerun for this SDK update",
+          "runtime": "CPython 3.11.5 / CyToolsCore 0.10.1 (MIT, commit a8d200f) / imgui-bundle 1.92.900 / pedalboard 0.9.25 / sounddevice 0.5.6",
+          "date": "2026-10-02",
+          "status": "Supported",
+          "executed": [
+            "SDK update 0.9.0 (GPL-3.0) to 0.10.1 (MIT): installed metadata read back (version 0.10.1, License-Expression MIT, one distribution), manifest with exclusiveGroups validated by the SDK",
+            "Unit tests: 214 run, OK (licence folder against the installed package, SDK pins, exclusive groups, worker hosts observed by the runtime status)",
+            "CLI: describe (41 operations), convert_audio on a file outside the Tool",
+            "MCP stdio: 62 tools, invalid parameter refused, CanRun with waitingForConcurrency, process_audio on an external file with tail rendering, runtime status 1 running / 0 unknown worker, cy_export_job outside the runtime, cy_finish_task: deletion deferred while the DSP worker is alive, workspace removed once release_workers stopped it, exported copy and source file kept"
+          ]
         }
       ],
       "notes": "Executed on the author's machine only; Linux and macOS never run."
@@ -720,7 +733,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": []
     },
     {
       "id": "batch_process",
@@ -903,7 +917,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": []
     },
     {
       "id": "convert_audio",
@@ -1063,7 +1078,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": []
     },
     {
       "id": "analyze_audio",
@@ -1104,7 +1120,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "render_session",
@@ -1292,7 +1309,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": []
     },
     {
       "id": "edit_session",
@@ -1594,7 +1612,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": []
     },
     {
       "id": "batch_session",
@@ -1844,7 +1863,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": []
     },
     {
       "id": "list_effects",
@@ -1869,7 +1889,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "list_workflows",
@@ -1894,7 +1915,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "get_workflow",
@@ -1930,7 +1952,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "save_workflow",
@@ -1999,7 +2022,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "scan_plugins",
@@ -2074,7 +2098,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": []
     },
     {
       "id": "list_plugins",
@@ -2099,7 +2124,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "describe_plugin",
@@ -2134,7 +2160,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "generate_sfx",
@@ -2378,7 +2405,12 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "model_files"
+      ]
     },
     {
       "id": "preview_sfx_recipe",
@@ -2452,7 +2484,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "list_sfx_types",
@@ -2495,7 +2528,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "generate_music",
@@ -2840,7 +2874,12 @@
       "canRunAsync": true,
       "canCancel": true,
       "supportsProgress": true,
-      "estimatedDurationSeconds": 90
+      "estimatedDurationSeconds": 90,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "model_files"
+      ]
     },
     {
       "id": "remix_music",
@@ -3149,7 +3188,12 @@
       "canRunAsync": true,
       "canCancel": true,
       "supportsProgress": true,
-      "estimatedDurationSeconds": 60
+      "estimatedDurationSeconds": 60,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "model_files"
+      ]
     },
     {
       "id": "repaint_music",
@@ -3484,7 +3528,12 @@
       "canRunAsync": true,
       "canCancel": true,
       "supportsProgress": true,
-      "estimatedDurationSeconds": 60
+      "estimatedDurationSeconds": 60,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "model_files"
+      ]
     },
     {
       "id": "write_lyrics",
@@ -3708,7 +3757,12 @@
       "canRunAsync": true,
       "canCancel": true,
       "supportsProgress": true,
-      "estimatedDurationSeconds": 45
+      "estimatedDurationSeconds": 45,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "model_files"
+      ]
     },
     {
       "id": "voice_piper",
@@ -3903,7 +3957,11 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "engine_piper",
+        "model_files"
+      ]
     },
     {
       "id": "voice_qwen3tts",
@@ -4203,7 +4261,12 @@
       "canRunAsync": true,
       "canCancel": true,
       "supportsProgress": true,
-      "estimatedDurationSeconds": 30
+      "estimatedDurationSeconds": 30,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "model_files"
+      ]
     },
     {
       "id": "voice_fishspeech",
@@ -4465,7 +4528,12 @@
       "canRunAsync": true,
       "canCancel": true,
       "supportsProgress": true,
-      "estimatedDurationSeconds": 60
+      "estimatedDurationSeconds": 60,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "model_files"
+      ]
     },
     {
       "id": "generate_voice",
@@ -4607,7 +4675,13 @@
       "canRunAsync": true,
       "canCancel": true,
       "supportsProgress": true,
-      "estimatedDurationSeconds": 60
+      "estimatedDurationSeconds": 60,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "engine_piper",
+        "model_files"
+      ]
     },
     {
       "id": "list_voices",
@@ -4657,7 +4731,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "save_voice_preset",
@@ -4751,7 +4826,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "list_voice_presets",
@@ -4776,7 +4852,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "delete_voice_preset",
@@ -4823,7 +4900,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "prepare_tts_text",
@@ -4977,7 +5055,12 @@
       "canRunAsync": true,
       "canCancel": true,
       "supportsProgress": true,
-      "estimatedDurationSeconds": 20
+      "estimatedDurationSeconds": 20,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "model_files"
+      ]
     },
     {
       "id": "transcribe_audio",
@@ -5074,7 +5157,12 @@
       "canRunAsync": true,
       "canCancel": true,
       "supportsProgress": true,
-      "estimatedDurationSeconds": 15
+      "estimatedDurationSeconds": 15,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "model_files"
+      ]
     },
     {
       "id": "master_audio",
@@ -5248,7 +5336,8 @@
       "canRunAsync": true,
       "canCancel": true,
       "supportsProgress": true,
-      "estimatedDurationSeconds": 60
+      "estimatedDurationSeconds": 60,
+      "exclusiveGroups": []
     },
     {
       "id": "list_models",
@@ -5287,7 +5376,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "install_model",
@@ -5365,7 +5455,10 @@
       ],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "model_files"
+      ]
     },
     {
       "id": "verify_model",
@@ -5401,7 +5494,10 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": true
+      "supportsProgress": true,
+      "exclusiveGroups": [
+        "model_files"
+      ]
     },
     {
       "id": "remove_model",
@@ -5437,7 +5533,10 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": [
+        "model_files"
+      ]
     },
     {
       "id": "engine_status",
@@ -5462,7 +5561,8 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": []
     },
     {
       "id": "install_engine",
@@ -5509,7 +5609,11 @@
       "canRunAsync": true,
       "canCancel": true,
       "supportsProgress": true,
-      "estimatedDurationSeconds": 1200
+      "estimatedDurationSeconds": 1200,
+      "exclusiveGroups": [
+        "engine_torch",
+        "engine_piper"
+      ]
     },
     {
       "id": "diagnose_backend",
@@ -5554,7 +5658,12 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": true,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "engine_piper"
+      ]
     },
     {
       "id": "release_workers",
@@ -5579,7 +5688,12 @@
       "permissions": [],
       "canRunAsync": true,
       "canCancel": false,
-      "supportsProgress": false
+      "supportsProgress": false,
+      "exclusiveGroups": [
+        "gpu",
+        "engine_torch",
+        "engine_piper"
+      ]
     }
   ],
   "standaloneExecutable": "CyTools_AudioStudio.exe"

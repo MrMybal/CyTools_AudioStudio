@@ -3,10 +3,10 @@
     runtime/python/Scripts/python.exe app/scripts/build_release.py [--skip-portable] [--python-nupkg PATH]
 
 Writes runtime/build/release/v<version>/:
-  cytools-app.zip (+ .sha256)          the application stream read by the Updates tab: app/ only,
-                                       without bytecode, tests included; entries start with app/
+  cytools-app.zip (+ .sha256)          the application stream read by the Updates tab: app/ without
+                                       bytecode, tests included, and the LICENCES folder
   CyTools_AudioStudio-<version>-win64.zip (+ .sha256)
-                                       portable Windows build: launcher, app/, docs, LICENSE and a private
+                                       portable Windows build: launcher, app/, docs, LICENSE, LICENCES and a private
                                        Python 3.11 (official NuGet build) with the base requirements and the
                                        pinned CyToolsCore SDK already installed. Engines and models are still
                                        installed by the application (Models tab / setup_engine.py).
@@ -33,7 +33,9 @@ APP = Path(__file__).resolve().parents[1]
 ROOT = APP.parent
 PYTHON_NUGET_VERSION = '3.11.9'
 PYTHON_NUGET_URL = 'https://www.nuget.org/api/v2/package/python/' + PYTHON_NUGET_VERSION
-SDK_REQUIREMENT = 'cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@442f537'
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import build_licences  # noqa: E402
+SDK_REQUIREMENT = build_licences.SDK_REQUIREMENT
 EXCLUDED_DIRS = {'__pycache__', '.pytest_cache'}
 EXCLUDED_SUFFIXES = {'.pyc', '.pyo', '.obj'}
 
@@ -52,7 +54,7 @@ def sha256_of(path):
 
 def write_sum(path):
     digest = sha256_of(path)
-    Path(str(path) + '.sha256').write_text(f'{digest}  {Path(path).name}\n', 'utf-8')
+    Path(str(path) + '.sha256').write_text(f'{digest}  {Path(path).name}\n', 'utf-8', newline='\n')   # sha256sum -c reads LF
     return digest
 
 
@@ -65,11 +67,21 @@ def app_files():
         yield path
 
 
+def licence_files():
+    """The generated LICENCES folder, refused when it does not match the installed SDK."""
+    stale = [path for path, text in build_licences.documents().items() if not path.is_file() or path.read_text('utf-8') != text]
+    if stale:
+        raise RuntimeError('LICENCES is stale: run app/scripts/build_licences.py (' + ', '.join(path.name for path in stale) + ')')
+    return sorted(path for path in build_licences.LICENCES.iterdir() if path.is_file() and path.name != 'PythonPackages.txt')
+
+
 def build_app_zip(target):
     say('application stream: ' + target.name)
     with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as bundle:
         for path in app_files():
             bundle.write(path, 'app/' + path.relative_to(APP).as_posix())
+        for path in licence_files():
+            bundle.write(path, 'LICENCES/' + path.name)
     return target
 
 
@@ -133,14 +145,22 @@ def build_portable_zip(target, version, nupkg):
             shutil.copy2(source, stage / name)
         (stage / 'data').mkdir()
         shutil.copy2(ROOT / 'data' / 'README.md', stage / 'data' / 'README.md')
+        (stage / 'LICENCES').mkdir()
+        for path in licence_files():
+            shutil.copy2(path, stage / 'LICENCES' / path.name)
         (stage / 'runtime').mkdir()
-        build_portable_python(stage / 'runtime' / 'python', nupkg)
+        python = build_portable_python(stage / 'runtime' / 'python', nupkg)
+        # the index describes the Python that is shipped, and refuses anything but the MIT SDK
+        packages, rows = build_licences.python_packages(python, stage / 'runtime' / 'python', 'runtime/python')
+        (stage / 'LICENCES' / 'PythonPackages.txt').write_text(packages, 'utf-8', newline='\n')
+        say(f'LICENCES/PythonPackages.txt: {len(rows)} distributions')
         (stage / 'PORTABLE.txt').write_text(
             f'CyTools_AudioStudio {version} - portable Windows x64 build\n\n'
             'Unzip anywhere (a path without accents is safest) and double-click CyTools_AudioStudio.exe.\n'
             'runtime/python is a private Python 3.11 with the interface, the CLI, MCP, the effects and VST3 hosting.\n'
             'Generation models need the engines: install them from the Models tab (or app/setup_engine.py); Git must be on the PATH for that.\n'
-            'Model weights are downloaded by the application into data/models.\n', 'utf-8')
+            'Model weights are downloaded by the application into data/models.\n'
+            'Licences: LICENSE (application, GPL-3.0) and the LICENCES folder (CyToolsCore SDK under MIT, sources, third-party notices).\n', 'utf-8')
         with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as bundle:
             for path in sorted(stage.rglob('*')):
                 if path.is_file():
@@ -175,7 +195,7 @@ def main():
         digest = write_sum(asset)
         sums.append(f'{digest}  {asset.name}')
         say(f'{asset.name}: {asset.stat().st_size / 1e6:.1f} MB  sha256 {digest[:16]}...')
-    (output / 'SHA256SUMS.txt').write_text('\n'.join(sums) + '\n', 'utf-8')
+    (output / 'SHA256SUMS.txt').write_text('\n'.join(sums) + '\n', 'utf-8', newline='\n')
     say(f'done in {time.monotonic() - started:.0f} s -> {output}')
     return 0
 

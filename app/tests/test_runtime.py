@@ -115,6 +115,16 @@ class RuntimeTests(unittest.TestCase):
         self.assertIn('components', storage)
         self.assertIn('downloadMode', storage)
 
+    def test_runtime_status_counts_the_worker_processes(self):
+        """SDK 0.10: GetRuntimeStatus observes the Tool's worker hosts, and CanRun reports the concurrency wait."""
+        self.completed('convert_audio', {'input': str(self.tone_path), 'output_format': 'wav'})   # starts the DSP worker
+        status = self.runtime.status()
+        self.assertGreaterEqual(status['runningWorkers'], 1)
+        self.assertEqual(status['unknownWorkers'], 0)
+        verdict = self.runtime.can_run('list_effects', {})
+        self.assertTrue(verdict['canRun'], verdict)
+        self.assertIs(verdict['waitingForConcurrency'], False)
+
     def test_invalid_parameters_are_refused_before_a_job_exists(self):
         before = len(self.runtime.list_jobs(self.alice))
         cases = [

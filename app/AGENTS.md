@@ -8,7 +8,7 @@ TaskFiles.md) before changing anything.
 
 1. `CyTool.json` is generated: edit `build_manifest.py`, then run
    `..\runtime\python\Scripts\python.exe build_manifest.py` and
-   `..\runtime\python\Scripts\cytools.exe validate CyTool.json` (the SDK is public: https://github.com/MrMybal/CyToolsCore, GPL-3.0).
+   `..\runtime\python\Scripts\cytools.exe validate CyTool.json` (the SDK is public: https://github.com/MrMybal/CyToolsCore, MIT since 0.10.1).
    Every new operation needs a handler registered in `audiostudio/operations/*.py` and a test.
 2. Regeneration order after a change: `scripts/build_model_catalog.py` (only when a model pin
    changes) -> `build_manifest.py` -> `scripts/merge_locales.py` (after adding UI strings to
@@ -17,9 +17,16 @@ TaskFiles.md) before changing anything.
    The application process (interface, CLI, MCP) never imports torch, transformers, diffusers or
    any model library. Base-environment dependencies are `requirements.txt`; engine dependencies are
    `requirements-engine-*.txt` and are installed by `setup_engine.py` at their final path.
+   The SDK pin (version and commit) lives in `scripts/build_licences.py`; after changing it run
+   that script: it rewrites `../LICENCES/` from the SDK really installed and `tests/test_licences.py`
+   fails while the folder is stale. The product stays GPL-3.0 (LICENSE); never replace GPL by MIT
+   in a dependency, a model or a third-party source.
 4. Workers speak the JSON-lines protocol of `workers/_protocol.py`; the host is
    `audiostudio/engines/workerhost.py`. Progress goes through `reporter.progress`, never stdout.
    A GPU backend keeps its model resident; `WorkerPool.make_exclusive` stops the others first.
+   Operations that must never overlap carry `exclusiveGroups` (`EXCLUSIVE_GROUPS` in
+   `build_manifest.py`: `gpu`, `engine_torch`, `engine_piper`, `model_files`); a new GPU, engine or
+   model-file operation must be added to that table.
 5. Tail rendering is mandatory in every rendering path (`audiostudio/dsp/tail.py`): never cut a
    reverb or delay tail; a selection rendered in the editor overlaps its tail onto what follows.
 6. Model weights are declared in `models/catalog.json` / `models/piper-voices.json` and checked

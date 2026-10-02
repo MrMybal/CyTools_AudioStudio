@@ -26,6 +26,19 @@
           "Portable release build (CyTools_AudioStudio-0.1.0-win64.zip, 211 MB, private Python 3.11.9 from the NuGet package): unzipped outside the project, its own python runs tool.py describe (41 operations) and the unit tests (OK, 6 skipped), the launcher started from C:\\ rendered the interface; cytools-app.zip passes the updater's extraction and verification",
           "Effect... chain dialog (live audition, drag reorder, apply with tail), desktop file drops (GLFW callback + handler), searchable pickers: interaction run 68/68 at 1500 and 1035 px"
         ]
+      },
+      {
+        "osVersion": "10.0.19044 (Windows 10 Enterprise LTSC 2021)",
+        "device": "CPU paths only (DSP worker, editor renderer, CLI, MCP); no GPU generation was rerun for this SDK update",
+        "runtime": "CPython 3.11.5 / CyToolsCore 0.10.1 (MIT, commit a8d200f) / imgui-bundle 1.92.900 / pedalboard 0.9.25 / sounddevice 0.5.6",
+        "date": "2026-10-02",
+        "status": "Supported",
+        "executed": [
+          "SDK update 0.9.0 (GPL-3.0) to 0.10.1 (MIT): installed metadata read back (version 0.10.1, License-Expression MIT, one distribution), manifest with exclusiveGroups validated by the SDK",
+          "Unit tests: 214 run, OK (licence folder against the installed package, SDK pins, exclusive groups, worker hosts observed by the runtime status)",
+          "CLI: describe (41 operations), convert_audio on a file outside the Tool",
+          "MCP stdio: 62 tools, invalid parameter refused, CanRun with waitingForConcurrency, process_audio on an external file with tail rendering, runtime status 1 running / 0 unknown worker, cy_export_job outside the runtime, cy_finish_task: deletion deferred while the DSP worker is alive, workspace removed once release_workers stopped it, exported copy and source file kept"
+        ]
       }
     ]
   }

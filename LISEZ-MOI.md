@@ -125,8 +125,11 @@ des tours de dialogue pour Fish Speech ; une IA pilotant l'outil par MCP peut le
 ## Licence
 
 Le code de l'application (`app/`, lanceurs, documentation) est un logiciel libre sous **GNU GPL v3**
-(fichier `LICENSE` à la racine), comme le SDK CyToolsCore et pedalboard/JUCE. Les moteurs et les
-poids des modèles gardent leurs propres licences (onglet Options > licences, `app/licenses.json`).
+(fichier `LICENSE` à la racine), comme pedalboard/JUCE. Le SDK CyToolsCore 0.10.1 utilisé est sous
+licence **MIT**, ce qui ne change pas la licence de l'application. Les moteurs et les poids des
+modèles gardent leurs propres licences (onglet Options > licences, `app/licenses.json`).
+Le dossier `LICENCES` (en anglais) accompagne chaque copie du logiciel : texte MIT du SDK,
+liens vers les sources (`SOURCES.txt`) et notices des composants tiers.
 
 ## Limites connues
 

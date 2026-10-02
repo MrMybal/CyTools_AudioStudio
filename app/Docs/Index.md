@@ -23,3 +23,8 @@
 
 - [Fonctionnalités livrées](ImplementationStatus.md).
 - [Résultats de validation](Validation.md).
+- [Licence MIT et redistribution](Licensing.md).
+
+## Mettre à jour un produit existant
+
+- [Migration des logiciels et plugins utilisant les SDK](UpdateExistingProducts.md).

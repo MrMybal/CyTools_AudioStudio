@@ -1,9 +1,9 @@
 # Base environment of the application (runtime/python): CyToolsCore, Dear ImGui interface, CLI, MCP,
 # audio I/O, native effects and VST3 hosting (pedalboard), playback/recording (sounddevice), mastering.
 # No AI framework here: engines are installed separately by setup_engine.py (see engines.json).
-# cytools-core is not on PyPI: install it from the public SDK repository (GPL-3.0) first, then this file:
-#   pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@442f537"
-cytools-core[mcp]==0.9.0
+# cytools-core is not on PyPI: install it from the public SDK repository (MIT since 0.10.1) first, then this file:
+#   pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@a8d200f2d0baaade1633e0683663b4506c595f74"
+cytools-core[mcp]==0.10.1
 imgui-bundle==1.92.900
 glfw>=2.7,<3                 # file drops from the desktop (uses the GLFW library shipped with imgui-bundle)
 numpy>=1.26,<3

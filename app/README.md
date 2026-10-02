@@ -1,6 +1,6 @@
 # CyTools_AudioStudio — developer guide
 
-Standalone audio studio built on the CyToolsCore SDK 0.9.0 (public, GPL-3.0: https://github.com/MrMybal/CyToolsCore): a multitrack editor with per-track
+Standalone audio studio built on the CyToolsCore SDK 0.10.1 (public, MIT: https://github.com/MrMybal/CyToolsCore): a multitrack editor with per-track
 insert chains (106 native effects, 92 of them real-time, and VST3 plugins) with their own
 interfaces, automation lanes, a master bus, saved workflows (tail rendering included),
 sound-effect, music and voice generation with several models, voice presets, an optional text
@@ -63,7 +63,7 @@ build or test the application: the test-suite uses synthetic fixtures only.
 cd <path>\CyTools_AudioStudio
 # 1. base environment (interface, CLI, MCP, DSP, VST3) — Python 3.11
 C:\Users\<you>\AppData\Local\Programs\Python\Python311\python.exe -m venv runtime\python
-.\runtime\python\Scripts\python.exe -m pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@442f537"   # SDK 0.9.0 (GPL-3.0), pinned to its commit; git must be on the PATH
+.\runtime\python\Scripts\python.exe -m pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@a8d200f2d0baaade1633e0683663b4506c595f74"   # SDK 0.10.1 (MIT), pinned to its commit; git must be on the PATH
 .\runtime\python\Scripts\python.exe -m pip install --keyring-provider disabled -r app\requirements.txt
 # 2. engines (heavy, private): PyTorch CUDA 12.8 stack + vendored Fish Speech / ACE-Step sources, and Piper
 .\runtime\python\Scripts\python.exe app\setup_engine.py torch      # ~12 GB, needs git; add --cpu-only without NVIDIA GPU
@@ -226,7 +226,14 @@ diffusers 0.37.1, qwen-tts 0.1.1, Fish Speech and ACE-Step stacks; vendored sour
 revisions) and `piper` (piper-tts 1.8.0, onnxruntime). Workers are persistent processes with a
 JSON-lines protocol (`workers/_protocol.py`, `audiostudio/engines/workerhost.py`): handshake,
 progress and log events, cancellation by process kill, idle unload, one resident GPU backend at a
-time (`WorkerPool.make_exclusive`). This persistent-worker host is a generic extension candidate for
+time (`WorkerPool.make_exclusive`). The manifest also declares SDK 0.10 `exclusiveGroups`
+(`EXCLUSIVE_GROUPS` in `build_manifest.py`): `gpu` for every operation that loads a model on the
+graphics card, `engine_torch` / `engine_piper` so that `install_engine`, `release_workers` and
+`diagnose_backend` never run beside an operation of that engine, `model_files` between model
+installation / removal and generation. With the current `Sequential` policy they change nothing;
+they are what keeps these operations apart if the policy is ever raised. The runtime status
+(`GetRuntimeStatus`) counts the worker hosts as running or stopped through their process, never as
+unknown (`tests/test_runtime.py`). This persistent-worker host is a generic extension candidate for
 the SDK (its `ProcessWorker` is one-shot and has no progress channel).
 
 ## Tests and evidence
@@ -250,19 +257,77 @@ scenario, the interaction run (`ui-interactions.json`), migration receipt.
 ## Licence
 
 The application code (`app/`, the launchers and this documentation) is free software under the
-**GNU General Public License v3.0** (`LICENSE` at the root), the same licence as the CyToolsCore SDK
-and as pedalboard / JUCE it depends on. Engines (PyTorch stacks, vendored Fish Speech and ACE-Step
-sources) and model weights are not part of the application code and keep their own licences,
-listed in `app/licenses.json` and shown in the Options tab; the Models tab asks for acceptance
-before downloading a gated or non-commercial model.
+**GNU General Public License v3.0** (`LICENSE` at the root), the same licence as pedalboard / JUCE
+it depends on. The CyToolsCore SDK is under the **MIT** licence since 0.10.1; that does not change
+the licence of this product, and nothing GPL was renamed MIT in a dependency, a model or a
+third-party source. Engines (PyTorch stacks, vendored Fish Speech and ACE-Step sources) and model
+weights are not part of the application code and keep their own licences, listed in
+`app/licenses.json` and shown in the Options tab; the Models tab asks for acceptance before
+downloading a gated or non-commercial model.
+
+`LICENCES/` at the root of the product is delivered with every copy:
+
+| File | Content | Written by |
+|---|---|---|
+| `CyToolsCore-MIT.txt` | full MIT text of the SDK, Copyright (c) 2026 Cyberalien, unchanged | `scripts/build_licences.py`, from the installed distribution |
+| `LICENSE-CyToolsCore.txt` | notice written by the SDK scaffold (also `app/LICENSE-CyToolsCore.txt`) | same |
+| `SOURCES.txt` | repositories, pinned SDK revision, guides, where the other components come from | same |
+| `ThirdParty-Notices.txt` | the components of `licenses.json` with licence and source | same |
+| `PythonPackages.txt` | every distribution of the shipped `runtime/python`, its licence and the licence files kept in the archive | `scripts/build_release.py`, portable archive only |
+
+`build_licences.py` stops when the installed SDK is not the pinned MIT release, `build_release.py`
+refuses a stale folder and a portable Python that contains another SDK, and `tests/test_licences.py`
+compares the folder with the installed package.
+
+## Versions and SDK updates
+
+| Product | CyToolsCore | Runtime ABI | Notes |
+|---|---|---|---|
+| 0.1.0 | 0.9.0 (GPL-3.0-only), commit `442f537` | `...-core090-...` | first release |
+| 0.1.1 | 0.10.1 (MIT), commit `a8d200f` | `...-core0101-...` | `exclusiveGroups` in the manifest, `LICENCES/`, worker counts in the runtime status |
+
+The SDK pin (version and commit) is in `scripts/build_licences.py`, `requirements.txt` and the two
+READMEs; `tests/test_licences.py` fails when they disagree. Manifest schema 1 and protocol 1.0 are
+unchanged, so are the operation ids, their parameters and the files under `data/` (settings,
+sessions, workflows, presets, jobs, models): nothing has to be converted.
+
+**Updating an installation from source** (0.1.0 to 0.1.1):
+
+```powershell
+git pull
+.\runtime\python\Scripts\python.exe -m pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@a8d200f2d0baaade1633e0683663b4506c595f74"
+.\runtime\python\Scripts\python.exe -m pip install --keyring-provider disabled -r app\requirements.txt
+.\runtime\python\Scripts\python.exe -c "import importlib.metadata as m; d = m.distribution('cytools-core'); print(d.version, d.metadata['License-Expression'])"   # 0.10.1 MIT
+```
+
+The engines (`runtime/engines`), the vendored sources and the models are untouched: they do not
+import the SDK.
+
+**Updating a portable installation**: the runtime ABI changed, so the Updates tab refuses the
+application stream of 0.1.1 on a 0.1.0 installation (its `runtime/python` still holds the GPL SDK
+0.9.0). Unzip `CyTools_AudioStudio-0.1.1-win64.zip` next to the old folder, then move `data/` and,
+when engines were installed, `runtime/engines` and `runtime/sources` into the new folder. Later
+releases with the same ABI are installed in place by the Updates tab, which also refreshes
+`LICENCES/` (the files it replaces are kept beside the application backup).
+
+**Going back to 0.1.0**: keep the old portable folder, or from source:
+
+```powershell
+git checkout v0.1.0
+.\runtime\python\Scripts\python.exe -m pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@442f537"   # SDK 0.9.0, received under the GPL-3.0
+```
+
+The SDK 0.9.0 still loads the manifest of 0.1.1 (it ignores `exclusiveGroups`), but `LICENCES/`
+would then describe an SDK that is not the installed one: the application and the SDK go back
+together.
 
 ## Releases
 
 `app/scripts/build_release.py` writes `runtime/build/release/v<version>/`: `cytools-app.zip` (+ `.sha256`,
-the stream read by `maintenance.py`: entries under `app/`, no bytecode, no data), the launcher, and the
+the stream read by `maintenance.py`: entries under `app/` plus `LICENCES/`, no bytecode, no data), the launcher, and the
 portable build `CyTools_AudioStudio-<version>-win64.zip` whose `runtime/python` is the official Python
 NuGet package with `requirements.txt` and the pinned SDK installed in a temporary folder (never the
-developer's venv). The launcher and `paths.base_python()` accept both layouts (`runtime/python/Scripts/`
+developer's venv), with `LICENCES/` at its root (`PythonPackages.txt` included). The launcher and `paths.base_python()` accept both layouts (`runtime/python/Scripts/`
 for a venv, `runtime/python/` for the portable build). `publish_release.py` creates the GitHub release
 `v<version>` and uploads the assets with a token read from `GITHUB_TOKEN` only.
 

@@ -179,6 +179,22 @@ def verify_candidate(candidate):
     return release.get('version') or manifest['version']
 
 
+def sync_licences(staged, keep=None):
+    """Refresh LICENCES/ at the product root from a staged release; keep receives the replaced files.
+
+    PythonPackages.txt describes runtime/python, which an application update never touches: it stays.
+    """
+    staged, target = Path(staged), ROOT / 'LICENCES'
+    if not staged.is_dir():
+        return
+    if keep is not None and target.is_dir():
+        shutil.copytree(target, keep, dirs_exist_ok=True)
+    target.mkdir(exist_ok=True)
+    for path in staged.iterdir():
+        if path.is_file() and not path.is_symlink() and path.name != 'PythonPackages.txt':
+            shutil.copy2(path, target / path.name)
+
+
 def stage_archive(archive, digest):
     stage = UPDATES / 'tool' / digest.lower()
     if (stage / 'unpacked').exists():
@@ -237,6 +253,10 @@ def apply_pending():
         raise
     write_json(SETTINGS / 'tool-previous.json', {'app': str(backup.relative_to(ROOT)).replace('\\', '/'), 'version': read_json(backup / 'release.json').get('version', '')})
     (SETTINGS / 'tool-pending.json').unlink()
+    try:        # the application is already swapped: a notice that cannot be copied must not block the start
+        sync_licences(source.parent / 'LICENCES', keep=Path(str(backup) + '.LICENCES'))
+    except OSError as exc:
+        say('LICENCES could not be refreshed: ' + str(exc))
     return pending.get('version', '')
 
 
@@ -249,6 +269,9 @@ def rollback_tool():
         shutil.rmtree(staged.parents[1])
     staged.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(ROOT / previous['app'], staged)
+    licences = Path(str(ROOT / previous['app']) + '.LICENCES')
+    if licences.is_dir():
+        shutil.copytree(licences, staged.parent / 'LICENCES')
     write_json(SETTINGS / 'tool-pending.json', {'app': str(staged.relative_to(ROOT)).replace('\\', '/'), 'version': previous.get('version', '')})
     say('The previous application will be restored at the next start.')
 
