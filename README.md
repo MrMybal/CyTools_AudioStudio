@@ -1,5 +1,9 @@
 # CyTools AudioStudio
 
+<p align="center">
+  <img src="app/assets/branding/logo.png" alt="CyTools AudioStudio logo" width="160">
+</p>
+
 A standalone audio studio for Windows (desktop application, command line and MCP server on one
 runtime), built on the [CyToolsCore](https://github.com/MrMybal/CyToolsCore) SDK. French user
 guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md](app/README.md).

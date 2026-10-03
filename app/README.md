@@ -354,3 +354,9 @@ for a venv, `runtime/python/` for the portable build). `publish_release.py` crea
 - The application update stream points at `MrMybal/CyTools_AudioStudio` (release.json); no release has
   been published there yet, so the update path is verified with fixtures only (a check against the
   repository answers "not found" until it is public and carries a release).
+
+## Application icon
+
+The application logo lives in `assets/branding/logo.png`. `build_icon.ps1` creates
+the Windows icon and the portable HelloImGui window icon. The launcher build embeds
+the icon resource; `branding.py` configures the application identity and asset folder.

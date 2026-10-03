@@ -20,6 +20,8 @@ def main():
     for name in list(sys.modules):
         if name in ('maintenance',):
             del sys.modules[name]
+    from branding import configure as configure_branding
+    configure_branding('Cyberalien.CyTools_AudioStudio')
     runpy.run_path(str(APP / 'gui' / 'main.py'), run_name='__main__')
 
 
