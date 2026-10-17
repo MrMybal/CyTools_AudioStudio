@@ -15578,5 +15578,641 @@
   "Inverser le clip": {
     "en": "Reverse clip",
     "fr": "Inverser le clip"
+  },
+  "+6 GiB VRAM: the language model plans the structure before the song is generated.": {
+    "en": "+6 GiB VRAM: the language model plans the structure before the song is generated.",
+    "fr": "+6 Gio de VRAM : le modèle de langage planifie la structure avant de générer le morceau."
+  },
+  "+6 Gio de VRAM : le modèle de langage planifie la structure avant de générer le morceau.": {
+    "en": "+6 GiB VRAM: the language model plans the structure before the song is generated.",
+    "fr": "+6 Gio de VRAM : le modèle de langage planifie la structure avant de générer le morceau."
+  },
+  "A chain of effects and VST3 plugins, saved as a file, applied to a selection, to tracks or to files.": {
+    "en": "A chain of effects and VST3 plugins, saved as a file, applied to a selection, to tracks or to files.",
+    "fr": "Une chaîne d'effets et de plugins VST3, enregistrée dans un fichier, appliquée à une sélection, à des pistes ou à des fichiers."
+  },
+  "Une chaîne d'effets et de plugins VST3, enregistrée dans un fichier, appliquée à une sélection, à des pistes ou à des fichiers.": {
+    "en": "A chain of effects and VST3 plugins, saved as a file, applied to a selection, to tracks or to files.",
+    "fr": "Une chaîne d'effets et de plugins VST3, enregistrée dans un fichier, appliquée à une sélection, à des pistes ou à des fichiers."
+  },
+  "Add an effect or a VST3 plugin above; they run from top to bottom.": {
+    "en": "Add an effect or a VST3 plugin above; they run from top to bottom.",
+    "fr": "Ajoutez un effet ou un plugin VST3 ci-dessus ; ils s'appliquent de haut en bas."
+  },
+  "Ajoutez un effet ou un plugin VST3 ci-dessus ; ils s'appliquent de haut en bas.": {
+    "en": "Add an effect or a VST3 plugin above; they run from top to bottom.",
+    "fr": "Ajoutez un effet ou un plugin VST3 ci-dessus ; ils s'appliquent de haut en bas."
+  },
+  "Add the chosen VST3 plugin at the end of the chain": {
+    "en": "Add the chosen VST3 plugin at the end of the chain",
+    "fr": "Ajouter le plugin VST3 choisi à la fin de la chaîne"
+  },
+  "Ajouter le plugin VST3 choisi à la fin de la chaîne": {
+    "en": "Add the chosen VST3 plugin at the end of the chain",
+    "fr": "Ajouter le plugin VST3 choisi à la fin de la chaîne"
+  },
+  "Add the chosen effect at the end of the chain": {
+    "en": "Add the chosen effect at the end of the chain",
+    "fr": "Ajouter l'effet choisi à la fin de la chaîne"
+  },
+  "Ajouter l'effet choisi à la fin de la chaîne": {
+    "en": "Add the chosen effect at the end of the chain",
+    "fr": "Ajouter l'effet choisi à la fin de la chaîne"
+  },
+  "Add to the chain": {
+    "en": "Add to the chain",
+    "fr": "Ajouter à la chaîne"
+  },
+  "Ajouter à la chaîne": {
+    "en": "Add to the chain",
+    "fr": "Ajouter à la chaîne"
+  },
+  "Application releases from GitHub, upstream engine sources, and the way back to the previous version.": {
+    "en": "Application releases from GitHub, upstream engine sources, and the way back to the previous version.",
+    "fr": "Versions de l'application sur GitHub, sources des moteurs, et retour à la version précédente."
+  },
+  "Versions de l'application sur GitHub, sources des moteurs, et retour à la version précédente.": {
+    "en": "Application releases from GitHub, upstream engine sources, and the way back to the previous version.",
+    "fr": "Versions de l'application sur GitHub, sources des moteurs, et retour à la version précédente."
+  },
+  "Back to the start (Home)": {
+    "en": "Back to the start (Home)",
+    "fr": "Retour au début (Origine)"
+  },
+  "Retour au début (Origine)": {
+    "en": "Back to the start (Home)",
+    "fr": "Retour au début (Origine)"
+  },
+  "Browse for a VST3 folder": {
+    "en": "Browse for a VST3 folder",
+    "fr": "Choisir un dossier VST3"
+  },
+  "Choisir un dossier VST3": {
+    "en": "Browse for a VST3 folder",
+    "fr": "Choisir un dossier VST3"
+  },
+  "Cancel this job": {
+    "en": "Cancel this job",
+    "fr": "Annuler ce job"
+  },
+  "Annuler ce job": {
+    "en": "Cancel this job",
+    "fr": "Annuler ce job"
+  },
+  "Copy the selection of the selected track (Ctrl+C)": {
+    "en": "Copy the selection of the selected track (Ctrl+C)",
+    "fr": "Copier la sélection de la piste sélectionnée (Ctrl+C)"
+  },
+  "Copier la sélection de la piste sélectionnée (Ctrl+C)": {
+    "en": "Copy the selection of the selected track (Ctrl+C)",
+    "fr": "Copier la sélection de la piste sélectionnée (Ctrl+C)"
+  },
+  "Cut the selection of the selected track (Ctrl+X)": {
+    "en": "Cut the selection of the selected track (Ctrl+X)",
+    "fr": "Couper la sélection de la piste sélectionnée (Ctrl+X)"
+  },
+  "Couper la sélection de la piste sélectionnée (Ctrl+X)": {
+    "en": "Cut the selection of the selected track (Ctrl+X)",
+    "fr": "Couper la sélection de la piste sélectionnée (Ctrl+X)"
+  },
+  "Delete the selected region (Del; Shift: on every track). To delete a whole clip: right-click it.": {
+    "en": "Delete the selected region (Del; Shift: on every track). To delete a whole clip: right-click it.",
+    "fr": "Supprimer la zone sélectionnée (Suppr ; Maj : sur toutes les pistes). Pour supprimer un clip entier : clic droit dessus."
+  },
+  "Supprimer la zone sélectionnée (Suppr ; Maj : sur toutes les pistes). Pour supprimer un clip entier : clic droit dessus.": {
+    "en": "Delete the selected region (Del; Shift: on every track). To delete a whole clip: right-click it.",
+    "fr": "Supprimer la zone sélectionnée (Suppr ; Maj : sur toutes les pistes). Pour supprimer un clip entier : clic droit dessus."
+  },
+  "Dry / wet balance of this insert (double-click to type it)": {
+    "en": "Dry / wet balance of this insert (double-click to type it)",
+    "fr": "Dosage sec / traité de cet insert (double-clic pour le saisir)"
+  },
+  "Dosage sec / traité de cet insert (double-clic pour le saisir)": {
+    "en": "Dry / wet balance of this insert (double-click to type it)",
+    "fr": "Dosage sec / traité de cet insert (double-clic pour le saisir)"
+  },
+  "Each chosen file goes through this chain; the results are listed in the Generate tab": {
+    "en": "Each chosen file goes through this chain; the results are listed in the Generate tab",
+    "fr": "Chaque fichier choisi passe par cette chaîne ; les résultats sont listés dans l'onglet Générer"
+  },
+  "Chaque fichier choisi passe par cette chaîne ; les résultats sont listés dans l'onglet Générer": {
+    "en": "Each chosen file goes through this chain; the results are listed in the Generate tab",
+    "fr": "Chaque fichier choisi passe par cette chaîne ; les résultats sont listés dans l'onglet Générer"
+  },
+  "Engines and model weights: state, size, source, licence; download, resume, verify, repair or remove them.": {
+    "en": "Engines and model weights: state, size, source, licence; download, resume, verify, repair or remove them.",
+    "fr": "Moteurs et poids des modèles : état, taille, source, licence ; téléchargement, reprise, vérification, réparation ou suppression."
+  },
+  "Moteurs et poids des modèles : état, taille, source, licence ; téléchargement, reprise, vérification, réparation ou suppression.": {
+    "en": "Engines and model weights: state, size, source, licence; download, resume, verify, repair or remove them.",
+    "fr": "Moteurs et poids des modèles : état, taille, source, licence ; téléchargement, reprise, vérification, réparation ou suppression."
+  },
+  "Expression": {
+    "en": "Expression",
+    "fr": "Expression"
+  },
+  "Extend until silence": {
+    "en": "Extend until silence",
+    "fr": "Prolonger jusqu'au silence"
+  },
+  "Prolonger jusqu'au silence": {
+    "en": "Extend until silence",
+    "fr": "Prolonger jusqu'au silence"
+  },
+  "FX": {
+    "en": "FX",
+    "fr": "FX"
+  },
+  "Generated files appear here: listen to them, add them to the editor or use them as a voice reference.": {
+    "en": "Generated files appear here: listen to them, add them to the editor or use them as a voice reference.",
+    "fr": "Les fichiers générés apparaissent ici : écoutez-les, ajoutez-les à l'éditeur ou utilisez-les comme voix de référence."
+  },
+  "Les fichiers générés apparaissent ici : écoutez-les, ajoutez-les à l'éditeur ou utilisez-les comme voix de référence.": {
+    "en": "Generated files appear here: listen to them, add them to the editor or use them as a voice reference.",
+    "fr": "Les fichiers générés apparaissent ici : écoutez-les, ajoutez-les à l'éditeur ou utilisez-les comme voix de référence."
+  },
+  "Import audio files as new tracks at the cursor (Ctrl+O)": {
+    "en": "Import audio files as new tracks at the cursor (Ctrl+O)",
+    "fr": "Importer des fichiers audio comme nouvelles pistes au curseur (Ctrl+O)"
+  },
+  "Importer des fichiers audio comme nouvelles pistes au curseur (Ctrl+O)": {
+    "en": "Import audio files as new tracks at the cursor (Ctrl+O)",
+    "fr": "Importer des fichiers audio comme nouvelles pistes au curseur (Ctrl+O)"
+  },
+  "Import": {
+    "en": "Import",
+    "fr": "Importer"
+  },
+  "Importer": {
+    "en": "Import",
+    "fr": "Importer"
+  },
+  "Inline annotations": {
+    "en": "Inline annotations",
+    "fr": "Annotations dans le texte"
+  },
+  "Annotations dans le texte": {
+    "en": "Inline annotations",
+    "fr": "Annotations dans le texte"
+  },
+  "Insert the copied audio at the cursor or the selection start (Ctrl+V)": {
+    "en": "Insert the copied audio at the cursor or the selection start (Ctrl+V)",
+    "fr": "Insérer l'audio copié au curseur ou au début de la sélection (Ctrl+V)"
+  },
+  "Insérer l'audio copié au curseur ou au début de la sélection (Ctrl+V)": {
+    "en": "Insert the copied audio at the cursor or the selection start (Ctrl+V)",
+    "fr": "Insérer l'audio copié au curseur ou au début de la sélection (Ctrl+V)"
+  },
+  "Installed version": {
+    "en": "Installed version",
+    "fr": "Version installée"
+  },
+  "Version installée": {
+    "en": "Installed version",
+    "fr": "Version installée"
+  },
+  "Language spoken in the reference (auto: detected by Whisper)": {
+    "en": "Language spoken in the reference (auto: detected by Whisper)",
+    "fr": "Langue parlée dans la référence (auto : détectée par Whisper)"
+  },
+  "Langue parlée dans la référence (auto : détectée par Whisper)": {
+    "en": "Language spoken in the reference (auto: detected by Whisper)",
+    "fr": "Langue parlée dans la référence (auto : détectée par Whisper)"
+  },
+  "Latency": {
+    "en": "Latency",
+    "fr": "Latence"
+  },
+  "Latence": {
+    "en": "Latency",
+    "fr": "Latence"
+  },
+  "Latest release": {
+    "en": "Latest release",
+    "fr": "Dernière version publiée"
+  },
+  "Dernière version publiée": {
+    "en": "Latest release",
+    "fr": "Dernière version publiée"
+  },
+  "Length of the silence to insert (double-click to type it)": {
+    "en": "Length of the silence to insert (double-click to type it)",
+    "fr": "Durée du silence à insérer (double-clic pour la saisir)"
+  },
+  "Durée du silence à insérer (double-clic pour la saisir)": {
+    "en": "Length of the silence to insert (double-click to type it)",
+    "fr": "Durée du silence à insérer (double-clic pour la saisir)"
+  },
+  "Licence": {
+    "en": "Licence",
+    "fr": "Licence"
+  },
+  "Loop the selection while playing": {
+    "en": "Loop the selection while playing",
+    "fr": "Lire la sélection en boucle"
+  },
+  "Lire la sélection en boucle": {
+    "en": "Loop the selection while playing",
+    "fr": "Lire la sélection en boucle"
+  },
+  "Manufacturer": {
+    "en": "Manufacturer",
+    "fr": "Fabricant"
+  },
+  "Fabricant": {
+    "en": "Manufacturer",
+    "fr": "Fabricant"
+  },
+  "Mono": {
+    "en": "Mono",
+    "fr": "Mono"
+  },
+  "Move down": {
+    "en": "Move down",
+    "fr": "Descendre"
+  },
+  "Descendre": {
+    "en": "Move down",
+    "fr": "Descendre"
+  },
+  "Move down in the chain": {
+    "en": "Move down in the chain",
+    "fr": "Descendre dans la chaîne"
+  },
+  "Descendre dans la chaîne": {
+    "en": "Move down in the chain",
+    "fr": "Descendre dans la chaîne"
+  },
+  "Move the track down": {
+    "en": "Move the track down",
+    "fr": "Descendre la piste"
+  },
+  "Descendre la piste": {
+    "en": "Move the track down",
+    "fr": "Descendre la piste"
+  },
+  "Move the track up": {
+    "en": "Move the track up",
+    "fr": "Monter la piste"
+  },
+  "Monter la piste": {
+    "en": "Move the track up",
+    "fr": "Monter la piste"
+  },
+  "Move up": {
+    "en": "Move up",
+    "fr": "Monter"
+  },
+  "Monter": {
+    "en": "Move up",
+    "fr": "Monter"
+  },
+  "Move up in the chain": {
+    "en": "Move up in the chain",
+    "fr": "Monter dans la chaîne"
+  },
+  "Monter dans la chaîne": {
+    "en": "Move up in the chain",
+    "fr": "Monter dans la chaîne"
+  },
+  "New empty workflow": {
+    "en": "New empty workflow",
+    "fr": "Nouveau workflow vide"
+  },
+  "Nouveau workflow vide": {
+    "en": "New empty workflow",
+    "fr": "Nouveau workflow vide"
+  },
+  "No effect in this chain": {
+    "en": "No effect in this chain",
+    "fr": "Aucun effet dans cette chaîne"
+  },
+  "Aucun effet dans cette chaîne": {
+    "en": "No effect in this chain",
+    "fr": "Aucun effet dans cette chaîne"
+  },
+  "No node yet": {
+    "en": "No node yet",
+    "fr": "Aucun nœud pour l'instant"
+  },
+  "Aucun nœud pour l'instant": {
+    "en": "No node yet",
+    "fr": "Aucun nœud pour l'instant"
+  },
+  "No plugin": {
+    "en": "No plugin",
+    "fr": "Aucun plugin"
+  },
+  "Aucun plugin": {
+    "en": "No plugin",
+    "fr": "Aucun plugin"
+  },
+  "No plugin selected": {
+    "en": "No plugin selected",
+    "fr": "Aucun plugin sélectionné"
+  },
+  "Aucun plugin sélectionné": {
+    "en": "No plugin selected",
+    "fr": "Aucun plugin sélectionné"
+  },
+  "No track yet": {
+    "en": "No track yet",
+    "fr": "Pas encore de piste"
+  },
+  "Pas encore de piste": {
+    "en": "No track yet",
+    "fr": "Pas encore de piste"
+  },
+  "Open a file or generate a sound, then add effects to its track here.": {
+    "en": "Open a file or generate a sound, then add effects to its track here.",
+    "fr": "Ouvrez un fichier ou générez un son, puis ajoutez ici les effets de sa piste."
+  },
+  "Ouvrez un fichier ou générez un son, puis ajoutez ici les effets de sa piste.": {
+    "en": "Open a file or generate a sound, then add effects to its track here.",
+    "fr": "Ouvrez un fichier ou générez un son, puis ajoutez ici les effets de sa piste."
+  },
+  "Opens this chain in the Workflows tab": {
+    "en": "Opens this chain in the Workflows tab",
+    "fr": "Ouvre cette chaîne dans l'onglet Workflows"
+  },
+  "Ouvre cette chaîne dans l'onglet Workflows": {
+    "en": "Opens this chain in the Workflows tab",
+    "fr": "Ouvre cette chaîne dans l'onglet Workflows"
+  },
+  "Plan with the language model": {
+    "en": "Plan with the language model",
+    "fr": "Planifier avec le modèle de langage"
+  },
+  "Planifier avec le modèle de langage": {
+    "en": "Plan with the language model",
+    "fr": "Planifier avec le modèle de langage"
+  },
+  "Position (cursor or playhead) / length of the session": {
+    "en": "Position (cursor or playhead) / length of the session",
+    "fr": "Position (curseur ou tête de lecture) / durée de la session"
+  },
+  "Position (curseur ou tête de lecture) / durée de la session": {
+    "en": "Position (cursor or playhead) / length of the session",
+    "fr": "Position (curseur ou tête de lecture) / durée de la session"
+  },
+  "Procedural: instant, no model, follows the words of the description. AudioLDM: an AI model (GPU).": {
+    "en": "Procedural: instant, no model, follows the words of the description. AudioLDM: an AI model (GPU).",
+    "fr": "Procédural : instantané, sans modèle, suit les mots de la description. AudioLDM : un modèle d'IA (GPU)."
+  },
+  "Procédural : instantané, sans modèle, suit les mots de la description. AudioLDM : un modèle d'IA (GPU).": {
+    "en": "Procedural: instant, no model, follows the words of the description. AudioLDM: an AI model (GPU).",
+    "fr": "Procédural : instantané, sans modèle, suit les mots de la description. AudioLDM : un modèle d'IA (GPU)."
+  },
+  "Refresh the list of presets": {
+    "en": "Refresh the list of presets",
+    "fr": "Actualiser la liste des presets"
+  },
+  "Actualiser la liste des presets": {
+    "en": "Refresh the list of presets",
+    "fr": "Actualiser la liste des presets"
+  },
+  "Refresh the saved workflows and the plugin catalogue": {
+    "en": "Refresh the saved workflows and the plugin catalogue",
+    "fr": "Actualiser les workflows enregistrés et le catalogue de plugins"
+  },
+  "Actualiser les workflows enregistrés et le catalogue de plugins": {
+    "en": "Refresh the saved workflows and the plugin catalogue",
+    "fr": "Actualiser les workflows enregistrés et le catalogue de plugins"
+  },
+  "Remove this folder": {
+    "en": "Remove this folder",
+    "fr": "Retirer ce dossier"
+  },
+  "Retirer ce dossier": {
+    "en": "Remove this folder",
+    "fr": "Retirer ce dossier"
+  },
+  "Remove this insert (Ctrl+Z to undo)": {
+    "en": "Remove this insert (Ctrl+Z to undo)",
+    "fr": "Retirer cet insert (Ctrl+Z pour annuler)"
+  },
+  "Retirer cet insert (Ctrl+Z pour annuler)": {
+    "en": "Remove this insert (Ctrl+Z to undo)",
+    "fr": "Retirer cet insert (Ctrl+Z pour annuler)"
+  },
+  "Renders the chain over the selection of the selected track (or its clips), with the tail": {
+    "en": "Renders the chain over the selection of the selected track (or its clips), with the tail",
+    "fr": "Applique la chaîne à la sélection de la piste sélectionnée (ou à ses clips), avec la queue"
+  },
+  "Applique la chaîne à la sélection de la piste sélectionnée (ou à ses clips), avec la queue": {
+    "en": "Renders the chain over the selection of the selected track (or its clips), with the tail",
+    "fr": "Applique la chaîne à la sélection de la piste sélectionnée (ou à ses clips), avec la queue"
+  },
+  "Reverb and delay tails are never cut: rendering goes on after the input until it is silent.": {
+    "en": "Reverb and delay tails are never cut: rendering goes on after the input until it is silent.",
+    "fr": "Les queues de réverb et de délai ne sont jamais coupées : le rendu continue après l'entrée jusqu'au silence."
+  },
+  "Les queues de réverb et de délai ne sont jamais coupées : le rendu continue après l'entrée jusqu'au silence.": {
+    "en": "Reverb and delay tails are never cut: rendering goes on after the input until it is silent.",
+    "fr": "Les queues de réverb et de délai ne sont jamais coupées : le rendu continue après l'entrée jusqu'au silence."
+  },
+  "Save the session: tracks, clips, effects, automation (Ctrl+S)": {
+    "en": "Save the session: tracks, clips, effects, automation (Ctrl+S)",
+    "fr": "Enregistrer la session : pistes, clips, effets, automation (Ctrl+S)"
+  },
+  "Enregistrer la session : pistes, clips, effets, automation (Ctrl+S)": {
+    "en": "Save the session: tracks, clips, effects, automation (Ctrl+S)",
+    "fr": "Enregistrer la session : pistes, clips, effets, automation (Ctrl+S)"
+  },
+  "Save this workflow in data/workflows": {
+    "en": "Save this workflow in data/workflows",
+    "fr": "Enregistrer ce workflow dans data/workflows"
+  },
+  "Enregistrer ce workflow dans data/workflows": {
+    "en": "Save this workflow in data/workflows",
+    "fr": "Enregistrer ce workflow dans data/workflows"
+  },
+  "Saved workflows (number of nodes)": {
+    "en": "Saved workflows (number of nodes)",
+    "fr": "Workflows enregistrés (nombre de nœuds)"
+  },
+  "Workflows enregistrés (nombre de nœuds)": {
+    "en": "Saved workflows (number of nodes)",
+    "fr": "Workflows enregistrés (nombre de nœuds)"
+  },
+  "Scan the folders to list the VST3 plugins.": {
+    "en": "Scan the folders to list the VST3 plugins.",
+    "fr": "Analysez les dossiers pour lister les plugins VST3."
+  },
+  "Analysez les dossiers pour lister les plugins VST3.": {
+    "en": "Scan the folders to list the VST3 plugins.",
+    "fr": "Analysez les dossiers pour lister les plugins VST3."
+  },
+  "Scans the folders for new or changed plugins": {
+    "en": "Scans the folders for new or changed plugins",
+    "fr": "Recherche les plugins nouveaux ou modifiés dans les dossiers"
+  },
+  "Recherche les plugins nouveaux ou modifiés dans les dossiers": {
+    "en": "Scans the folders for new or changed plugins",
+    "fr": "Recherche les plugins nouveaux ou modifiés dans les dossiers"
+  },
+  "Show the effects (inserts) of the selected track or of the master under the timeline (F)": {
+    "en": "Show the effects (inserts) of the selected track or of the master under the timeline (F)",
+    "fr": "Afficher sous la timeline les effets (inserts) de la piste sélectionnée ou du master (F)"
+  },
+  "Afficher sous la timeline les effets (inserts) de la piste sélectionnée ou du master (F)": {
+    "en": "Show the effects (inserts) of the selected track or of the master under the timeline (F)",
+    "fr": "Afficher sous la timeline les effets (inserts) de la piste sélectionnée ou du master (F)"
+  },
+  "Shows which sound layers the description gives, without rendering": {
+    "en": "Shows which sound layers the description gives, without rendering",
+    "fr": "Montre les couches sonores que donne la description, sans calcul"
+  },
+  "Montre les couches sonores que donne la description, sans calcul": {
+    "en": "Shows which sound layers the description gives, without rendering",
+    "fr": "Montre les couches sonores que donne la description, sans calcul"
+  },
+  "Sound effects, music and voices; results can go straight to the editor.": {
+    "en": "Sound effects, music and voices; results can go straight to the editor.",
+    "fr": "Effets sonores, musique et voix ; les résultats peuvent aller directement dans l'éditeur."
+  },
+  "Effets sonores, musique et voix ; les résultats peuvent aller directement dans l'éditeur.": {
+    "en": "Sound effects, music and voices; results can go straight to the editor.",
+    "fr": "Effets sonores, musique et voix ; les résultats peuvent aller directement dans l'éditeur."
+  },
+  "The same seed and description give the same sound.": {
+    "en": "The same seed and description give the same sound.",
+    "fr": "La même graine et la même description donnent le même son."
+  },
+  "La même graine et la même description donnent le même son.": {
+    "en": "The same seed and description give the same sound.",
+    "fr": "La même graine et la même description donnent le même son."
+  },
+  "Uses the selected region of the selected track in the editor": {
+    "en": "Uses the selected region of the selected track in the editor",
+    "fr": "Utilise la zone sélectionnée de la piste sélectionnée dans l'éditeur"
+  },
+  "Utilise la zone sélectionnée de la piste sélectionnée dans l'éditeur": {
+    "en": "Uses the selected region of the selected track in the editor",
+    "fr": "Utilise la zone sélectionnée de la piste sélectionnée dans l'éditeur"
+  },
+  "Version": {
+    "en": "Version",
+    "fr": "Version"
+  },
+  "Write automation: while playing, knob and slider moves are recorded into automation lanes": {
+    "en": "Write automation: while playing, knob and slider moves are recorded into automation lanes",
+    "fr": "Écriture d'automation : pendant la lecture, les mouvements des boutons et curseurs sont enregistrés dans les courbes d'automation"
+  },
+  "Écriture d'automation : pendant la lecture, les mouvements des boutons et curseurs sont enregistrés dans les courbes d'automation": {
+    "en": "Write automation: while playing, knob and slider moves are recorded into automation lanes",
+    "fr": "Écriture d'automation : pendant la lecture, les mouvements des boutons et curseurs sont enregistrés dans les courbes d'automation"
+  },
+  "Write": {
+    "en": "Write",
+    "fr": "Écrire"
+  },
+  "Écrire": {
+    "en": "Write",
+    "fr": "Écrire"
+  },
+  "[tone: ...] [pause: 500ms] in the text (1.7B CustomVoice).": {
+    "en": "[tone: ...] [pause: 500ms] in the text (1.7B CustomVoice).",
+    "fr": "[tone: ...] [pause: 500ms] dans le texte (1.7B CustomVoice)."
+  },
+  "[tone: ...] [pause: 500ms] dans le texte (1.7B CustomVoice).": {
+    "en": "[tone: ...] [pause: 500ms] in the text (1.7B CustomVoice).",
+    "fr": "[tone: ...] [pause: 500ms] dans le texte (1.7B CustomVoice)."
+  },
+  "whisper, excited, ...": {
+    "en": "whisper, excited, ...",
+    "fr": "chuchoté, excité, ..."
+  },
+  "chuchoté, excité, ...": {
+    "en": "whisper, excited, ...",
+    "fr": "chuchoté, excité, ..."
+  },
+  "Density": {
+    "en": "Density",
+    "fr": "Densité"
+  },
+  "Densité": {
+    "en": "Density",
+    "fr": "Densité"
+  },
+  "Compact": {
+    "en": "Compact",
+    "fr": "Compacte"
+  },
+  "Compacte": {
+    "en": "Compact",
+    "fr": "Compacte"
+  },
+  "Comfortable": {
+    "en": "Comfortable",
+    "fr": "Confortable"
+  },
+  "Confortable": {
+    "en": "Comfortable",
+    "fr": "Confortable"
+  },
+  "Colours of the whole interface: the five themes of the CyUI library (CyDAW, Shaderixel, CyEngineHub).": {
+    "en": "Colours of the whole interface: the five themes of the CyUI library (CyDAW, Shaderixel, CyEngineHub).",
+    "fr": "Couleurs de toute l'interface : les cinq thèmes de la bibliothèque CyUI (CyDAW, Shaderixel, CyEngineHub)."
+  },
+  "Couleurs de toute l'interface : les cinq thèmes de la bibliothèque CyUI (CyDAW, Shaderixel, CyEngineHub).": {
+    "en": "Colours of the whole interface: the five themes of the CyUI library (CyDAW, Shaderixel, CyEngineHub).",
+    "fr": "Couleurs de toute l'interface : les cinq thèmes de la bibliothèque CyUI (CyDAW, Shaderixel, CyEngineHub)."
+  },
+  "Compact for dense work (14 px text, tight spacing), comfortable for more air (16 px text).": {
+    "en": "Compact for dense work (14 px text, tight spacing), comfortable for more air (16 px text).",
+    "fr": "Compacte pour un travail dense (texte de 14 px, espacements serrés), confortable pour plus d'air (texte de 16 px)."
+  },
+  "Compacte pour un travail dense (texte de 14 px, espacements serrés), confortable pour plus d'air (texte de 16 px).": {
+    "en": "Compact for dense work (14 px text, tight spacing), comfortable for more air (16 px text).",
+    "fr": "Compacte pour un travail dense (texte de 14 px, espacements serrés), confortable pour plus d'air (texte de 16 px)."
+  },
+  "Mid grey (CyDAW)": {
+    "en": "Mid grey (CyDAW)",
+    "fr": "Gris moyen (CyDAW)"
+  },
+  "Gris moyen (CyDAW)": {
+    "en": "Mid grey (CyDAW)",
+    "fr": "Gris moyen (CyDAW)"
+  },
+  "Light grey (CyDAW)": {
+    "en": "Light grey (CyDAW)",
+    "fr": "Gris clair (CyDAW)"
+  },
+  "Gris clair (CyDAW)": {
+    "en": "Light grey (CyDAW)",
+    "fr": "Gris clair (CyDAW)"
+  },
+  "Amber night (CyDAW)": {
+    "en": "Amber night (CyDAW)",
+    "fr": "Nuit ambrée (CyDAW)"
+  },
+  "Nuit ambrée (CyDAW)": {
+    "en": "Amber night (CyDAW)",
+    "fr": "Nuit ambrée (CyDAW)"
+  },
+  "Violet (Shaderixel)": {
+    "en": "Violet (Shaderixel)",
+    "fr": "Violet (Shaderixel)"
+  },
+  "Navy (CyEngineHub)": {
+    "en": "Navy (CyEngineHub)",
+    "fr": "Bleu marine (CyEngineHub)"
+  },
+  "Bleu marine (CyEngineHub)": {
+    "en": "Navy (CyEngineHub)",
+    "fr": "Bleu marine (CyEngineHub)"
+  },
+  "frames": {
+    "en": "frames",
+    "fr": "échantillons"
+  },
+  "échantillons": {
+    "en": "frames",
+    "fr": "échantillons"
+  },
+  "Préférences de l'interface": {
+    "en": "Interface preferences",
+    "fr": "Préférences de l’interface"
   }
 }

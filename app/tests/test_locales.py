@@ -27,7 +27,12 @@ LABEL_CALLS = {'button', 'small_button', 'checkbox', 'radio_button', 'input_text
                'text', 'text_wrapped', 'text_disabled', 'text_unformatted', 'bullet_text', 'separator_text', 'set_tooltip'}
 PROGRESS_OVERLAY_INDEX = 2   # progress_bar(fraction, size, overlay)
 # EditorPanel helpers: name -> (index of the label argument, index of the tooltip argument)
-TOOLBAR_CALLS = {'_button': (0, 1), '_check': (0, 2), '_combo': (None, 4)}
+TOOLBAR_CALLS = {'_icon': (None, 2), '_toggle': (0, 2), '_text_button': (0, 1), '_combo': (None, 4), '_prop': (0, 1),
+                 'heading': (0, None), 'section_title': (0, None), 'panel_header': (0, 1), 'text_dim': (0, None), 'text_faint': (0, None),
+                 'text_wrapped_dim': (0, None), 'text_wrapped_faint': (0, None), 'tooltip': (0, None), 'empty_state': (0, 1),
+                 'callout': (1, None), 'status_text': (0, None), 'property': (0, 1), 'toggle_switch': (0, None), 'toggle_button': (0, None),
+                 'icon_button': (None, 1), 'icon_text_button': (1, None), 'primary_button': (0, None), 'ghost_button': (0, None),
+                 'danger_button': (0, None), 'segmented': (None, None), 'badge': (0, None), 'link_text': (0, None)}
 
 # Protocol state codes shown through tr() in gui/models_panel.py (STATE_COLOUR keys).
 MODEL_STATES = ('Installed', 'Downloading', 'Verifying', 'Partial', 'Interrupted', 'Failed',

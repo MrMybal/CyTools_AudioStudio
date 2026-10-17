@@ -30,6 +30,7 @@ from gui.jobs import Jobs  # noqa: E402
 from gui.player import Player  # noqa: E402
 from gui.timeline import Timeline  # noqa: E402
 from gui.widgets import Dialogs  # noqa: E402
+from gui import cyui  # noqa: E402
 from gui.editor_panel import EditorPanel  # noqa: E402
 from gui.inserts_panel import InsertsPanel  # noqa: E402
 from gui.workflow_panel import WorkflowPanel  # noqa: E402
@@ -61,6 +62,8 @@ class App:
         self.automation_write = False
         self.pending_drops = []
         self.id_conflicts = {}          # frame -> number of widgets ImGui reported with a conflicting ID
+        self.status_message = ('', cyui.NEUTRAL)   # last message of any panel, shown in the status bar
+        self._seen_messages = {}
         self.drop_ready = False
         self.drop_error = ''
         self.editor = EditorPanel(self)
@@ -324,6 +327,9 @@ class App:
         event = self.dialogs.poll() if self.dialogs.purpose == 'batch' else None
         if event:
             self.batch_process(event[1] if isinstance(event[1], list) else [event[1]])
+        # everything above the status bar; the status bar is the last strip of the window
+        status_height = cyui.status_bar_height()
+        native.begin_child('##app-body', (0, -(status_height + native.get_style().item_spacing.y)))
         if imgui.begin_tab_bar('###audiostudio-tabs'):
             for name in TABS:
                 flags = native.TabItemFlags_.set_selected if self.requested_tab == name else 0
@@ -333,28 +339,71 @@ class App:
                     imgui.end_tab_item()
             self.requested_tab = None
             imgui.end_tab_bar()
+        native.end_child()
         if self.frames % 120 == 0:
             self.player.renderer.prune()
+        self._collect_messages()
         self._status_bar()
         self._shortcuts()
+        cyui.render_notifications()
+
+    def _collect_messages(self):
+        """Every panel keeps writing its ``message``; a new one becomes the status bar text and a toast."""
+        sources = [('editor', self.editor, cyui.NEUTRAL), ('inserts', self.inserts, cyui.NEUTRAL), ('workflows', self.workflows, cyui.NEUTRAL),
+                   ('generate', self.generate, cyui.NEUTRAL), ('plugins', self.plugins, cyui.NEUTRAL), ('models', self.models, cyui.NEUTRAL),
+                   ('updates', self.updates, cyui.NEUTRAL), ('jobs', self.jobs, cyui.SUCCESS)]
+        for key, panel, tone in sources:
+            text = getattr(panel, 'message', '') or ''
+            if text and text != self._seen_messages.get(key):
+                self.status_message = (text, tone)
+                cyui.notify(text, tone if tone != cyui.NEUTRAL else cyui.INFO, 4.0)
+            self._seen_messages[key] = text
+        for key, text in (('jobs-error', self.jobs.error), ('player-error', self.player.error), ('mic-error', getattr(self.generate.mic, 'error', ''))):
+            text = text or ''
+            if text and text != self._seen_messages.get(key):
+                self.status_message = (text, cyui.ERROR)
+                cyui.notify(text, cyui.ERROR, 7.0)
+            self._seen_messages[key] = text
 
     def _status_bar(self):
-        running = self.jobs.running()
-        if running:
-            job = running[0]
-            progress = job.get('progress') or {}
-            imgui.progress_bar(float(progress.get('percent', 0)) / 100.0, (260, 0), self.jobs.progress_text(job)[:70])
-            imgui.same_line()
-            if len(running) > 1:
-                imgui.text_disabled(f'+{len(running) - 1}')
+        """Bottom strip: the last message, running jobs (progress, cancel), audio engine state."""
+        with cyui.status_bar('##audiostudio-status'):
+            p = cyui.palette()
+            text, tone = self.status_message
+            export_text, export_tone, export_progress = self.editor.status()
+            running = self.jobs.running()
+            if export_progress is not None:
+                cyui.progress_bar(export_progress, (cyui.dp(160.0), imgui.get_text_line_height()), None, cyui.ACCENT)
                 imgui.same_line()
-            if imgui.small_button(tr('Cancel') + '##status'):
-                self.jobs.cancel(job['jobId'])
+                cyui.status_text(export_text, export_tone)
+                imgui.same_line()
+            if running:
+                job = running[0]
+                progress = job.get('progress') or {}
+                percent = float(progress.get('percent', 0)) / 100.0
+                cyui.progress_bar(percent if percent > 0 else -1.0, (cyui.dp(160.0), imgui.get_text_line_height()), None, cyui.ACCENT)
+                imgui.same_line()
+                cyui.status_text(self.jobs.progress_text(job)[:90] + (f'  (+{len(running) - 1})' if len(running) > 1 else ''), cyui.ACCENT)
+                imgui.same_line()
+                if cyui.icon_button(cyui.icon.close, tr('Cancel this job'), id='Cancel job', fallback='x', size=(imgui.get_text_line_height() + 4, imgui.get_text_line_height())):
+                    self.jobs.cancel(job['jobId'])
+                imgui.same_line()
+            if text:
+                cyui.status_dot(cyui.tone_colour(tone) if tone != cyui.NEUTRAL else p.textFaint)
+                imgui.same_line(0, 4)
+                cyui.status_text(text[:220], tone)
+            else:
+                cyui.status_text(tr('Ready'))
+            # right side: audio engine
+            player = self.player
+            right = f'{self.document.samplerate / 1000:g} kHz  ·  {player.buffer_size} ' + tr('frames')
+            if player.playing:
+                right = '%s %d%%  ·  ' % (tr('DSP'), int(min(999, player.load * 100))) + right
+            with cyui.scoped_font(None, 0.86):
+                width = imgui.calc_text_size(right).x
             imgui.same_line()
-        if self.jobs.error:
-            imgui.text_colored((1.0, 0.45, 0.4, 1.0), self.jobs.error[:200])
-        elif self.jobs.message:
-            imgui.text_disabled(self.jobs.message[:200])
+            cyui.align_right(width + cyui.dp(4.0))
+            cyui.status_text(right, cyui.WARNING if (player.playing and player.load > 0.7) else cyui.NEUTRAL)
 
     def _shortcuts(self):
         io = native.get_io()
@@ -373,6 +422,10 @@ class App:
             document.copy()
         if io.key_ctrl and native.is_key_pressed(native.Key.v):
             document.paste()
+        if io.key_ctrl and native.is_key_pressed(native.Key.s):
+            self.editor.save_session()
+        if io.key_ctrl and native.is_key_pressed(native.Key.o):
+            self.dialogs.open_file('import', tr('Open audio files'), str(DATA / 'inputs'), multiple=True)
         if native.is_key_pressed(native.Key.delete):
             document.delete(all_tracks=io.key_shift)
         if native.is_key_pressed(native.Key.home):

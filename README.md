@@ -14,9 +14,12 @@ guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md](app/README
   per track that you can move (also onto another track, which then plays them through its own
   effects), trim (non-destructively), fade from their corners, reverse from their right-click menu, selection editing (cut, copy,
   paste, delete, trim, silence, split into two clips), undo / redo, recording from the microphone,
-  playback through the default output, sessions saved as folders. The bar above the timeline is
-  split into titled groups (Session, Transport, Output, View, Options, Export), each control with a
-  tooltip.
+  playback through the default output, sessions saved as folders.
+- **Interface** drawn with CyUI, the interface library of the Cy* applications (CyDAW 2, Shaderixel,
+  CyEngineHub), ported to Python in `app/gui/cyui`: five themes (mid grey, light grey, amber night,
+  violet, navy) and two densities chosen in Options, Segoe UI fonts with icon buttons, tooltips that
+  name each action and its shortcut, property tables in the forms, a status bar (last message,
+  running jobs with their progress and a cancel button, audio engine state) and notifications.
 - **Insert chains per track and on the master bus** with 106 native effects (92 of them real-time)
   and VST3 plugins, each with its own interface: input / output meters, a live scope and a live
   spectrometer of the audio entering and leaving the effect, transfer

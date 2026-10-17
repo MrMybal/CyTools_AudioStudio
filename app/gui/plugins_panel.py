@@ -6,7 +6,7 @@ from imgui_bundle import imgui
 
 from audiostudio.paths import SETTINGS, PLUGIN_CACHE, default_vst3_directories
 from audiostudio.vst import host as vst_host
-from .widgets import status_line
+from . import cyui
 
 
 class PluginsPanel:
@@ -53,80 +53,103 @@ class PluginsPanel:
 
     def draw(self):
         tr = self.tr
-        imgui.text_wrapped(tr('VST3 plugins are loaded in a separate worker process: a crashing plugin never closes the application. VST2 is not supported (no licence).'))
-        imgui.separator_text(tr('Folders'))
-        for folder in default_vst3_directories():
-            imgui.bullet_text(str(folder) + '  ' + tr('(standard)'))
-        remove = None
-        for index, folder in enumerate(self.settings.get('directories', [])):
-            imgui.push_id(index)
-            imgui.bullet_text(folder)
-            imgui.same_line()
-            if imgui.small_button(tr('Remove')):
-                remove = index
-            imgui.pop_id()
-        if remove is not None:
-            del self.settings['directories'][remove]
-            self._save_settings()
-        imgui.push_item_width(420)
-        _, self.new_directory = imgui.input_text(tr('Add folder'), self.new_directory)
-        imgui.pop_item_width()
-        imgui.same_line()
-        if imgui.button(tr('Browse') + '##plugdir'):
-            self.app.dialogs.select_folder('plugin-dir', tr('VST3 folder'))
-        imgui.same_line()
-        if imgui.button(tr('Add')) and self.new_directory.strip():
-            self.settings.setdefault('directories', []).append(self.new_directory.strip())
-            self.new_directory = ''
-            self._save_settings()
+        icon = cyui.icon
+        p = cyui.palette()
+        cyui.panel_header(tr('Plugins'), tr('VST3 plugins are loaded in a separate worker process: a crashing plugin never closes the application. VST2 is not supported (no licence).'))
+        cyui.space(4.0)
+        if cyui.begin_section(tr('Folders') + '###folders'):
+            for folder in default_vst3_directories():
+                cyui.text_dim(str(folder))
+                imgui.same_line()
+                cyui.badge(tr('standard'))
+            remove = None
+            for index, folder in enumerate(self.settings.get('directories', [])):
+                imgui.push_id(index)
+                imgui.align_text_to_frame_padding()
+                imgui.text(folder)
+                imgui.same_line()
+                if cyui.icon_button(icon.close, tr('Remove this folder'), id='Remove', fallback='x', active_colour=p.error):
+                    remove = index
+                imgui.pop_id()
+            if remove is not None:
+                del self.settings['directories'][remove]
+                self._save_settings()
+            imgui.push_item_width(cyui.dp(420.0))
+            _, self.new_directory = imgui.input_text_with_hint('##add-folder', tr('Add folder'), self.new_directory)
+            imgui.pop_item_width()
+            imgui.same_line(0, 3)
+            if cyui.icon_button(icon.folder, tr('Browse for a VST3 folder'), id='plugdir', fallback='...'):
+                self.app.dialogs.select_folder('plugin-dir', tr('VST3 folder'))
+            imgui.same_line(0, 3)
+            with cyui.scoped_disabled(not self.new_directory.strip()):
+                if cyui.button(tr('Add') + '###Add folder') and self.new_directory.strip():
+                    self.settings.setdefault('directories', []).append(self.new_directory.strip())
+                    self.new_directory = ''
+                    self._save_settings()
+            cyui.end_section()
         event = self.app.dialogs.poll() if self.app.dialogs.purpose == 'plugin-dir' else None
         if event:
             self.new_directory = event[1] if isinstance(event[1], str) else event[1][0]
         scanning = self.app.jobs.is_running('scan_plugins')
-        imgui.begin_disabled(scanning)
-        if imgui.button(tr('Scan plugins')):
-            self.scan(False)
-        imgui.same_line()
-        if imgui.button(tr('Rescan all')):
-            self.scan(True)
-        imgui.end_disabled()
+        with cyui.scoped_disabled(scanning):
+            if cyui.primary_button(cyui.icon_label(icon.search, tr('Scan plugins')) + '###Scan plugins'):
+                self.scan(False)
+            cyui.tooltip(tr('Scans the folders for new or changed plugins'))
+            imgui.same_line(0, 4)
+            if cyui.button(tr('Rescan all') + '###Rescan all'):
+                self.scan(True)
         if scanning:
             imgui.same_line()
             job = self.app.jobs.running('scan_plugins')[0]
-            imgui.progress_bar(float((job.get('progress') or {}).get('percent', 0)) / 100, (250, 0), self.app.jobs.progress_text(job)[:60])
-        imgui.separator_text(tr('Catalogue') + f' ({len(self.catalogue)})')
-        imgui.push_item_width(250)
-        _, self.filter = imgui.input_text(tr('Filter'), self.filter)
-        imgui.pop_item_width()
-        shown = [p for p in self.catalogue if self.filter.lower() in (p.get('name', '') + p.get('manufacturer', '')).lower()]
-        imgui.begin_child('##pluginlist', (320, max(160.0, imgui.get_content_region_avail().y - 20)), True)
+            percent = float((job.get('progress') or {}).get('percent', 0)) / 100
+            cyui.progress_bar(percent if percent > 0 else -1.0, (cyui.dp(250.0), 0), self.app.jobs.progress_text(job)[:60])
+        cyui.space(4.0)
+        cyui.heading(tr('Catalogue') + f' ({len(self.catalogue)})', 3)
+        _, self.filter = cyui.search_field('##filter', self.filter, tr('Filter'), cyui.dp(320.0))
+        shown = [pl for pl in self.catalogue if self.filter.lower() in (pl.get('name', '') + pl.get('manufacturer', '')).lower()]
+        height = max(160.0, imgui.get_content_region_avail().y - cyui.dp(4.0))
+        with cyui.scoped_colour((imgui.Col_.child_bg, p.bg0)):
+            imgui.begin_child('##pluginlist', (cyui.dp(320.0), height), imgui.ChildFlags_.borders)
+        if not shown and not self.failures:
+            cyui.empty_state(tr('No plugin'), tr('Scan the folders to list the VST3 plugins.'), icon.audio)
         for index, plugin in enumerate(shown):
-            selected = index == self.selected
-            if imgui.selectable(f"{plugin.get('name')}  -  {plugin.get('manufacturer', '')}##{index}", selected)[0]:
+            if imgui.selectable(f"{plugin.get('name')}  -  {plugin.get('manufacturer', '')}##{index}", index == self.selected)[0]:
                 self.selected = index
         for failure in self.failures:
-            imgui.text_colored((1.0, 0.5, 0.4, 1.0), Path(failure.get('path', '')).name + ': ' + str(failure.get('error', ''))[:60])
+            cyui.text_coloured(p.error, Path(failure.get('path', '')).name + ': ' + str(failure.get('error', ''))[:60])
         imgui.end_child()
         imgui.same_line()
-        imgui.begin_child('##plugininfo', (0, max(160.0, imgui.get_content_region_avail().y - 20)), True)
+        cyui.begin_card('##plugininfo', None, height)
         if shown and self.selected < len(shown):
             plugin = shown[self.selected]
-            imgui.text(str(plugin.get('name')))
-            imgui.text_disabled(str(plugin.get('path')))
-            imgui.text(tr('Manufacturer: ') + str(plugin.get('manufacturer', '')) + '   ' + tr('Version: ') + str(plugin.get('version', '')))
-            imgui.text(tr('Type: ') + (tr('instrument') if plugin.get('isInstrument') else tr('effect')) + '   ' + tr('Latency: ') + f"{plugin.get('latencySamples', 0)} samples")
-            if imgui.button(tr('Add to workflow')):
+            cyui.heading(str(plugin.get('name')), 2)
+            cyui.text_faint(str(plugin.get('path')))
+            cyui.space(4.0)
+            if cyui.begin_properties('##plugin-props', 140):
+                cyui.property(tr('Manufacturer'))
+                imgui.text(str(plugin.get('manufacturer', '')))
+                cyui.property(tr('Version'))
+                imgui.text(str(plugin.get('version', '')))
+                cyui.property(tr('Type'))
+                imgui.text(tr('instrument') if plugin.get('isInstrument') else tr('effect'))
+                cyui.property(tr('Latency'))
+                imgui.text(f"{plugin.get('latencySamples', 0)} " + tr('samples'))
+                cyui.end_properties()
+            cyui.space(4.0)
+            if cyui.primary_button(cyui.icon_label(icon.add, tr('Add to workflow')) + '###Add to workflow'):
                 self.app.workflows.add_plugin(plugin)
                 self.message = tr('Added to the current workflow: ') + str(plugin.get('name'))
-            imgui.same_line()
-            if imgui.button(tr('Open plugin window')):
+            imgui.same_line(0, 4)
+            if cyui.icon_text_button(icon.new_window, tr('Open plugin window') + '###Open plugin window'):
                 node = {'plugin': plugin['path'], 'pluginName': plugin.get('name', ''), 'params': {}, 'state': ''}
                 self.app.open_plugin_editor(node)
-            imgui.separator_text(tr('Parameters') + f" ({len(plugin.get('parameters', {}))})")
-            for name, info in list(plugin.get('parameters', {}).items())[:80]:
-                imgui.bullet_text(f"{info.get('label', name)}: {info.get('value')} {info.get('units', '')}")
+            cyui.space(4.0)
+            cyui.section_title(tr('Parameters') + f" ({len(plugin.get('parameters', {}))})")
+            if cyui.begin_properties('##plugin-params', 200):
+                for name, info in list(plugin.get('parameters', {}).items())[:80]:
+                    cyui.property(str(info.get('label', name)))
+                    imgui.text(f"{info.get('value')} {info.get('units', '')}")
+                cyui.end_properties()
         else:
-            imgui.text_disabled(tr('Select a plugin, or scan first.'))
-        imgui.end_child()
-        if self.message:
-            status_line(self.message)
+            cyui.empty_state(tr('No plugin selected'), tr('Select a plugin, or scan first.'), icon.audio)
+        cyui.end_card()

@@ -92,8 +92,14 @@ Onglets :
   Télécharger / Reprendre / Réparer / Vérifier / Supprimer, acceptation personnelle des licences.
 - **Updates** : mises à jour GitHub de l'application (dépôt à configurer), des sources moteur
   (révisions épinglées) avec retour arrière ; les poids suivent leur propre catalogue.
-- **Options** : langue (anglais par défaut, français), thème, taille du texte, licences,
+- **Options** : langue (anglais par défaut, français), thème (gris moyen, gris clair, nuit ambrée,
+  violet, bleu marine), densité (compacte ou confortable), taille du texte, licences,
   sauvegarde/chargement de configuration, stockage partagé.
+- **Interface** : dessinée avec CyUI, la bibliothèque d'interface des logiciels Cy* (portage Python
+  dans `app/gui/cyui`). Les barres d'outils sont des boutons-icônes avec une info-bulle qui nomme
+  l'action et son raccourci (Espace, Ctrl+O, Ctrl+S, Ctrl+Z, Ctrl+Y, Ctrl+X/C/V, Suppr, H, F). La
+  barre d'état en bas affiche le dernier message, les jobs en cours (progression, bouton pour
+  annuler) et l'état du moteur audio ; les événements apparaissent aussi en notification.
 
 ## Traitement par lots d'une session (CLI / MCP, sans interface)
 

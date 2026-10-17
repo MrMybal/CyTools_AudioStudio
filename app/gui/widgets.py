@@ -1,5 +1,4 @@
 """Shared widgets: parameter editors from effect specs / plugin descriptions, file dialogs."""
-from contextlib import contextmanager
 from pathlib import Path
 
 from imgui_bundle import imgui, portable_file_dialogs as pfd
@@ -161,17 +160,17 @@ class Dialogs:
 
 
 def status_line(text, error=False):
+    """A contextual notice in a form: a CyUI callout for problems, dimmed wrapped text otherwise."""
+    from . import cyui
     if error:
-        imgui.text_colored((1.0, 0.45, 0.4, 1.0), text)
+        cyui.callout(cyui.WARNING, text)
     else:
-        imgui.text_wrapped(text)
+        cyui.text_wrapped_dim(text)
 
 
 def help_marker(text):
-    imgui.same_line()
-    imgui.text_disabled('(?)')
-    if imgui.is_item_hovered():
-        imgui.set_tooltip(text)
+    from . import cyui
+    cyui.help_marker(text)
 
 
 # ----------------------------------------------------------------------------- layout helpers
@@ -232,79 +231,23 @@ class Row:
         (imgui.text_disabled if disabled else imgui.text)(text)
 
 
-class Toolbar:
-    """Framed groups of controls with a small title ("Session", "Transport"...), side by side and
-    wrapping to the next line when the window is too narrow::
-
-        bar = Toolbar()
-        with bar.group('transport', tr('Transport')):
-            imgui.button(...); imgui.same_line(); imgui.button(...)
-
-    A group keeps the width it had at the previous frame to decide whether it fits on the line.
-    Groups must not be nested (they share the draw-list channels of the window).
-    """
-    PAD = 5.0
-    GAP = 6.0
-    _widths = {}
-
-    def __init__(self):
-        origin = imgui.get_cursor_screen_pos()
-        self.left = self.x = origin.x
-        self.right = origin.x + imgui.get_content_region_avail().x
-        self.top = self.bottom = origin.y          # current line of groups
-        self.first = True
-
-    @contextmanager
-    def group(self, key, title):
-        # Positions are computed here rather than with same_line(): a same_line() followed by a
-        # cursor move would put the second widget of the group on the line of the previous group.
-        width = Toolbar._widths.get(key)
-        if not self.first and (width is None or self.x + width > self.right):
-            self.x, self.top = self.left, self.bottom + self.GAP
-        self.first = False
-        draw = imgui.get_window_draw_list()
-        caption = imgui.get_font_size() * 0.72
-        origin = imgui.ImVec2(self.x, self.top)
-        draw.channels_split(2)
-        draw.channels_set_current(1)
-        imgui.set_cursor_screen_pos((origin.x + self.PAD, origin.y + caption + 2))
-        imgui.begin_group()
-        try:
-            yield
-        finally:
-            imgui.end_group()
-            inner = imgui.get_item_rect_max()
-            title_width = caption / imgui.get_font_size() * imgui.calc_text_size(title.upper()).x
-            right = max(inner.x, origin.x + self.PAD + title_width) + self.PAD
-            bottom = inner.y + self.PAD - 1
-            draw.channels_set_current(0)
-            draw.add_rect_filled(origin, (right, bottom), imgui.get_color_u32((0.16, 0.17, 0.21, 1.0)), 4.0)
-            draw.add_rect(origin, (right, bottom), imgui.get_color_u32((0.32, 0.35, 0.43, 1.0)), 4.0)
-            draw.add_text(imgui.get_font(), caption, (origin.x + self.PAD, origin.y + 1), imgui.get_color_u32((0.62, 0.7, 0.85, 1.0)), title.upper())
-            draw.channels_merge()
-            Toolbar._widths[key] = right - origin.x
-            self.x = right + self.GAP
-            self.bottom = max(self.bottom, bottom)
-            # one item covering the line so far: the window knows its size and the cursor goes below the bar
-            imgui.set_cursor_screen_pos((self.left, self.top))
-            imgui.dummy((max(1.0, right - self.left), self.bottom - self.top))
-
-
 def tooltip(text):
-    """Tooltip of the last item (also when it is disabled)."""
-    if imgui.is_item_hovered(imgui.HoveredFlags_.allow_when_disabled):
-        imgui.set_tooltip(text)
+    """Delayed, wrapped tooltip of the last item (also when it is disabled)."""
+    from . import cyui
+    cyui.tooltip(text)
 
 
 def multiline(label, value, height, key, tr=lambda t: t):
-    """Label above, field over the full width (a label on the right would be cut off)."""
-    imgui.text(tr(label))
-    return imgui.input_text_multiline('##' + key, value, (-1, height))
+    """Label above (dimmed), field over the full width (a label on the right would be cut off)."""
+    from . import cyui
+    cyui.text_dim(tr(label))
+    return imgui.input_text_multiline('##' + key, value, (-1, cyui.dp(height)))
 
 
 def field(label, value, key, tr=lambda t: t, width=-1):
-    """Single-line input with its label above."""
-    imgui.text(tr(label))
+    """Single-line input with its label above (dimmed)."""
+    from . import cyui
+    cyui.text_dim(tr(label))
     imgui.push_item_width(width)
     result = imgui.input_text('##' + key, value)
     imgui.pop_item_width()
@@ -339,13 +282,17 @@ def file_peaks(path, columns=240):
     return value
 
 
-def thumbnail(path, width=240.0, height=38.0, colour=(0.36, 0.72, 0.95)):
-    """Draw a small waveform of a file; returns its duration in seconds (or None)."""
+def thumbnail(path, width=240.0, height=38.0, colour=None):
+    """Draw a small waveform of a file; returns its duration in seconds (or None). ``colour`` is a
+    packed colour; the palette's information colour by default."""
+    from . import cyui
+    p = cyui.palette()
+    colour = colour if isinstance(colour, int) else (p.info if colour is None else cyui.from_floats(*colour))
     peaks = file_peaks(path, max(16, int(width)))
     origin = imgui.get_cursor_screen_pos()
     imgui.dummy((width, height))
     draw = imgui.get_window_draw_list()
-    draw.add_rect_filled(origin, (origin.x + width, origin.y + height), imgui.get_color_u32((0.08, 0.09, 0.11, 1.0)))
+    draw.add_rect_filled(origin, (origin.x + width, origin.y + height), p.bg0, imgui.get_style().frame_rounding)
     if peaks is None:
         return None
     low, high, duration = peaks
@@ -356,5 +303,5 @@ def thumbnail(path, width=240.0, height=38.0, colour=(0.36, 0.72, 0.95)):
         for i in range(count):
             x = origin.x + (i + 0.5) * step
             top, bottom = middle - float(high[i]) * half, middle - float(low[i]) * half
-            draw.add_line((x, top), (x, max(bottom, top + 1)), imgui.get_color_u32((*colour, 1.0)), max(1.0, step))
+            draw.add_line((x, top), (x, max(bottom, top + 1)), colour, max(1.0, step))
     return duration

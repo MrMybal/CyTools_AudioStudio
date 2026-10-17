@@ -417,7 +417,7 @@ def _scenario_steps(app, ctx, recorder):
     wait(ctx, 4)
     recorder.check('master FX button shows the master chain', app.inserts.show_master and app.inserts.owner() is document.master, app.inserts.show_master)
     gain_before = document.master.gain_db
-    ctx.item_drag_with_delta('**/master/##master-gain', imgui.ImVec2(-60, 0))
+    ctx.item_drag_with_delta('**/master/##master-gain/##bar', imgui.ImVec2(-60, 0))
     wait(ctx, 4)
     recorder.check('dragging the master gain slider changes the master gain', document.master.gain_db != gain_before, f'{gain_before} -> {document.master.gain_db}')
     document.master.gain_db = 0.0

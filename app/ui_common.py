@@ -18,7 +18,10 @@ ROOT = APP.parent
 from standalone_log import install as install_standalone_log
 journal = install_standalone_log(ROOT)
 PREFERENCES = ROOT / 'data/settings/ui-preferences.json'
-DEFAULTS = {'language': 'en', 'theme': 'dark', 'font_scale': 1.0, 'autosave_generation': False}
+DEFAULTS = {'language': 'en', 'theme': 'mid-grey', 'density': 'compact', 'font_scale': 1.0, 'autosave_generation': False}
+# CyUI themes (gui/cyui, from the CyUI library); the former stock ImGui choices map onto them.
+THEME_KEYS = ('mid-grey', 'light-grey', 'amber-night', 'violet', 'navy')
+LEGACY_THEMES = {'dark': 'mid-grey', 'light': 'light-grey', 'classic': 'amber-night'}
 
 def read(path, default):
     try: return json.loads(path.read_text(encoding='utf-8-sig'))
@@ -30,7 +33,9 @@ class Preferences:
         stored = read(self.path, {})
         self.values = {**DEFAULTS, **(stored if isinstance(stored, dict) else {})}
         if self.values['language'] not in ('en', 'fr'): self.values['language'] = 'en'
-        if self.values['theme'] not in ('dark', 'light', 'classic'): self.values['theme'] = 'dark'
+        self.values['theme'] = LEGACY_THEMES.get(self.values['theme'], self.values['theme'])
+        if self.values['theme'] not in THEME_KEYS: self.values['theme'] = DEFAULTS['theme']
+        if self.values.get('density') not in ('compact', 'comfortable'): self.values['density'] = 'compact'
         if not isinstance(self.values.get('autosave_generation'),bool): self.values['autosave_generation']=False
         try: self.values['font_scale'] = min(1.6, max(.8, float(self.values['font_scale'])))
         except (TypeError, ValueError): self.values['font_scale'] = 1.0
@@ -351,13 +356,26 @@ class ImGuiFacade:
 
 imgui = ImGuiFacade()
 
+def dpi_scale():
+    try:
+        from imgui_bundle import hello_imgui
+        return float(hello_imgui.dpi_window_size_factor()) or 1.0
+    except Exception:
+        return 1.0
+
 def apply_style():
+    """CyUI theme and density (palette, sizes, roundings), then the text size preference."""
     native = raw()
-    {'dark': native.style_colors_dark, 'light': native.style_colors_light,
-     'classic': native.style_colors_classic}[preferences.values['theme']]()
+    from gui import cyui
+    cyui.apply(preferences.values['theme'], preferences.values['density'], dpi_scale())
     style = native.get_style()
     if hasattr(style, 'font_scale_main'): style.font_scale_main = preferences.values['font_scale']
     else: native.get_io().font_global_scale = preferences.values['font_scale']
+
+def load_fonts():
+    """Segoe UI / Semibold / Consolas with the Segoe MDL2 icons (CyUI), ImGui's font elsewhere."""
+    from gui import cyui
+    cyui.load_fonts()
 
 def license_records():
     manifest = read(APP/'CyTool.json', {})
@@ -390,39 +408,50 @@ def dependency_records():
 def options_panel():
     global _licenses
     native=raw()
-    native.text(tr('Interface preferences'))
-    changed,index=native.combo(label('Language'),('en','fr').index(preferences.values['language']),['English','Français'])
-    if changed: preferences.values['language']=('en','fr')[index]; preferences.save()
-    changed,index=native.combo(label('Theme'),('dark','light','classic').index(preferences.values['theme']),[tr('Dark'),tr('Light'),tr('Classic')])
-    if changed: preferences.values['theme']=('dark','light','classic')[index]; preferences.save(); apply_style()
-    changed,scale=native.slider_float(label('Text size'),preferences.values['font_scale'],.8,1.6,'%.2fx')
-    if changed: preferences.values['font_scale']=scale; preferences.save(); apply_style()
+    from gui import cyui
+    cyui.heading(tr('Interface preferences'), 2)
+    if cyui.begin_properties('##interface-preferences', 170):
+        cyui.property(tr('Language'))
+        changed,index=native.combo('##language',('en','fr').index(preferences.values['language']),['English','Français'])
+        if changed: preferences.values['language']=('en','fr')[index]; preferences.save()
+        cyui.property(tr('Theme'), tr('Colours of the whole interface: the five themes of the CyUI library (CyDAW, Shaderixel, CyEngineHub).'))
+        names=[tr(theme.name) for theme in cyui.THEMES]
+        changed,index=native.combo('##theme',THEME_KEYS.index(preferences.values['theme']),names)
+        if changed: preferences.values['theme']=THEME_KEYS[index]; preferences.save(); apply_style()
+        cyui.property(tr('Density'), tr('Compact for dense work (14 px text, tight spacing), comfortable for more air (16 px text).'))
+        changed,index=cyui.segmented('##density',[tr('Compact'),tr('Comfortable')],('compact','comfortable').index(preferences.values['density']),-1)
+        if changed: preferences.values['density']=('compact','comfortable')[index]; preferences.save(); apply_style()
+        cyui.property(tr('Text size'))
+        changed,scale=cyui.slider_bar('##text-size',preferences.values['font_scale'],.8,1.6,'%.2fx',-1)
+        if changed: preferences.values['font_scale']=round(scale,2); preferences.save(); apply_style()
+        cyui.end_properties()
     if native.button(label('Reset interface preferences')):
         preferences.values=dict(DEFAULTS); preferences.save(); apply_style()
-    native.text_wrapped(tr('Preferences are saved for this Tool. Model settings and files are not changed.'))
+    cyui.text_wrapped_faint(tr('Preferences are saved for this Tool. Model settings and files are not changed.'))
+    cyui.divider()
     configuration_panel()
     from installation_ui import panel as installation_panel
     installation_panel(native, tr, label)
-    native.separator()
-    native.text(tr('Licenses'))
-    native.text_wrapped(tr('Application, engine and model licenses are separate. Missing information does not grant usage rights. See the original license for its exact terms; translated interface labels are not a legal translation.'))
+    cyui.divider()
+    cyui.heading(tr('Licenses'), 2)
+    cyui.text_wrapped_dim(tr('Application, engine and model licenses are separate. Missing information does not grant usage rights. See the original license for its exact terms; translated interface labels are not a legal translation.'))
     if _licenses is None: _licenses=license_records()
     for index,record in enumerate(_licenses):
         native.push_id(index)
-        if native.collapsing_header(tr(record.get('kind','Component'))+' / '+str(record.get('name',''))):
+        if cyui.begin_section(tr(record.get('kind','Component'))+' / '+str(record.get('name','')),False):
             text=str(record.get('license') or 'Not declared')
             native.text_wrapped(tr(text) if text=='Not declared' else text)
             if record.get('notes'): native.text_wrapped(str(record['notes']))
             url=record.get('url','')
             if isinstance(url,str) and url.startswith(('https://','http://')) and native.button(label('Open official page / license')): webbrowser.open(url)
         native.pop_id()
-    if native.collapsing_header(label('Installed dependencies')):
+    if cyui.begin_section(label('Installed dependencies'),False):
         global _dependencies
         if '_dependencies' not in globals(): _dependencies=dependency_records()
         native.text_wrapped(tr('License information comes from installed package metadata. A missing or incomplete declaration must be checked with the publisher.'))
         for index,record in enumerate(_dependencies):
             native.push_id('dependency-'+str(index))
-            if native.collapsing_header(record['name']+' '+record['version']):
+            if cyui.begin_section(record['name']+' '+record['version'],False):
                 value=record['license']; native.text_wrapped(tr(value) if value=='Not declared' else value)
                 if record['url'].startswith(('https://','http://')) and native.button(label('Open publisher page')): webbrowser.open(record['url'])
             native.pop_id()
@@ -442,6 +471,7 @@ def run(runner):
     from imgui_bundle import hello_imgui
     original=runner.callbacks.show_gui
     bind_runtime(original)
+    runner.callbacks.load_additional_fonts=load_fonts      # CyUI fonts instead of hello_imgui's default font
     from advanced_ui import Panel as AdvancedPanel
     principal=next((v for v in scope().values() if hasattr(v,'client_id') and hasattr(v,'permissions')),None)
     _advanced_panel=AdvancedPanel(_runtime,principal)
@@ -459,6 +489,11 @@ def run(runner):
     # Run options smoke checks without mutating the user's saved preference.
     test_language=next((a.split('=',1)[1] for a in sys.argv if a.startswith('--ui-test-language=')),None)
     if test_language in ('en','fr'): preferences.values['language']=test_language
+    # visual checks of every theme / density, never saved
+    test_theme=next((a.split('=',1)[1] for a in sys.argv if a.startswith('--ui-test-theme=')),None)
+    if test_theme in THEME_KEYS: preferences.values['theme']=test_theme
+    test_density=next((a.split('=',1)[1] for a in sys.argv if a.startswith('--ui-test-density=')),None)
+    if test_density in ('compact','comfortable'): preferences.values['density']=test_density
     runner.app_window_params.window_title=tr(runner.app_window_params.window_title)
     source=Path(sys.modules['__main__'].__file__).read_text(encoding='utf-8-sig')
     has_tabs='begin_tab_bar(' in source

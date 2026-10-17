@@ -23,6 +23,7 @@ import numpy as np
 from imgui_bundle import imgui
 
 from .knobs import level_meter, horizontal_meter
+from . import cyui
 
 HEADER_WIDTH = 200.0
 RULER_HEIGHT = 22.0
@@ -44,7 +45,13 @@ def clock(seconds):
 
 
 def colour(r, g, b, a=1.0):
-    return imgui.get_color_u32((r, g, b, a))
+    """A literal colour: only for data colours (track colours stored as float tuples)."""
+    return cyui.from_floats(r, g, b, a)
+
+
+def P():
+    """The CyUI palette: every other colour of the timeline is taken from it by role."""
+    return cyui.palette()
 
 
 class Timeline:
@@ -140,13 +147,15 @@ class Timeline:
         middle = (top + bottom) / 2
         half = max(1.0, (bottom - top) / 2 - 1)
         gain = 10 ** (track.gain_db / 20) * self.vertical_zoom
-        draw.add_line((x0, middle), (x1, middle), colour(0.3, 0.32, 0.36, 0.8))
+        draw.add_line((x0, middle), (x1, middle), P().line)
         count = len(low)
         if not count:
             return
         step = (x1 - x0) / count
         base = colour(*track.colour, 0.45 if muted else 1.0)
-        played = colour(0.98, 0.62, 0.2)
+        if cyui.is_light():
+            base = cyui.darker(base, 0.35)          # track colours are pastel: darker on a light ground
+        played = P().accent
         for i in range(count):
             x = x0 + (i + 0.5) * step
             y_top = middle - min(1.0, float(high[i]) * gain) * half
@@ -181,18 +190,18 @@ class Timeline:
         to_y = lambda v: y1 - 4 - (float(np.clip(v, lo, hi)) - lo) / span_v * (y1 - y_top - 8)
         from_y = lambda y: lo + float(np.clip((y1 - 4 - y) / (y1 - y_top - 8), 0.0, 1.0)) * span_v
         label = dict(document.automatable_keys(owner)).get(key, key)
-        draw.add_rect_filled((x0, y_top), (x1, y1), colour(1.0, 0.6, 0.2, 0.06))
-        draw.add_text((x0 + 4, y1 - 16), colour(1.0, 0.7, 0.3, 0.9), tr('Automation: ') + tr(label))
+        draw.add_rect_filled((x0, y_top), (x1, y1), cyui.alpha(P().warning, 0.06))
+        draw.add_text((x0 + 4, y1 - 16), cyui.alpha(P().warning, 0.9), tr('Automation: ') + tr(label))
         start, stop = self.view
         columns = max(2, int((x1 - x0) / 2))
         times = np.linspace(start, stop, columns)
         if lane is not None and lane.points:
             values = lane.values(times, default)
             points = [imgui.ImVec2(float(to_x(t)), float(to_y(v))) for t, v in zip(times, values)]
-            draw.add_polyline(points, colour(1.0, 0.6, 0.2, 0.95), 2.0, 0)
+            draw.add_polyline(points, cyui.alpha(P().warning, 0.95), 2.0, 0)
         else:
             y = to_y(default)
-            draw.add_line((x0, y), (x1, y), colour(1.0, 0.6, 0.2, 0.5), 1.0)
+            draw.add_line((x0, y), (x1, y), cyui.alpha(P().warning, 0.5), 1.0)
         mouse = imgui.get_mouse_pos()
         near = None
         if lane is not None:
@@ -202,8 +211,8 @@ class Timeline:
                     is_near = hovered and abs(mouse.x - px) <= POINT_RADIUS + 2 and abs(mouse.y - py) <= POINT_RADIUS + 2
                     if is_near:
                         near = index
-                    draw.add_circle_filled((px, py), POINT_RADIUS + (1.5 if is_near else 0.0), colour(1.0, 0.75, 0.35) if is_near else colour(1.0, 0.6, 0.2), 12)
-                    draw.add_circle((px, py), POINT_RADIUS, colour(0.1, 0.1, 0.1, 0.9), 12, 1.0)
+                    draw.add_circle_filled((px, py), POINT_RADIUS + (1.5 if is_near else 0.0), cyui.brighter(P().warning, 0.25) if is_near else P().warning, 12)
+                    draw.add_circle((px, py), POINT_RADIUS, cyui.alpha(P().bg0, 0.9), 12, 1.0)
         io = imgui.get_io()
         consumed = False
         if self.auto_drag and self.auto_drag['owner'] is owner and self.auto_drag['key'] == key:
@@ -255,14 +264,9 @@ class Timeline:
     def _automation_button(self, document, owner, tr):
         """The 'A' button of a header: popup listing the automation lanes."""
         active = bool(owner.automation_view)
-        if active:
-            imgui.push_style_color(imgui.Col_.button, (0.75, 0.45, 0.15, 1.0))
-        if imgui.small_button('A###Automation'):
+        clicked, _ = cyui.toggle_button('A###Automation', active, P().warning, tip=tr('Automation lane shown over this track'))
+        if clicked:
             imgui.open_popup('automation-menu')
-        if active:
-            imgui.pop_style_color()
-        if imgui.is_item_hovered():
-            imgui.set_tooltip(tr('Automation lane shown over this track'))
         if imgui.begin_popup('automation-menu'):
             if imgui.menu_item(tr('None (hide)'), '', not owner.automation_view)[0]:
                 owner.automation_view = ''
@@ -299,19 +303,19 @@ class Timeline:
         imgui.set_cursor_screen_pos((lane_x0, origin.y))
         imgui.invisible_button('ruler', (lane_width, RULER_HEIGHT))
         ruler_hovered = imgui.is_item_hovered()
-        draw.add_rect_filled((origin.x, origin.y), (origin.x + width, origin.y + RULER_HEIGHT), colour(0.13, 0.14, 0.17))
+        draw.add_rect_filled((origin.x, origin.y), (origin.x + width, origin.y + RULER_HEIGHT), P().bg1)
         ticks = max(2, int(lane_width // 90))
         step = _nice_step(span / ticks)
         t = np.floor(start / step) * step
         while t <= stop + step:
             x = to_x(t)
             if lane_x0 <= x <= lane_x0 + lane_width:
-                draw.add_line((x, origin.y + RULER_HEIGHT - 8), (x, origin.y + RULER_HEIGHT), colour(0.55, 0.55, 0.6))
-                draw.add_text((x + 3, origin.y + 3), colour(0.7, 0.72, 0.76), clock(t))
+                draw.add_line((x, origin.y + RULER_HEIGHT - 8), (x, origin.y + RULER_HEIGHT), P().textFaint)
+                draw.add_text((x + 3, origin.y + 3), P().textDim, clock(t))
             t += step
         if document.selection:
             a, b = sorted(document.selection)
-            draw.add_rect_filled((max(lane_x0, to_x(a)), origin.y + RULER_HEIGHT - 6), (min(lane_x0 + lane_width, to_x(b)), origin.y + RULER_HEIGHT), colour(0.35, 0.6, 1.0, 0.6))
+            draw.add_rect_filled((max(lane_x0, to_x(a)), origin.y + RULER_HEIGHT - 6), (min(lane_x0 + lane_width, to_x(b)), origin.y + RULER_HEIGHT), cyui.alpha(P().accent, 0.6))
         if ruler_hovered and (imgui.is_mouse_clicked(imgui.MouseButton_.left) or imgui.is_mouse_dragging(imgui.MouseButton_.left, 2.0)):
             seconds = float(np.clip(to_t(mouse.x), 0, max(document.duration, 0.0)))
             document.cursor = seconds
@@ -323,7 +327,8 @@ class Timeline:
         # add-track button in the corner above the track headers: always in view, however many tracks
         imgui.set_cursor_screen_pos((origin.x + 4, origin.y + 1))
         imgui.push_style_var(imgui.StyleVar_.frame_padding, (8.0, 1.0))
-        if imgui.button(tr('+ Track') + '###Add track', (HEADER_WIDTH - 14, RULER_HEIGHT - 2)):
+        caption = cyui.icon_label(cyui.icon.add, tr('Track')) if cyui.icons_available() else tr('+ Track')
+        if cyui.button(caption + '###Add track', cyui.GHOST, (HEADER_WIDTH - 14, RULER_HEIGHT - 2)):
             document.add_empty_track()
             if app is not None:
                 app.editor.message = tr('Empty track added: record, drop or generate a sound into it, or add inserts.')
@@ -355,7 +360,7 @@ class Timeline:
             imgui.push_id(track.id)
             # -- header
             draw.add_rect_filled((child_origin.x, y), (child_origin.x + HEADER_WIDTH - 4, y + lane_height - 2),
-                                 colour(0.21, 0.24, 0.3) if selected else colour(0.15, 0.16, 0.19))
+                                 cyui.mix(P().bg2, P().accent, 0.10) if selected else P().bg2)
             draw.add_rect_filled((child_origin.x, y), (child_origin.x + 4, y + lane_height - 2), colour(*track.colour))
             imgui.set_cursor_screen_pos((child_origin.x + 8, y + 4))
             imgui.push_item_width(HEADER_WIDTH - 54)
@@ -364,49 +369,38 @@ class Timeline:
                 track.name = name
                 document.touch()
             imgui.pop_item_width()
-            imgui.same_line()
-            if imgui.small_button('X###Delete track'):
+            imgui.same_line(0, 2)
+            if cyui.icon_button(cyui.icon.close, tr('Delete this track (Ctrl+Z to undo)'), id='Delete track', fallback='X'):
                 remove_id = track.id
-            if imgui.is_item_hovered():
-                imgui.set_tooltip(tr('Delete this track (Ctrl+Z to undo)'))
             imgui.set_cursor_screen_pos((child_origin.x + 8, y + 28))
-            changed, value = imgui.checkbox(tr('M') + '###mute', track.mute)
-            if changed:
+            clicked, value = cyui.toggle_button(tr('M') + '###mute', track.mute, P().warning, tip=tr('Mute'))
+            if clicked:
                 track.mute = value
                 document.touch()
-            if imgui.is_item_hovered():
-                imgui.set_tooltip(tr('Mute'))
-            imgui.same_line()
-            changed, value = imgui.checkbox(tr('S') + '###solo', track.solo)
-            if changed:
+            imgui.same_line(0, 3)
+            clicked, value = cyui.toggle_button(tr('S') + '###solo', track.solo, P().success, tip=tr('Solo'))
+            if clicked:
                 track.solo = value
                 document.touch()
-            if imgui.is_item_hovered():
-                imgui.set_tooltip(tr('Solo'))
-            imgui.same_line()
-            if imgui.small_button('^###Move track up'):
-                document.move_track(track.id, -1)
-            imgui.same_line()
-            if imgui.small_button('v###Move track down'):
-                document.move_track(track.id, 1)
-            imgui.same_line()
+            imgui.same_line(0, 3)
             chain_length = sum(1 for n in track.inserts if not n.get('_preview'))      # the Effect... audition insert is not counted
             fx_active = chain_length > 0
-            if fx_active:
-                imgui.push_style_color(imgui.Col_.button, (0.2, 0.5, 0.75, 1.0))
-            if imgui.small_button(('FX%d' % chain_length if fx_active else 'FX') + '###FX'):
-                if app is not None:
-                    app.inserts.show(track)
-            if fx_active:
-                imgui.pop_style_color()
-            if imgui.is_item_hovered():
-                imgui.set_tooltip(tr('Effects and VST3 plugins of this track (inserts)'))
-            imgui.same_line()
+            clicked, _ = cyui.toggle_button(('FX %d' % chain_length if fx_active else 'FX') + '###FX', fx_active,
+                                            tip=tr('Effects and VST3 plugins of this track (inserts)'))
+            if clicked and app is not None:
+                app.inserts.show(track)
+            imgui.same_line(0, 3)
             self._automation_button(document, track, tr)
+            imgui.same_line(0, 3)
+            if cyui.icon_button(cyui.icon.chevron_up, tr('Move the track up'), id='Move track up', fallback='^', size=(imgui.get_frame_height() * 0.8, 0)):
+                document.move_track(track.id, -1)
+            imgui.same_line(0, 0)
+            if cyui.icon_button(cyui.icon.chevron_down, tr('Move the track down'), id='Move track down', fallback='v', size=(imgui.get_frame_height() * 0.8, 0)):
+                document.move_track(track.id, 1)
             if lane_height >= 80:
                 imgui.set_cursor_screen_pos((child_origin.x + 8, y + 52))
                 imgui.push_item_width(HEADER_WIDTH - 26)
-                changed, gain = imgui.slider_float('##gain', track.gain_db, -48.0, 12.0, tr('Gain') + ' %.1f dB')
+                changed, gain = cyui.slider_bar('##gain', track.gain_db, -48.0, 12.0, tr('Gain') + ' %.1f dB')
                 if imgui.is_item_activated():
                     document.edit('Gain', [track.id])
                 if changed:
@@ -416,7 +410,7 @@ class Timeline:
                         document.automation_write(track, 'gain_db', player.position, gain)
                 if lane_height >= 104:
                     imgui.set_cursor_screen_pos((child_origin.x + 8, y + 76))
-                    changed, pan = imgui.slider_float('##pan', track.pan, -1.0, 1.0, tr('Pan') + ' %.2f')
+                    changed, pan = cyui.slider_bar('##pan', track.pan, -1.0, 1.0, tr('Pan') + ' %.2f', 0.0, P().info)
                     if imgui.is_item_activated():
                         document.edit('Pan', [track.id])
                     if changed:
@@ -436,10 +430,10 @@ class Timeline:
 
             # -- lane background, selection
             x0, y0, x1, y1 = lane_x0, y, lane_x0 + lane_width, y + lane_height - 2
-            draw.add_rect_filled((x0, y0), (x1, y1), colour(0.11, 0.12, 0.15) if selected else colour(0.085, 0.09, 0.11))
+            draw.add_rect_filled((x0, y0), (x1, y1), cyui.mix(P().bg0, P().bg1, 0.6) if selected else P().bg0)
             if document.selection and (selected or io.key_shift):
                 a, b = sorted(document.selection)
-                draw.add_rect_filled((max(x0, to_x(a)), y0), (min(x1, to_x(b)), y1), colour(0.35, 0.6, 1.0, 0.22))
+                draw.add_rect_filled((max(x0, to_x(a)), y0), (min(x1, to_x(b)), y1), P().selection)
 
             # -- clips (title bar + waveform)
             visible = []
@@ -456,7 +450,7 @@ class Timeline:
                 draw.add_rect_filled((px_a, y0), (px_b, y0 + TITLE_HEIGHT), colour(*track.colour, (0.55 if selected else 0.35) * alpha))
                 draw.add_rect((px_a, y0), (px_b, y1), colour(*track.colour, 0.6 * alpha))
                 draw.push_clip_rect((px_a, y0), (px_b, y0 + TITLE_HEIGHT), True)
-                draw.add_text((px_a + 4, y0 + 1), colour(1, 1, 1, 0.9 * alpha), f'{clip.name}  {clock(clip_a)}')
+                draw.add_text((px_a + 4, y0 + 1), cyui.alpha(P().text, 0.95 * alpha), f'{clip.name}  {clock(clip_a)}')
                 draw.pop_clip_rect()
                 fa = document.seconds_to_frame(vis_a) - clip.offset
                 fb = document.seconds_to_frame(vis_b) - clip.offset
@@ -465,9 +459,9 @@ class Timeline:
                     middle = (wave_top + y1) / 2
                     self._draw_wave(draw, track, clip, 0, px_a, px_b, wave_top, middle - 1, fa, fb, version, head_x, track.mute or leaving)
                     self._draw_wave(draw, track, clip, 1, px_a, px_b, middle + 1, y1, fa, fb, version, head_x, track.mute or leaving)
-                    draw.add_line((px_a, middle), (px_b, middle), colour(0.2, 0.2, 0.24))
-                    draw.add_text((px_b - 26 if px_b - px_a > 50 else px_a + 2, wave_top + 1), colour(0.7, 0.7, 0.75, 0.7), 'L')
-                    draw.add_text((px_b - 26 if px_b - px_a > 50 else px_a + 2, middle + 2), colour(0.7, 0.7, 0.75, 0.7), 'R')
+                    draw.add_line((px_a, middle), (px_b, middle), P().line)
+                    draw.add_text((px_b - 26 if px_b - px_a > 50 else px_a + 2, wave_top + 1), P().textFaint, 'L')
+                    draw.add_text((px_b - 26 if px_b - px_a > 50 else px_a + 2, middle + 2), P().textFaint, 'R')
                 else:
                     self._draw_wave(draw, track, clip, None, px_a, px_b, wave_top, y1, fa, fb, version, head_x, track.mute or leaving)
             # -- lane body: selection, cursor, menu, panning, automation
@@ -540,9 +534,9 @@ class Timeline:
             # -- cursor and playhead
             cursor_x = to_x(document.cursor)
             if x0 <= cursor_x <= x1:
-                draw.add_line((cursor_x, y0), (cursor_x, y1), colour(0.95, 0.95, 0.95, 0.85), 1.0)
+                draw.add_line((cursor_x, y0), (cursor_x, y1), cyui.alpha(P().text, 0.75), 1.0)
             if x0 <= head_x <= x1:
-                draw.add_line((head_x, y0), (head_x, y1), colour(1.0, 0.3, 0.3) if player.is_recording else colour(1, 1, 1), 1.5)
+                draw.add_line((head_x, y0), (head_x, y1), P().error if player.is_recording else P().accent, 1.5)
 
             # -- height handle (lower edge)
             imgui.set_cursor_screen_pos((child_origin.x, y1 - 3))
@@ -563,7 +557,7 @@ class Timeline:
             document.remove_track(remove_id)
         y += 8
         if not document.tracks:
-            draw.add_text((lane_x0 + 12, child_origin.y + 12), colour(0.6, 0.6, 0.65), tr('No track. Open a file, record, or generate a sound.'))
+            draw.add_text((lane_x0 + 12, child_origin.y + 12), P().textFaint, tr('No track. Open a file, record, or generate a sound.'))
 
         imgui.set_cursor_screen_pos((child_origin.x, y))
         imgui.dummy((width - 14, 8))
@@ -651,7 +645,7 @@ class Timeline:
             trimming = self.trimming is not None and self.trimming['clip'] is clip and self.trimming['edge'] == side
             if imgui.is_item_hovered() or trimming:
                 imgui.set_mouse_cursor(imgui.MouseCursor_.resize_ew)
-                draw.add_rect_filled((handle_x, edge_top), (handle_x + EDGE_WIDTH, y1), colour(1, 1, 1, 0.25))
+                draw.add_rect_filled((handle_x, edge_top), (handle_x + EDGE_WIDTH, y1), cyui.alpha(P().accent, 0.45))
                 if imgui.is_item_hovered():
                     imgui.set_tooltip(tr('Drag to trim the clip (the audio is kept)'))
             if imgui.is_item_activated():
@@ -669,11 +663,11 @@ class Timeline:
         fade_in_x = to_x(clip_a + clip.fade_in)
         fade_out_x = to_x(clip_b - clip.fade_out)
         if clip.fade_in > 0:
-            draw.add_triangle_filled((clip_px_a, y1), (fade_in_x, wave_top), (clip_px_a, wave_top), colour(0, 0, 0, 0.45))
-            draw.add_line((clip_px_a, y1), (fade_in_x, wave_top), colour(1, 1, 1, 0.75), 1.5)
+            draw.add_triangle_filled((clip_px_a, y1), (fade_in_x, wave_top), (clip_px_a, wave_top), cyui.alpha(P().bg0, 0.65))
+            draw.add_line((clip_px_a, y1), (fade_in_x, wave_top), cyui.alpha(P().text, 0.8), 1.5)
         if clip.fade_out > 0:
-            draw.add_triangle_filled((fade_out_x, wave_top), (clip_px_b, y1), (clip_px_b, wave_top), colour(0, 0, 0, 0.45))
-            draw.add_line((fade_out_x, wave_top), (clip_px_b, y1), colour(1, 1, 1, 0.75), 1.5)
+            draw.add_triangle_filled((fade_out_x, wave_top), (clip_px_b, y1), (clip_px_b, wave_top), cyui.alpha(P().bg0, 0.65))
+            draw.add_line((fade_out_x, wave_top), (clip_px_b, y1), cyui.alpha(P().text, 0.8), 1.5)
         for side in ('in', 'out'):
             if side == 'in':
                 left = min(max(clip_px_a, fade_in_x), clip_px_b - FADE_HANDLE)
@@ -685,8 +679,8 @@ class Timeline:
             imgui.invisible_button('fade-' + side, (FADE_HANDLE, FADE_HANDLE))
             hovered_fade = imgui.is_item_hovered()
             fading = self.fading is not None and self.fading['clip'] is clip and self.fading['side'] == side
-            draw.add_rect_filled((left, wave_top), (left + FADE_HANDLE, wave_top + FADE_HANDLE), colour(1, 1, 1, 0.9 if (hovered_fade or fading) else 0.55))
-            draw.add_rect((left, wave_top), (left + FADE_HANDLE, wave_top + FADE_HANDLE), colour(0, 0, 0, 0.6))
+            draw.add_rect_filled((left, wave_top), (left + FADE_HANDLE, wave_top + FADE_HANDLE), P().accent if (hovered_fade or fading) else P().bg5, 2.0)
+            draw.add_rect((left, wave_top), (left + FADE_HANDLE, wave_top + FADE_HANDLE), P().lineStrong, 2.0)
             if hovered_fade:
                 imgui.set_mouse_cursor(imgui.MouseCursor_.resize_ew)
                 imgui.set_tooltip(tr('Drag for a fade in') if side == 'in' else tr('Drag for a fade out'))
@@ -717,7 +711,7 @@ class Timeline:
         top, bottom = row[1], row[2] - 2
         draw.add_rect_filled((a, top), (b, bottom), colour(*target.colour, 0.25))
         draw.add_rect((a, top), (b, bottom), colour(*target.colour, 0.95), rounding=0.0, thickness=2.0)
-        draw.add_text((a + 4, top + 1), colour(1, 1, 1, 0.95), clip.name + '  -> ' + target.name)
+        draw.add_text((a + 4, top + 1), P().text, clip.name + '  -> ' + target.name)
         imgui.set_tooltip(tr('Release to move the clip to ') + target.name)
 
     def _wheel(self, io, span, start, to_t, mouse):
@@ -732,12 +726,12 @@ class Timeline:
     def _vertical_meter(self, draw, x, y_top, y_bottom, peak):
         for channel, value in enumerate(peak[:2]):
             x0 = x + channel * (METER_WIDTH + 1)
-            draw.add_rect_filled((x0, y_top), (x0 + METER_WIDTH, y_bottom), colour(0.08, 0.09, 0.11))
+            draw.add_rect_filled((x0, y_top), (x0 + METER_WIDTH, y_bottom), P().bg0)
             if value > 0:
                 db = 20 * np.log10(max(value, 1e-6))
                 fill = float(np.clip((db + 60.0) / 60.0, 0.0, 1.0))
                 top = y_bottom - fill * (y_bottom - y_top)
-                shade = colour(0.95, 0.3, 0.25) if db > -3 else (colour(0.9, 0.8, 0.2) if db > -12 else colour(0.3, 0.8, 0.35))
+                shade = P().error if db > -3 else (P().warning if db > -12 else P().success)
                 draw.add_rect_filled((x0, top), (x0 + METER_WIDTH, y_bottom), shade)
 
     def _master_lane(self, document, player, draw, child_origin, y, width, lane_x0, lane_width, to_x, to_t, head_x, tr, app, io, span, start, mouse):
@@ -745,30 +739,28 @@ class Timeline:
         lane_height = float(master.height)
         renderer = player.renderer
         imgui.push_id('master')
-        draw.add_rect_filled((child_origin.x, y), (child_origin.x + HEADER_WIDTH - 4, y + lane_height - 2), colour(0.19, 0.17, 0.14))
-        draw.add_rect_filled((child_origin.x, y), (child_origin.x + 4, y + lane_height - 2), colour(0.98, 0.62, 0.2))
+        draw.add_rect_filled((child_origin.x, y), (child_origin.x + HEADER_WIDTH - 4, y + lane_height - 2), cyui.mix(P().bg2, P().accent, 0.08))
+        draw.add_rect_filled((child_origin.x, y), (child_origin.x + 4, y + lane_height - 2), P().accent)
         imgui.set_cursor_screen_pos((child_origin.x + 8, y + 4))
-        imgui.text(tr('Master'))
+        imgui.align_text_to_frame_padding()
+        with cyui.scoped_font(cyui.bold_font()):
+            imgui.text(tr('Master'))
         imgui.same_line()
-        changed, value = imgui.checkbox(tr('M') + '###master-mute', master.mute)
-        if changed:
+        clicked, value = cyui.toggle_button(tr('M') + '###master-mute', master.mute, P().warning, tip=tr('Mute'))
+        if clicked:
             master.mute = value
             document.touch()
-        imgui.same_line()
+        imgui.same_line(0, 3)
         fx_active = bool(master.inserts)
-        if fx_active:
-            imgui.push_style_color(imgui.Col_.button, (0.2, 0.5, 0.75, 1.0))
-        if imgui.small_button(('FX%d' % len(master.inserts) if fx_active else 'FX') + '###master-FX') and app is not None:
+        clicked, _ = cyui.toggle_button(('FX %d' % len(master.inserts) if fx_active else 'FX') + '###master-FX', fx_active,
+                                        tip=tr('Effects and VST3 plugins of the master bus'))
+        if clicked and app is not None:
             app.inserts.show(master)
-        if fx_active:
-            imgui.pop_style_color()
-        if imgui.is_item_hovered():
-            imgui.set_tooltip(tr('Effects and VST3 plugins of the master bus'))
-        imgui.same_line()
+        imgui.same_line(0, 3)
         self._automation_button(document, master, tr)
         imgui.set_cursor_screen_pos((child_origin.x + 8, y + 28))
         imgui.push_item_width(HEADER_WIDTH - 26)
-        changed, gain = imgui.slider_float('##master-gain', master.gain_db, -48.0, 12.0, tr('Gain') + ' %.1f dB')
+        changed, gain = cyui.slider_bar('##master-gain', master.gain_db, -48.0, 12.0, tr('Gain') + ' %.1f dB')
         if imgui.is_item_activated():
             document.edit('Master gain', [])
         if changed:
@@ -785,7 +777,7 @@ class Timeline:
             imgui.text_disabled('%.1f / %.1f dBFS' % (20 * np.log10(max(peak[0], 1e-6)), 20 * np.log10(max(peak[1], 1e-6))) if peak[0] > 0 else tr('stereo output'))
         # lane
         x0, y0, x1, y1 = lane_x0, y, lane_x0 + lane_width, y + lane_height - 2
-        draw.add_rect_filled((x0, y0), (x1, y1), colour(0.12, 0.11, 0.09))
+        draw.add_rect_filled((x0, y0), (x1, y1), cyui.mix(P().bg0, P().accent, 0.04))
         imgui.set_cursor_screen_pos((x0, y0))
         imgui.invisible_button('master-lane', (lane_width, lane_height - 2))
         hovered = imgui.is_item_hovered()
@@ -802,9 +794,9 @@ class Timeline:
                 self.pan(-io.mouse_delta.x / lane_width * span)
         cursor_x = to_x(document.cursor)
         if x0 <= cursor_x <= x1:
-            draw.add_line((cursor_x, y0), (cursor_x, y1), colour(0.95, 0.95, 0.95, 0.85), 1.0)
+            draw.add_line((cursor_x, y0), (cursor_x, y1), cyui.alpha(P().text, 0.75), 1.0)
         if x0 <= head_x <= x1:
-            draw.add_line((head_x, y0), (head_x, y1), colour(1, 1, 1), 1.5)
+            draw.add_line((head_x, y0), (head_x, y1), P().accent, 1.5)
         imgui.set_cursor_screen_pos((child_origin.x, y1 - 3))
         imgui.invisible_button('resize', (width - 14, 5))
         if imgui.is_item_hovered() or imgui.is_item_active():
@@ -830,12 +822,12 @@ class Timeline:
         draw = imgui.get_window_draw_list()
         y0 = origin.y
         y1 = y0 + SCROLLBAR_HEIGHT
-        draw.add_rect_filled((lane_x0, y0), (lane_x0 + lane_width, y1), colour(0.12, 0.13, 0.16))
+        draw.add_rect_filled((lane_x0, y0), (lane_x0 + lane_width, y1), P().bg1, 3.0)
         width_ratio = min(1.0, span / total)
         handle_w = max(24.0, lane_width * width_ratio)
         handle_x = lane_x0 + (start / total) * lane_width
         handle_x = min(handle_x, lane_x0 + lane_width - handle_w)
-        draw.add_rect_filled((handle_x, y0 + 2), (handle_x + handle_w, y1 - 2), colour(0.45, 0.47, 0.55, 0.95 if (hovered or active) else 0.7), 3.0)
+        draw.add_rect_filled((handle_x, y0 + 2), (handle_x + handle_w, y1 - 2), P().accentDim if active else (cyui.brighter(P().bg5, 0.12) if hovered else P().bg5), 3.0)
         if hovered:
             imgui.set_tooltip(tr('Drag to move along the timeline'))
         mouse = imgui.get_mouse_pos()
@@ -862,7 +854,7 @@ class Timeline:
         hovered, active = imgui.is_item_hovered(), imgui.is_item_active()
         draw = imgui.get_window_draw_list()
         y0, y1 = origin.y + 2, origin.y + 2 + OVERVIEW_HEIGHT
-        draw.add_rect_filled((lane_x0, y0), (lane_x0 + lane_width, y1), colour(0.09, 0.1, 0.12))
+        draw.add_rect_filled((lane_x0, y0), (lane_x0 + lane_width, y1), P().bg0, 3.0)
         rows = max(1, len(document.tracks))
         row_h = (OVERVIEW_HEIGHT - 4) / rows
         for index, track in enumerate(document.tracks):
@@ -873,10 +865,10 @@ class Timeline:
                 draw.add_rect_filled((a, top), (max(a + 1, b), top + max(1.0, row_h - 1)), colour(*track.colour, 0.8))
         win_a = lane_x0 + start / total * lane_width
         win_b = lane_x0 + min(1.0, stop / total) * lane_width
-        draw.add_rect_filled((win_a, y0), (win_b, y1), colour(1, 1, 1, 0.12))
-        draw.add_rect((win_a, y0), (win_b, y1), colour(1, 1, 1, 0.55 if (hovered or active) else 0.35))
+        draw.add_rect_filled((win_a, y0), (win_b, y1), cyui.alpha(P().text, 0.10))
+        draw.add_rect((win_a, y0), (win_b, y1), P().accent if (hovered or active) else cyui.alpha(P().text, 0.35))
         cursor_x = lane_x0 + document.cursor / total * lane_width
-        draw.add_line((cursor_x, y0), (cursor_x, y1), colour(0.95, 0.95, 0.95, 0.7))
+        draw.add_line((cursor_x, y0), (cursor_x, y1), cyui.alpha(P().text, 0.7))
         mouse = imgui.get_mouse_pos()
         if imgui.is_item_activated():
             self.overview_drag = (start, mouse.x, win_a <= mouse.x <= win_b)

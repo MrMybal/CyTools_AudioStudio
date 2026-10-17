@@ -14,7 +14,8 @@ from audiostudio.dsp import effects
 from audiostudio.workflow import model as workflow_model
 from audiostudio.editor.renderer import Renderer
 from .effect_ui import EffectUI
-from .widgets import Row, status_line, search_combo
+from .widgets import search_combo
+from . import cyui
 from .search import effect_haystack, plugin_haystack
 
 LIST_WIDTH = 250.0
@@ -158,45 +159,51 @@ class InsertsPanel:
         document = self.document
         renderer = self.app.player.renderer
         owner = self.owner()
-        imgui.begin_child('##inserts-panel', (0, height), imgui.ChildFlags_.borders)
+        p = cyui.palette()
+        icon = cyui.icon
+        with cyui.scoped_colour((imgui.Col_.child_bg, p.bg1)):
+            imgui.begin_child('##inserts-panel', (0, height), imgui.ChildFlags_.borders)
         if owner is None:
-            imgui.text_disabled(tr('No track: open a file or generate a sound, then add inserts here.'))
+            cyui.empty_state(tr('No track yet'), tr('Open a file or generate a sound, then add effects to its track here.'), icon.equalizer)
             imgui.end_child()
             return
         # ---------------------------------------------------------------- left: chain
-        imgui.begin_child('##chain-list', (LIST_WIDTH, 0), imgui.ChildFlags_.borders)
-        owner_colour = (0.98, 0.62, 0.2, 1.0) if owner is document.master else (*owner.colour, 1.0)
-        imgui.text_colored(owner_colour, (tr('Master bus') if owner is document.master else tr('Track') + ': ' + owner.name)[:30])
-        if imgui.is_item_hovered():
-            imgui.set_tooltip(tr('Effects belong to one track or to the master. Click a track (or the master lane) to show its chain.'))
-        if imgui.radio_button(tr('This track') + '##inserts-track', not self.show_master):
-            self.show_master = False
-            self.owner_id = None
-        imgui.same_line()
-        if imgui.radio_button(tr('Master') + '##inserts-master', self.show_master):
-            self.show_master = True
-        imgui.separator()
+        with cyui.scoped_colour((imgui.Col_.child_bg, p.bg2)):
+            imgui.begin_child('##chain-list', (LIST_WIDTH, 0), imgui.ChildFlags_.borders | imgui.ChildFlags_.always_use_window_padding)
+        is_master = owner is document.master
+        chip = p.accent if is_master else cyui.from_floats(*owner.colour)
+        cyui.colour_chip('##owner-colour', chip, (cyui.dp(4.0), imgui.get_text_line_height()))
+        imgui.same_line(0, 6)
+        cyui.heading(cyui.clip_text(tr('Master bus') if is_master else owner.name, LIST_WIDTH - 40), 3)
+        cyui.tooltip(tr('Effects belong to one track or to the master. Click a track (or the master lane) to show its chain.'))
+        changed, which = cyui.segmented('##inserts-owner', [tr('This track') + '###inserts-track', tr('Master') + '###inserts-master'], 1 if self.show_master else 0, -1)
+        if changed:
+            self.show_master = which == 1
+            if not self.show_master:
+                self.owner_id = None
+        cyui.space(4.0)
         remove = None
         move = None
         drop = None
         selected_id = self.selected.get(owner.id)
+        chain = [n for n in owner.inserts if not n.get('_preview')]   # the Effect... dialog's audition insert is not part of the chain
         for index, node in enumerate(owner.inserts):
             if node.get('_preview'):
-                continue                              # the Effect... dialog's audition insert is not part of the chain
+                continue
             imgui.push_id(node['id'])
             changed, enabled = imgui.checkbox('##on', bool(node.get('enabled', True)))
             if changed:
                 node['enabled'] = enabled
                 document.touch()
-            if imgui.is_item_hovered():
-                imgui.set_tooltip(tr('Enable or bypass this insert'))
-            imgui.same_line()
+            cyui.tooltip(tr('Enable or bypass this insert'))
+            imgui.same_line(0, 4)
             title = tr(effects.REGISTRY[node['effect']].name) if node['kind'] == 'effect' and node['effect'] in effects.REGISTRY else (node.get('pluginName') or Path(node.get('plugin', '')).stem)
             error = renderer.errors.get(node['id'])
-            if error:
-                imgui.push_style_color(imgui.Col_.text, (1.0, 0.5, 0.4, 1.0))
-            if imgui.selectable(f'{index + 1}. {title}###select', selected_id == node['id'], 0, (LIST_WIDTH - 110, 0))[0]:
-                self.selected[owner.id] = node['id']
+            colour = p.error if error else (p.text if node.get('enabled', True) else p.textFaint)
+            buttons = imgui.get_frame_height() * 3 + 8
+            with cyui.scoped_colour((imgui.Col_.text, colour)):
+                if imgui.selectable(f'{index + 1}. {title}###select', selected_id == node['id'], 0, (max(40.0, imgui.get_content_region_avail().x - buttons), 0))[0]:
+                    self.selected[owner.id] = node['id']
             if imgui.begin_drag_drop_source():
                 imgui.set_drag_drop_payload_py_id('audiostudio-insert', index)
                 imgui.text(title)
@@ -209,25 +216,22 @@ class InsertsPanel:
                         drop = (dragged, index)
                 imgui.end_drag_drop_target()
             if error:
-                imgui.pop_style_color()
-                if imgui.is_item_hovered():
-                    imgui.set_tooltip(error)
-            imgui.same_line()
-            if imgui.small_button('^###Move insert up'):
+                cyui.tooltip(error)
+            imgui.same_line(0, 2)
+            small = (imgui.get_frame_height() * 0.9, 0)
+            if cyui.icon_button(icon.chevron_up, tr('Move up in the chain'), id='Move insert up', fallback='^', size=small):
                 move = (node['id'], -1)
-            imgui.same_line()
-            if imgui.small_button('v###Move insert down'):
+            imgui.same_line(0, 0)
+            if cyui.icon_button(icon.chevron_down, tr('Move down in the chain'), id='Move insert down', fallback='v', size=small):
                 move = (node['id'], 1)
-            imgui.same_line()
-            if imgui.small_button('X###Remove insert'):
+            imgui.same_line(0, 0)
+            if cyui.icon_button(icon.close, tr('Remove this insert (Ctrl+Z to undo)'), id='Remove insert', fallback='X', size=small, active_colour=p.error):
                 remove = node['id']
             imgui.pop_id()
-        if not owner.inserts:
-            imgui.text_disabled(tr('(no insert)'))
+        if not chain:
+            cyui.text_faint(tr('(no insert)'))
         else:
-            imgui.push_style_color(imgui.Col_.text, imgui.get_style().color_(imgui.Col_.text_disabled))
-            imgui.text_wrapped(tr('Drag an insert onto another to reorder the chain.'))
-            imgui.pop_style_color()
+            cyui.text_wrapped_faint(tr('Drag an insert onto another to reorder the chain.'))
         if remove is not None:
             document.remove_insert(owner, remove)
             renderer.forget(remove)
@@ -235,88 +239,99 @@ class InsertsPanel:
             document.move_insert(owner, move[0], move[1])
         if drop is not None:
             document.reorder_insert(owner, drop[0], drop[1])
-        imgui.separator()
+        cyui.divider()
+        cyui.section_title(tr('Add to the chain'))
         specs = self.realtime_effects()
-        _, self.effect_index = search_combo('add-effect', self.effect_index, [tr(s.name) for s in specs], LIST_WIDTH - 70,
+        add_width = cyui.button_width(tr('Add')) + 4
+        _, self.effect_index = search_combo('add-effect', self.effect_index, [tr(s.name) for s in specs], imgui.get_content_region_avail().x - add_width - 4,
                                             haystacks=[effect_haystack(s, tr) for s in specs], groups=[tr(s.category) for s in specs],
                                             tooltips=[tr(s.help) if s.help else '' for s in specs], tr=tr)
-        imgui.same_line()
-        if imgui.button(tr('Add') + '###Add insert effect') and specs:
+        imgui.same_line(0, 4)
+        if cyui.button(tr('Add') + '###Add insert effect') and specs:
             self.add_effect(owner, specs[self.effect_index].id)
+        cyui.tooltip(tr('Add the chosen effect at the end of the chain'))
         catalogue = self.app.workflows.plugin_catalogue
-        labels = [f"{p.get('name')} ({p.get('manufacturer', '')})" for p in catalogue] or [tr('(scan plugins in the Plugins tab)')]
-        _, self.plugin_index = search_combo('add-plugin', min(self.plugin_index, max(0, len(labels) - 1)), labels, LIST_WIDTH - 70,
-                                            haystacks=[plugin_haystack(p) for p in catalogue] or None, tr=tr)
-        imgui.same_line()
-        if imgui.button(tr('Add') + '###Add insert plugin') and catalogue:
-            self.add_plugin(owner, catalogue[self.plugin_index])
-        row = Row()
-        if row.button('From workflow', tr):
+        labels = [f"{p_.get('name')} ({p_.get('manufacturer', '')})" for p_ in catalogue] or [tr('(scan plugins in the Plugins tab)')]
+        _, self.plugin_index = search_combo('add-plugin', min(self.plugin_index, max(0, len(labels) - 1)), labels, imgui.get_content_region_avail().x - add_width - 4,
+                                            haystacks=[plugin_haystack(p_) for p_ in catalogue] or None, tr=tr)
+        imgui.same_line(0, 4)
+        with cyui.scoped_disabled(not catalogue):
+            if cyui.button(tr('Add') + '###Add insert plugin') and catalogue:
+                self.add_plugin(owner, catalogue[self.plugin_index])
+        cyui.tooltip(tr('Add the chosen VST3 plugin at the end of the chain'))
+        cyui.space(2.0)
+        if cyui.ghost_button(tr('From workflow') + '###From workflow'):
             try:
                 self.load_workflow(owner, self.app.workflows.current())
             except Exception as exc:
                 self.message = str(exc)
-        if imgui.is_item_hovered():
-            imgui.set_tooltip(tr('Adds the chain of the Workflows tab as inserts'))
-        if row.button('To workflow', tr):
+        cyui.tooltip(tr('Adds the chain of the Workflows tab as inserts'))
+        imgui.same_line(0, 2)
+        if cyui.ghost_button(tr('To workflow') + '###To workflow'):
             self.to_workflow(owner)
-        if owner is not document.master:
-            if row.button('Bake', tr):
-                self.bake(owner)
-            if imgui.is_item_hovered():
-                imgui.set_tooltip(tr('Renders the inserts into the clip (with the tail) and removes them'))
+        cyui.tooltip(tr('Opens this chain in the Workflows tab'))
+        if not is_master:
+            imgui.same_line(0, 2)
+            with cyui.scoped_disabled(not chain):
+                if cyui.ghost_button(tr('Bake') + '###Bake'):
+                    self.bake(owner)
+            cyui.tooltip(tr('Renders the inserts into the clip (with the tail) and removes them'))
         imgui.end_child()
         imgui.same_line()
         # ---------------------------------------------------------------- right: selected insert
-        imgui.begin_child('##insert-editor', (0, 0), imgui.ChildFlags_.borders)
+        imgui.begin_child('##insert-editor', (0, 0), imgui.ChildFlags_.borders | imgui.ChildFlags_.always_use_window_padding)
         position, size = imgui.get_window_pos(), imgui.get_window_size()
         self.editor_rect = (position.x, position.y, position.x + size.x, position.y + size.y)     # for scripted hover sweeps
         node = self.selected_node(owner)
         if node is None:
-            imgui.text_disabled(tr('Add an effect or a VST3 plugin to this chain.'))
+            cyui.empty_state(tr('No effect in this chain'), tr('Add an effect or a VST3 plugin to this chain.'), icon.equalizer)
         else:
             width = imgui.get_content_region_avail().x
             imgui.push_id(node['id'])
-            changed, enabled = imgui.checkbox(tr('On') + '##on', bool(node.get('enabled', True)))
+            changed, enabled = cyui.toggle_switch(tr('On') + '##on', bool(node.get('enabled', True)))
             if changed:
                 node['enabled'] = enabled
                 document.touch()
+            cyui.tooltip(tr('Enable or bypass this insert'))
+            imgui.same_line(0, 12)
+            imgui.align_text_to_frame_padding()
+            cyui.text_dim(tr('Mix'))
             imgui.same_line()
-            imgui.push_item_width(120)
-            changed, mix = imgui.slider_float(tr('Mix') + '##mix', float(node.get('mix', 1.0)), 0.0, 1.0, '%.2f')
+            changed, mix = cyui.slider_bar('##mix', float(node.get('mix', 1.0)), 0.0, 1.0, '%.2f', cyui.dp(120.0))
             if imgui.is_item_activated():
                 document._edit_owner('Mix', owner)
             if changed:
                 node['mix'] = float(mix)
                 document.touch()
-            imgui.pop_item_width()
+            cyui.tooltip(tr('Dry / wet balance of this insert (double-click to type it)'))
             spec = effects.REGISTRY.get(node.get('effect')) if node['kind'] == 'effect' else None
-            if spec is not None and spec.sidechain and owner is not document.master:
+            if spec is not None and spec.sidechain and not is_master:
+                imgui.same_line(0, 12)
+                imgui.align_text_to_frame_padding()
+                cyui.text_dim(tr('Side-chain'))
                 imgui.same_line()
-                others = [t for t in document.tracks if t.id != owner.id]
-                labels = [tr('(no side-chain)')] + [t.name for t in others]
-                current = next((i + 1 for i, t in enumerate(others) if t.id == node.get('sidechain')), 0)
-                imgui.push_item_width(160)
-                changed, current = imgui.combo(tr('Side-chain') + '##sidechain', current, labels)
+                others = [t_ for t_ in document.tracks if t_.id != owner.id]
+                labels = [tr('(no side-chain)')] + [t_.name for t_ in others]
+                current = next((i + 1 for i, t_ in enumerate(others) if t_.id == node.get('sidechain')), 0)
+                imgui.push_item_width(cyui.dp(160.0))
+                changed, current = imgui.combo('##sidechain', current, labels)
                 imgui.pop_item_width()
                 if changed:
                     node['sidechain'] = others[current - 1].id if current > 0 else ''
                     if not node['sidechain']:
                         node.pop('sidechain', None)
                     document.touch()
-                if imgui.is_item_hovered():
-                    imgui.set_tooltip(tr('Another track feeds the detector (ducking) or the carrier (vocoder)'))
-            imgui.same_line()
-            imgui.text_disabled(tr('Right-click a knob for its automation lane'))
-            imgui.separator()
+                cyui.tooltip(tr('Another track feeds the detector (ducking) or the carrier (vocoder)'))
+            imgui.same_line(0, 12)
+            imgui.align_text_to_frame_padding()
+            cyui.text_faint(tr('Right-click a knob for its automation lane'))
+            cyui.divider(3.0)
             if node['kind'] == 'effect':
                 self.effect_ui.draw(owner, node, renderer, width)
             elif node['kind'] == 'vst3':
                 if node.get('_description') is None:
-                    node['_description'] = next((p for p in catalogue if p.get('path', '').lower() == str(node['plugin']).lower()), None) or {'parameters': {}}
+                    node['_description'] = next((p_ for p_ in catalogue if p_.get('path', '').lower() == str(node['plugin']).lower()), None) or {'parameters': {}}
                 self.effect_ui.draw_vst(owner, node, renderer, width)
             imgui.pop_id()
-        if self.message:
-            status_line(self.message)
         imgui.end_child()
         imgui.end_child()

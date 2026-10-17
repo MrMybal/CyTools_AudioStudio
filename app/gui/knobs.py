@@ -1,37 +1,65 @@
 """Drawing primitives for the effect interfaces: rotary knobs, level and gain-reduction meters,
-plot areas with dB / log-frequency axes. Everything is drawn with the window draw list so it
-follows the ImGui theme (dark, light, classic) of the Options tab.
+plot areas with dB / log-frequency axes. Colours come from the CyUI palette by role (gui/cyui), so
+every drawing follows the theme chosen in the Options tab.
 """
 import math
 
 import numpy as np
 from imgui_bundle import imgui
 
+from . import cyui
+
 KNOB_SIZE = 44.0
 METER_WIDTH = 10.0
 
 
 def col(r, g, b, a=1.0):
-    return imgui.get_color_u32((r, g, b, a))
+    """A literal colour (track colours stored as float tuples)."""
+    return cyui.from_floats(r, g, b, a)
+
+
+def accent():
+    """The theme accent as (r, g, b) floats."""
+    return cyui.floats(cyui.palette().accent)[:3]
+
+
+def accent_col(alpha=1.0):
+    return cyui.alpha(cyui.palette().accent, alpha)
+
+
+def warm(alpha=1.0):
+    """The second highlight of the plots (levels, thresholds, markers): the palette's warning tone."""
+    return cyui.alpha(cyui.palette().warning, alpha)
+
+
+def cool(alpha=1.0):
+    """Information tone (left channel, bands): the palette's info colour."""
+    return cyui.alpha(cyui.palette().info, alpha)
+
+
+def text_col(alpha=1.0):
+    return cyui.alpha(cyui.palette().text, alpha)
+
+
+def grid_col(major=False):
+    p = cyui.palette()
+    return p.gridStrong if major else p.grid
+
+
+def label_col():
+    return cyui.palette().textFaint
+
+
+def frame_bg(alpha=None):
+    """The ground of canvases and wells (bg0)."""
+    colour = cyui.palette().bg0
+    return colour if alpha is None else cyui.alpha(colour, alpha)
 
 
 def theme_col(index, alpha=None):
     """A style colour as u32 (optionally with another alpha)."""
     c = imgui.get_style().color_(index)
     return imgui.get_color_u32((c.x, c.y, c.z, c.w if alpha is None else alpha))
-
-
-def accent():
-    c = imgui.get_style().color_(imgui.Col_.slider_grab)
-    return (c.x, c.y, c.z)
-
-
-def text_col(alpha=1.0):
-    return theme_col(imgui.Col_.text, alpha)
-
-
-def frame_bg(alpha=None):
-    return theme_col(imgui.Col_.frame_bg, alpha)
 
 
 def db_to_unit(db, floor=-60.0):
@@ -45,12 +73,16 @@ def gain_to_db(value):
 # ----------------------------------------------------------------------------- knob
 
 def knob(label, value, minimum, maximum, fmt='%.2f', log=False, size=KNOB_SIZE, tooltip='', default=None, automated=False):
-    """Rotary knob; drag vertically (Ctrl for fine), double-click resets. Returns (changed, value)."""
+    """Rotary knob with the CyDAW behaviour: drag (Ctrl = fine, Shift = fast), the wheel nudges, a
+    double click restores the default, a click on its value types it. Returns (changed, value).
+    The widget identity is ``label`` / '##knob'."""
+    p = cyui.palette()
     io = imgui.get_io()
     imgui.push_id(label)
     origin = imgui.get_cursor_screen_pos()
     text_h = imgui.get_text_line_height()
-    width = max(size, imgui.calc_text_size(label.split('##')[0]).x + 4)
+    shown_label = label.split('##')[0]
+    width = max(size, imgui.calc_text_size(shown_label).x + 4)
     imgui.invisible_button('##knob', (width, size + text_h * 2 + 4))
     hovered, active = imgui.is_item_hovered(), imgui.is_item_active()
     changed = False
@@ -63,9 +95,15 @@ def knob(label, value, minimum, maximum, fmt='%.2f', log=False, size=KNOB_SIZE, 
         to_norm = lambda v: (v - minimum) / (maximum - minimum) if maximum > minimum else 0.0
         from_norm = lambda n: minimum + n * (maximum - minimum)
     norm = float(np.clip(to_norm(value), 0.0, 1.0))
+    storage = imgui.get_state_storage()
+    moved_key, click_key = imgui.get_id('##moved'), imgui.get_id('##click-y')
+    if imgui.is_item_activated():
+        storage.set_bool(moved_key, False)
+        storage.set_float(click_key, io.mouse_pos.y)
     if active and (io.mouse_delta.y != 0.0 or io.mouse_delta.x != 0.0):
-        speed = 0.0025 if io.key_ctrl else 0.01
-        norm = float(np.clip(norm - io.mouse_delta.y * speed + io.mouse_delta.x * speed * 0.5, 0.0, 1.0))
+        storage.set_bool(moved_key, True)
+        speed = 0.0055 * cyui.value_speed()
+        norm = float(np.clip(norm - io.mouse_delta.y * speed + io.mouse_delta.x * speed * 0.35, 0.0, 1.0))
         value = from_norm(norm)
         changed = True
     if hovered and imgui.is_mouse_double_clicked(imgui.MouseButton_.left) and default is not None:
@@ -73,34 +111,45 @@ def knob(label, value, minimum, maximum, fmt='%.2f', log=False, size=KNOB_SIZE, 
         norm = float(np.clip(to_norm(value), 0.0, 1.0))
         changed = True
     if hovered and io.mouse_wheel != 0.0:
-        norm = float(np.clip(norm + io.mouse_wheel * (0.01 if io.key_ctrl else 0.04), 0.0, 1.0))
+        norm = float(np.clip(norm + io.mouse_wheel * 0.02 * cyui.value_speed(), 0.0, 1.0))
         value = from_norm(norm)
         changed = True
+        cyui.take_wheel()
+    # its value (under the label) clicked without a drag: typed in
+    on_value = storage.get_float(click_key, origin.y) >= origin.y + size + text_h
+    open_entry = (imgui.is_item_deactivated() and not storage.get_bool(moved_key, False) and on_value
+                  and not imgui.is_mouse_double_clicked(imgui.MouseButton_.left))
+    typed, number = cyui.value_entry('knob', (origin.x, origin.y + size + text_h), (origin.x + width, origin.y + size + text_h * 2 + 4),
+                                     value, minimum, maximum, open_entry)
+    if typed:
+        value, changed = float(number), True
+        norm = float(np.clip(to_norm(value), 0.0, 1.0))
     draw = imgui.get_window_draw_list()
     centre = (origin.x + width / 2, origin.y + size / 2)
-    radius = size / 2 - 3
-    start_angle, end_angle = math.pi * 0.75, math.pi * 2.25
-    draw.add_circle_filled(centre, radius, frame_bg(), 32)
+    radius = size / 2 - 2
+    thickness = max(2.0, size * 0.085)
+    start_angle, sweep = math.pi * 0.75, math.pi * 1.5
     draw.path_clear()
-    draw.path_arc_to(centre, radius - 2, start_angle, end_angle, 32)
-    draw.path_stroke(theme_col(imgui.Col_.frame_bg_hovered), 3.0, 0)
-    angle = start_angle + norm * (end_angle - start_angle)
-    ar, ag, ab = accent()
+    draw.path_arc_to(centre, radius, start_angle, start_angle + sweep, 32)
+    draw.path_stroke(p.bg5, thickness, 0)
+    angle = start_angle + norm * sweep
     if norm > 0.001:
         draw.path_clear()
-        draw.path_arc_to(centre, radius - 2, start_angle, angle, 32)
-        draw.path_stroke(col(ar, ag, ab, 1.0 if (hovered or active) else 0.85), 3.0, 0)
-    tip = (centre[0] + math.cos(angle) * (radius - 7), centre[1] + math.sin(angle) * (radius - 7))
-    draw.add_line(centre, tip, text_col(0.95), 2.0)
+        draw.path_arc_to(centre, radius, start_angle, angle, 32)
+        draw.path_stroke(cyui.brighter(p.accent, 0.15) if (hovered or active) else p.accent, thickness, 0)
+    draw.add_circle_filled(centre, radius - thickness * 0.9, p.bg5 if (hovered or active) else p.bg4, 24)
+    tip = (centre[0] + math.cos(angle) * (radius - thickness * 1.1), centre[1] + math.sin(angle) * (radius - thickness * 1.1))
+    inner = (centre[0] + math.cos(angle) * radius * 0.25, centre[1] + math.sin(angle) * radius * 0.25)
+    draw.add_line(inner, tip, p.text, max(1.5, thickness * 0.55))
     if automated:
-        draw.add_circle_filled((origin.x + width - 5, origin.y + 5), 3.5, col(1.0, 0.6, 0.2), 12)
-    text = label.split('##')[0]
-    draw.add_text((origin.x + (width - imgui.calc_text_size(text).x) / 2, origin.y + size + 2), text_col(0.9), text)
+        draw.add_circle_filled((origin.x + width - 5, origin.y + 5), 3.5, p.warning, 12)
+    draw.add_text((origin.x + (width - imgui.calc_text_size(shown_label).x) / 2, origin.y + size + 2), p.text if (hovered or active) else p.textDim, shown_label)
     try:
         shown = fmt % value if '%' in fmt else fmt
     except (TypeError, ValueError):
         shown = '%.3g' % value
-    draw.add_text((origin.x + (width - imgui.calc_text_size(shown).x) / 2, origin.y + size + text_h + 2), text_col(0.7), shown)
+    shown = shown.replace('%%', '%')
+    draw.add_text((origin.x + (width - imgui.calc_text_size(shown).x) / 2, origin.y + size + text_h + 2), p.text if (hovered or active) else p.textFaint, shown)
     if hovered and tooltip:
         imgui.set_tooltip(tooltip)
     imgui.pop_id()
@@ -110,58 +159,50 @@ def knob(label, value, minimum, maximum, fmt='%.2f', log=False, size=KNOB_SIZE, 
 # ----------------------------------------------------------------------------- meters
 
 def level_meter(peak, width=METER_WIDTH, height=90.0, floor=-60.0, hold=None, label=''):
-    """Vertical peak meter in dB (green / yellow / red). ``hold`` is a peak-hold value in dB or None."""
+    """Vertical peak meter in dB (success / warning / error zones). ``hold`` is a peak-hold value in dB or None."""
+    p = cyui.palette()
     origin = imgui.get_cursor_screen_pos()
     imgui.dummy((width + (imgui.calc_text_size(label).x + 4 if label else 0), height))
     draw = imgui.get_window_draw_list()
     x0, y0, x1, y1 = origin.x, origin.y, origin.x + width, origin.y + height
-    draw.add_rect_filled((x0, y0), (x1, y1), frame_bg())
+    draw.add_rect_filled((x0, y0), (x1, y1), p.bg0, 2.0)
     db = gain_to_db(peak) if peak > 0 else floor
     fill = db_to_unit(db, floor)
     top = y1 - fill * height
-    # three zones
     green_top = y1 - db_to_unit(-12.0, floor) * height
     yellow_top = y1 - db_to_unit(-3.0, floor) * height
     if fill > 0:
-        draw.add_rect_filled((x0 + 1, max(top, green_top)), (x1 - 1, y1 - 1), col(0.3, 0.8, 0.35))
+        draw.add_rect_filled((x0 + 1, max(top, green_top)), (x1 - 1, y1 - 1), p.success)
         if top < green_top:
-            draw.add_rect_filled((x0 + 1, max(top, yellow_top)), (x1 - 1, green_top), col(0.9, 0.8, 0.2))
+            draw.add_rect_filled((x0 + 1, max(top, yellow_top)), (x1 - 1, green_top), p.warning)
         if top < yellow_top:
-            draw.add_rect_filled((x0 + 1, top), (x1 - 1, yellow_top), col(0.95, 0.3, 0.25))
+            draw.add_rect_filled((x0 + 1, top), (x1 - 1, yellow_top), p.error)
     if hold is not None and hold > floor:
         y = y1 - db_to_unit(hold, floor) * height
-        draw.add_line((x0 + 1, y), (x1 - 1, y), text_col(0.9), 1.5)
+        draw.add_line((x0 + 1, y), (x1 - 1, y), cyui.alpha(p.error if hold > -0.1 else p.text, 0.85), 1.5)
     if label:
-        draw.add_text((x1 + 3, y1 - imgui.get_text_line_height()), text_col(0.7), label)
+        draw.add_text((x1 + 3, y1 - imgui.get_text_line_height()), p.textFaint, label)
     return db
 
 
 def reduction_meter(reduction_db, width=METER_WIDTH, height=90.0, range_db=-30.0, label='GR'):
     """Gain-reduction meter growing downwards from the top (0 dB)."""
+    p = cyui.palette()
     origin = imgui.get_cursor_screen_pos()
     imgui.dummy((width + imgui.calc_text_size(label).x + 4, height))
     draw = imgui.get_window_draw_list()
     x0, y0, x1, y1 = origin.x, origin.y, origin.x + width, origin.y + height
-    draw.add_rect_filled((x0, y0), (x1, y1), frame_bg())
+    draw.add_rect_filled((x0, y0), (x1, y1), p.bg0, 2.0)
     amount = float(np.clip(reduction_db / range_db, 0.0, 1.0)) if reduction_db < 0 else 0.0
     if amount > 0:
-        draw.add_rect_filled((x0 + 1, y0 + 1), (x1 - 1, y0 + 1 + amount * (height - 2)), col(0.98, 0.62, 0.2))
-    draw.add_text((x1 + 3, y0), text_col(0.7), label)
-    draw.add_text((x1 + 3, y1 - imgui.get_text_line_height()), text_col(0.7), '%.1f' % reduction_db)
+        draw.add_rect_filled((x0 + 1, y0 + 1), (x1 - 1, y0 + 1 + amount * (height - 2)), p.warning)
+    draw.add_text((x1 + 3, y0), p.textFaint, label)
+    draw.add_text((x1 + 3, y1 - imgui.get_text_line_height()), p.textDim, '%.1f' % reduction_db)
 
 
 def horizontal_meter(peak_l, peak_r, width=140.0, height=8.0, floor=-60.0):
-    origin = imgui.get_cursor_screen_pos()
-    imgui.dummy((width, height * 2 + 2))
-    draw = imgui.get_window_draw_list()
-    for row, peak in enumerate((peak_l, peak_r)):
-        y0 = origin.y + row * (height + 2)
-        draw.add_rect_filled((origin.x, y0), (origin.x + width, y0 + height), frame_bg())
-        db = gain_to_db(peak) if peak > 0 else floor
-        fill = db_to_unit(db, floor) * width
-        if fill > 0:
-            colour = col(0.95, 0.3, 0.25) if db > -3.0 else (col(0.9, 0.8, 0.2) if db > -12.0 else col(0.3, 0.8, 0.35))
-            draw.add_rect_filled((origin.x, y0), (origin.x + fill, y0 + height), colour)
+    """Two horizontal level bars (left above right), CyUI meter law and colours, with a peak hold."""
+    cyui.meter('##hmeter', (width, height * 2 + 2), peak_l, peak_r, vertical=False)
 
 
 # ----------------------------------------------------------------------------- plots
@@ -191,12 +232,12 @@ class Plot:
         self.active = imgui.is_item_active()
         self.x0, self.y0 = self.origin.x, self.origin.y
         self.x1, self.y1 = self.origin.x + self.width, self.origin.y + self.height
-        self.draw.add_rect_filled((self.x0, self.y0), (self.x1, self.y1), frame_bg())
+        self.draw.add_rect_filled((self.x0, self.y0), (self.x1, self.y1), frame_bg(), 3.0)
         self.draw.push_clip_rect((self.x0, self.y0), (self.x1, self.y1), True)
 
     def end(self):
         self.draw.pop_clip_rect()
-        self.draw.add_rect((self.x0, self.y0), (self.x1, self.y1), theme_col(imgui.Col_.border))
+        self.draw.add_rect((self.x0, self.y0), (self.x1, self.y1), cyui.palette().line, 3.0)
 
     def px(self, x):
         if self.log_x:
@@ -224,18 +265,18 @@ class Plot:
     def grid_x(self, values, labels=True, fmt=None):
         for value in values:
             x = self.px(value)
-            self.draw.add_line((x, self.y0), (x, self.y1), text_col(0.12))
+            self.draw.add_line((x, self.y0), (x, self.y1), grid_col(True))
             if labels:
                 text = fmt(value) if fmt else str(value)
-                self.draw.add_text((x + 2, self.y1 - imgui.get_text_line_height() - 1), text_col(0.5), text)
+                self.draw.add_text((x + 2, self.y1 - imgui.get_text_line_height() - 1), label_col(), text)
 
     def grid_y(self, values, labels=True, fmt=None):
         for value in values:
             y = self.py(value)
-            self.draw.add_line((self.x0, y), (self.x1, y), text_col(0.12))
+            self.draw.add_line((self.x0, y), (self.x1, y), grid_col(True))
             if labels:
                 text = fmt(value) if fmt else str(value)
-                self.draw.add_text((self.x0 + 2, y - imgui.get_text_line_height() / 2), text_col(0.5), text)
+                self.draw.add_text((self.x0 + 2, y - imgui.get_text_line_height() / 2), label_col(), text)
 
     def line(self, xs, ys, colour, thickness=1.5):
         xs, ys = np.asarray(xs, dtype=np.float64), np.asarray(ys, dtype=np.float64)

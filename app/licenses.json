@@ -14,6 +14,13 @@
     "notes": "Copyright (c) 2026 Cyberalien. Full text in LICENCES/CyToolsCore-MIT.txt, scaffold notice in LICENCES/LICENSE-CyToolsCore.txt, pinned revision in LICENCES/SOURCES.txt. The MIT licence of the SDK does not change the GPL-3.0 licence of the application."
   },
   {
+    "kind": "Library",
+    "name": "CyUI - themes, widgets and layout of the Cy* interfaces (Python port in app/gui/cyui)",
+    "license": "GPL-3.0-only (as part of the application code)",
+    "url": "",
+    "notes": "Ported from the C++ CyUI library (D:/_Project/CyImgui_Interface) of the same author, Cyberalien. Fonts and icons are the Windows system fonts Segoe UI, Segoe UI Semibold, Consolas and Segoe MDL2 Assets: they are read from C:/Windows/Fonts and not shipped."
+  },
+  {
     "kind": "Engine",
     "name": "pedalboard (Spotify) - native effects and VST3 hosting, built on JUCE",
     "license": "GPL-3.0",

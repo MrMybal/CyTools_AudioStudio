@@ -20,8 +20,9 @@ from audiostudio.dsp import processors as P
 from audiostudio.dsp import filters as dsp_filters
 from audiostudio.dsp import space as dsp_space
 from audiostudio.paths import PRESETS
-from .knobs import (knob, level_meter, reduction_meter, Plot, col, text_col, accent, theme_col, freq_label, FREQ_GRID, gain_to_db)
+from .knobs import (knob, level_meter, reduction_meter, Plot, col, text_col, accent, accent_col, warm, cool, theme_col, freq_label, FREQ_GRID, gain_to_db)
 from .widgets import Row, draw_plugin_params
+from . import cyui
 
 SCOPE_FRAMES = 2048
 GR_HISTORY = 240
@@ -163,8 +164,7 @@ class EffectUI:
             mono_out = tap.recent('output', SCOPE_FRAMES).mean(axis=0)
             step = max(1, SCOPE_FRAMES // int(scope_w))
             plot.line(xs[::step], mono_in[::step], text_col(0.35), 1.0)
-            ar, ag, ab = accent()
-            plot.line(xs[::step], mono_out[::step], col(ar, ag, ab, 0.95), 1.2)
+            plot.line(xs[::step], mono_out[::step], accent_col(0.95), 1.2)
         plot.end()
         if plot.hovered:
             imgui.set_tooltip(tr('Waveform entering (grey) and leaving (colour) this effect'))
@@ -174,8 +174,7 @@ class EffectUI:
         freqs, db_in = self.spectrum(node, renderer, 'input', slot='header')
         _, db_out = self.spectrum(node, renderer, 'output', slot='header')
         self.draw_spectrum_in(spectrum_plot, freqs, db_in, text_col(0.16))
-        ar, ag, ab = accent()
-        spectrum_plot.line(freqs, db_out, col(ar, ag, ab, 0.95), 1.2)
+        spectrum_plot.line(freqs, db_out, accent_col(0.95), 1.2)
         for value in (100, 1000, 10000):
             x = spectrum_plot.px(value)
             spectrum_plot.draw.add_line((x, spectrum_plot.y0), (x, spectrum_plot.y1), text_col(0.10))
@@ -233,12 +232,12 @@ class EffectUI:
         """Interface of an effect node (kind 'effect'); returns nothing."""
         spec = effects.REGISTRY.get(node.get('effect'))
         if spec is None:
-            imgui.text_colored((1, 0.4, 0.4, 1), self.tr('Unknown effect: ') + str(node.get('effect')))
+            imgui.text_colored(cyui.vec(cyui.palette().error), self.tr('Unknown effect: ') + str(node.get('effect')))
             return
         self.header(node, renderer, width)
         error = renderer.errors.get(node['id'])
         if error:
-            imgui.text_colored((1.0, 0.5, 0.4, 1.0), error)
+            imgui.text_colored(cyui.vec(cyui.palette().error), error)
         if spec.help:
             imgui.text_disabled(self.tr(spec.help))
         family = spec.ui or 'generic'
@@ -279,15 +278,14 @@ class EffectUI:
         plot.line(levels, levels, text_col(0.25), 1.0)
         if processor is not None and hasattr(processor, 'curve'):
             try:
-                ar, ag, ab = accent()
-                plot.line(levels, processor.curve(levels), col(ar, ag, ab), 2.0)
+                plot.line(levels, processor.curve(levels), accent_col(), 2.0)
             except Exception:
                 pass
         level = float(meters.get('level_db', -100.0))
         if level > -60.0 and processor is not None and hasattr(processor, 'curve'):
             try:
                 out_level = float(processor.curve(np.array([level]))[0])
-                plot.point(level, out_level, 4.0, col(1.0, 0.6, 0.2))
+                plot.point(level, out_level, 4.0, warm())
             except Exception:
                 pass
         plot.end()
@@ -301,7 +299,7 @@ class EffectUI:
         plot = Plot(120.0, plot_size, (0, GR_HISTORY), (-30.0, 0.0))
         plot.grid_y((-20, -10), fmt=lambda v: '%d' % v)
         if history.size > 1:
-            plot.fill_under(np.arange(history.size), history, col(0.98, 0.62, 0.2, 0.6))
+            plot.fill_under(np.arange(history.size), history, warm(0.6))
         plot.end()
         if plot.hovered:
             imgui.set_tooltip(tr('Gain reduction over the last seconds'))
@@ -324,8 +322,8 @@ class EffectUI:
         for index in range(bands):
             x_a, x_b = plot.px(edges[index]), plot.px(edges[index + 1])
             red = float(reductions[index]) if index < len(reductions) else 0.0
-            colour = col(0.98, 0.62, 0.2, 0.25 + min(0.5, -red / 24.0)) if red < 0 else col(0.5, 0.6, 0.8, 0.12)
-            plot.draw.add_rect_filled((x_a, plot.y0), (x_b, plot.y1), colour if index == self.mb_band.get(node['id'], 0) else col(0.5, 0.6, 0.8, 0.06 + (min(0.4, -red / 24.0) if red < 0 else 0)))
+            colour = warm(0.25 + min(0.5, -red / 24.0)) if red < 0 else cool(0.12)
+            plot.draw.add_rect_filled((x_a, plot.y0), (x_b, plot.y1), colour if index == self.mb_band.get(node['id'], 0) else cool(0.06 + (min(0.4, -red / 24.0) if red < 0 else 0)))
             plot.draw.add_text((x_a + 4, plot.y0 + 2), text_col(0.8), f'{index + 1}: {red:.1f} dB')
         for n, freq in enumerate(crossovers, start=1):
             x = plot.px(freq)
@@ -380,10 +378,9 @@ class EffectUI:
         self.draw_spectrum_in(plot, sfreqs, mapped)
         plot.grid_x(FREQ_GRID, fmt=freq_label)
         plot.grid_y((-18, -12, -6, 0, 6, 12, 18), fmt=lambda v: '%+d' % v)
-        ar, ag, ab = accent()
         if processor is not None and hasattr(processor, 'response'):
             try:
-                plot.line(freqs, processor.response(freqs), col(ar, ag, ab), 2.2)
+                plot.line(freqs, processor.response(freqs), accent_col(), 2.2)
             except Exception:
                 pass
         selected = self.eq_band.get(node['id'], 1)
@@ -395,7 +392,7 @@ class EffectUI:
             freq, gain = float(params.get(f'b{n}_freq', 1000.0)), float(params.get(f'b{n}_gain', 0.0))
             kind = params.get(f'b{n}_type', 'peak')
             y_value = gain if kind in ('peak', 'low_shelf', 'high_shelf') else 0.0
-            p = plot.point(freq, y_value, 6.0 if n == selected else 5.0, col(ar, ag, ab, 0.9 if n == selected else 0.55), text_col(0.9))
+            p = plot.point(freq, y_value, 6.0 if n == selected else 5.0, accent_col(0.9 if n == selected else 0.55), text_col(0.9))
             plot.draw.add_text((p[0] + 7, p[1] - 8), text_col(0.8), str(n))
             if plot.hovered and abs(mouse.x - p[0]) < 8 and abs(mouse.y - p[1]) < 8:
                 hovered_band = n
@@ -455,9 +452,8 @@ class EffectUI:
         self.draw_spectrum_in(plot, sfreqs, (sdb + 90.0) / 90.0 * 28.0 - 14.0)
         plot.grid_x(FREQ_GRID, fmt=freq_label)
         plot.grid_y((-12, -6, 0, 6, 12), fmt=lambda v: '%+d' % v)
-        ar, ag, ab = accent()
         if processor is not None:
-            plot.line(freqs, processor.response(freqs), col(ar, ag, ab), 2.0)
+            plot.line(freqs, processor.response(freqs), accent_col(), 2.0)
         plot.end()
         for index, param in enumerate(spec.params[:10]):
             if index:
@@ -485,7 +481,6 @@ class EffectUI:
         self.draw_spectrum_in(plot, sfreqs, (sdb + 90.0) / 90.0 * 72.0 - 48.0)
         plot.grid_x(FREQ_GRID, fmt=freq_label)
         plot.grid_y((-36, -24, -12, 0, 12), fmt=lambda v: '%+d' % v)
-        ar, ag, ab = accent()
         response = None
         if processor is not None and hasattr(processor, 'response'):
             try:
@@ -498,11 +493,11 @@ class EffectUI:
             except Exception:
                 response = None
         if response is not None:
-            plot.line(freqs, response, col(ar, ag, ab), 2.0)
+            plot.line(freqs, response, accent_col(), 2.0)
         cutoff = renderer.meters(node['id']).get('cutoff_hz')
         if cutoff:
             x = plot.px(cutoff)
-            plot.draw.add_line((x, plot.y0), (x, plot.y1), col(1.0, 0.6, 0.2, 0.8), 1.5)
+            plot.draw.add_line((x, plot.y0), (x, plot.y1), warm(0.8), 1.5)
         plot.end()
         imgui.same_line()
         imgui.begin_group()
@@ -514,14 +509,13 @@ class EffectUI:
         processor = renderer.processor(node['id'])
         plot = Plot(max(260.0, min(width - 20, 420.0)), 110.0, (0.0, 1.0), (-80.0, 0.0))
         plot.grid_y((-60, -40, -20), fmt=lambda v: '%d' % v)
-        ar, ag, ab = accent()
         if processor is not None and hasattr(processor, 'envelope'):
             times, levels = processor.envelope(160)
             total = float(times[-1]) if len(times) else 1.0
             plot.x_max = max(total, 0.1)
             plot.grid_x([round(total * f, 1) for f in (0.25, 0.5, 0.75)], fmt=lambda v: '%.1fs' % v)
-            plot.fill_under(times, levels, col(ar, ag, ab, 0.35))
-            plot.line(times, levels, col(ar, ag, ab), 1.5)
+            plot.fill_under(times, levels, accent_col(0.35))
+            plot.line(times, levels, accent_col(), 1.5)
         else:
             params = spec.normalize(node['params'])
             decay = 0.3 + 3.5 * float(params.get('room_size', 0.5)) if 'room_size' in params else 2.0
@@ -530,8 +524,8 @@ class EffectUI:
             levels = -60.0 * times / max(decay, 0.05) * (1.0 + damping * 0.5)
             plot.x_max = max(times[-1], 0.1)
             plot.grid_x([round(times[-1] * f, 1) for f in (0.25, 0.5, 0.75)], fmt=lambda v: '%.1fs' % v)
-            plot.fill_under(times, levels, col(ar, ag, ab, 0.35))
-            plot.line(times, levels, col(ar, ag, ab), 1.5)
+            plot.fill_under(times, levels, accent_col(0.35))
+            plot.line(times, levels, accent_col(), 1.5)
         plot.end()
         if plot.hovered:
             imgui.set_tooltip(tr('Decay of the reverb (dB over time)'))
@@ -566,11 +560,10 @@ class EffectUI:
         span = max([t[0] for t in taps] + [0.5]) * 1.1
         plot.x_max = span
         plot.grid_x([round(span * f, 2) for f in (0.25, 0.5, 0.75)], fmt=lambda v: '%.2fs' % v)
-        ar, ag, ab = accent()
         plot.draw.add_rect_filled((plot.px(0) - 1, plot.py(1.0)), (plot.px(0) + 2, plot.py(0)), text_col(0.6))
         for t, level, pan in taps:
             x = plot.px(t)
-            colour = col(ar, ag, ab) if abs(pan) < 0.3 else (col(0.4, 0.7, 1.0) if pan < 0 else col(1.0, 0.6, 0.3))
+            colour = accent_col() if abs(pan) < 0.3 else (cool() if pan < 0 else warm())
             plot.draw.add_rect_filled((x - 2, plot.py(min(1.0, level))), (x + 2, plot.py(0)), colour)
         plot.draw.add_text((plot.x0 + 4, plot.y0 + 2), text_col(0.6), tr('echoes (blue = left, orange = right)'))
         plot.end()
@@ -588,12 +581,11 @@ class EffectUI:
         shape = params.get('shape', 'sine')
         depth = float(params.get('depth', 1.0))
         wave = P.lfo(shape if shape in ('sine', 'triangle', 'square', 'saw') else 'sine', phases) * depth
-        ar, ag, ab = accent()
-        plot.line(phases, wave, col(ar, ag, ab), 2.0)
+        plot.line(phases, wave, accent_col(), 2.0)
         rate = float(params.get('rate_hz', params.get('frequency_hz', 1.0)))
         meters = renderer.meters(node['id'])
         if 'lfo' in meters:
-            plot.point(0.0, float(meters['lfo']), 4.0, col(1.0, 0.6, 0.2))
+            plot.point(0.0, float(meters['lfo']), 4.0, warm())
         plot.draw.add_text((plot.x0 + 4, plot.y0 + 2), text_col(0.6), tr('LFO') + ' %.2f Hz  (%.2f s / %s)' % (rate, 1.0 / max(rate, 1e-3), tr('cycle')))
         plot.end()
         imgui.same_line()
@@ -611,7 +603,6 @@ class EffectUI:
         plot.draw.add_line((plot.px(0), plot.y0), (plot.px(0), plot.y1), text_col(0.15))
         xs = np.linspace(-1.0, 1.0, 101)
         plot.line(xs, xs, text_col(0.25), 1.0)
-        ar, ag, ab = accent()
         curve = None
         if processor is not None and hasattr(processor, 'curve'):
             try:
@@ -628,7 +619,7 @@ class EffectUI:
             levels = 2 ** float(params['bit_depth'])
             curve = np.round(xs * levels / 2) / (levels / 2)
         if curve is not None:
-            plot.line(xs, curve, col(ar, ag, ab), 2.0)
+            plot.line(xs, curve, accent_col(), 2.0)
         plot.end()
         if plot.hovered:
             imgui.set_tooltip(tr('Transfer curve: input -> output'))
@@ -643,10 +634,9 @@ class EffectUI:
         levels = meters.get('band_level_db', [])
         plot = Plot(max(260.0, min(width - 20, 420.0)), 90.0, (0.0, max(1, len(levels))), (-60.0, 0.0))
         plot.grid_y((-40, -20), fmt=lambda v: '%d' % v)
-        ar, ag, ab = accent()
         for index, level in enumerate(levels):
             x_a, x_b = plot.px(index + 0.1), plot.px(index + 0.9)
-            plot.draw.add_rect_filled((x_a, plot.py(max(-60.0, float(level)))), (x_b, plot.py(-60.0)), col(ar, ag, ab, 0.85))
+            plot.draw.add_rect_filled((x_a, plot.py(max(-60.0, float(level)))), (x_b, plot.py(-60.0)), accent_col(0.85))
         plot.draw.add_text((plot.x0 + 4, plot.y0 + 2), text_col(0.6), tr('band levels of the voice (modulator)'))
         plot.end()
         if node['params'].get('carrier') == 'sidechain':
@@ -676,8 +666,7 @@ class EffectUI:
         mid = (left + right) * 0.7071
         side = (left - right) * 0.7071
         scale = 1.0 / max(1e-3, float(np.max(np.abs(block))) * 1.1)
-        ar, ag, ab = accent()
-        colour = col(ar, ag, ab, 0.6)
+        colour = accent_col(0.6)
         xs = side * scale
         ys = mid * scale
         for x, y in zip(xs[::2], ys[::2]):
@@ -690,9 +679,8 @@ class EffectUI:
         # spectrum
         plot = Plot(half, 150.0, (20.0, 20000.0), (-90.0, 0.0), log_x=True)
         freqs, db = self.spectrum(node, renderer)
-        ar, ag, ab = accent()
-        self.draw_spectrum_in(plot, freqs, db, col(ar, ag, ab, 0.45))
-        plot.line(freqs, db, col(ar, ag, ab, 0.9), 1.2)
+        self.draw_spectrum_in(plot, freqs, db, accent_col(0.45))
+        plot.line(freqs, db, accent_col(0.9), 1.2)
         plot.grid_x(FREQ_GRID, fmt=freq_label)
         plot.grid_y((-60, -40, -20), fmt=lambda v: '%d' % v)
         plot.draw.add_text((plot.x0 + 4, plot.y0 + 2), text_col(0.6), tr('Spectrum'))
@@ -732,10 +720,9 @@ class EffectUI:
         self.draw_spectrum_in(plot, sfreqs, (sdb + 90.0) / 90.0 * 48.0 - 24.0)
         plot.grid_x(FREQ_GRID, fmt=freq_label)
         plot.grid_y((-12, -6, 0, 6, 12), fmt=lambda v: '%+d' % v)
-        ar, ag, ab = accent()
         if processor is not None:
             try:
-                plot.line(freqs, processor.response(freqs), col(ar, ag, ab), 2.2)
+                plot.line(freqs, processor.response(freqs), accent_col(), 2.2)
             except Exception:
                 pass
         reductions = meters.get('band_reduction_db', [])
@@ -745,7 +732,7 @@ class EffectUI:
                 continue
             freq = float(params.get(f'b{n}_freq', 1000.0))
             red = float(reductions[n - 1]) if n - 1 < len(reductions) else 0.0
-            p_ = plot.point(freq, red + float(params.get(f'b{n}_static_db', 0.0)), 6.0 if n == selected else 5.0, col(1.0, 0.6, 0.2, 0.9 if n == selected else 0.55), text_col(0.9))
+            p_ = plot.point(freq, red + float(params.get(f'b{n}_static_db', 0.0)), 6.0 if n == selected else 5.0, warm(0.9 if n == selected else 0.55), text_col(0.9))
             plot.draw.add_text((p_[0] + 7, p_[1] - 8), text_col(0.8), '%d  %.1f dB' % (n, red))
         plot.end()
         if plot.hovered:
@@ -775,7 +762,7 @@ class EffectUI:
             value = float(meters.get(key, -100.0))
             imgui.text('%-12s' % label)
             imgui.same_line(130)
-            imgui.text_colored((1.0, 0.75, 0.35, 1.0) if value > -100 else (0.5, 0.5, 0.5, 1.0), ('%6.1f LUFS' % value) if value > -100 else '   --  LUFS')
+            imgui.text_colored(cyui.vec(cyui.palette().warning if value > -100 else cyui.palette().textFaint), ('%6.1f LUFS' % value) if value > -100 else '   --  LUFS')
         imgui.text('%-12s' % tr('Peak'))
         imgui.same_line(130)
         imgui.text('%6.1f dBFS' % float(meters.get('peak_db', -100.0)))
@@ -788,12 +775,11 @@ class EffectUI:
         plot.grid_y((-30, -23, -14, -6), fmt=lambda v: '%d' % v)
         values = np.asarray(history)
         if values.size > 1:
-            ar, ag, ab = accent()
-            plot.line(np.arange(values.size), np.clip(values, -40.0, 0.0), col(ar, ag, ab), 1.8)
+            plot.line(np.arange(values.size), np.clip(values, -40.0, 0.0), accent_col(), 1.8)
         for target, name in ((-14.0, 'streaming'), (-23.0, 'broadcast')):
             y = plot.py(target)
-            plot.draw.add_line((plot.x0, y), (plot.x1, y), col(1.0, 0.6, 0.2, 0.5), 1.0)
-            plot.draw.add_text((plot.x1 - 70, y - 14), col(1.0, 0.6, 0.2, 0.8), '%d %s' % (int(target), name))
+            plot.draw.add_line((plot.x0, y), (plot.x1, y), warm(0.5), 1.0)
+            plot.draw.add_text((plot.x1 - 70, y - 14), warm(0.8), '%d %s' % (int(target), name))
         plot.end()
         if plot.hovered:
             imgui.set_tooltip(tr('Momentary loudness over the last seconds; -14 LUFS streaming, -23 LUFS broadcast'))
@@ -808,15 +794,14 @@ class EffectUI:
         if spectrum is not None and profile is not None:
             freqs = np.fft.rfftfreq(2048, 1.0 / sr)
             mask = (freqs >= 20.0) & (freqs <= 20000.0)
-            ar, ag, ab = accent()
-            plot.fill_under(freqs[mask][::2], np.asarray(spectrum)[mask][::2], col(ar, ag, ab, 0.35))
-            plot.line(freqs[mask][::2], np.asarray(profile)[mask][::2] + 20.0 * np.log10(max(0.5, float(node['params'].get('sensitivity', 1.5)))), col(1.0, 0.6, 0.2, 0.95), 1.8)
+            plot.fill_under(freqs[mask][::2], np.asarray(spectrum)[mask][::2], accent_col(0.35))
+            plot.line(freqs[mask][::2], np.asarray(profile)[mask][::2] + 20.0 * np.log10(max(0.5, float(node['params'].get('sensitivity', 1.5)))), warm(0.95), 1.8)
         plot.grid_x(FREQ_GRID, fmt=freq_label)
         plot.grid_y((-80, -60, -40, -20), fmt=lambda v: '%d' % v)
         plot.draw.add_text((plot.x0 + 4, plot.y0 + 2), text_col(0.7), tr('input spectrum (fill) and noise threshold (orange)') + '   %s %.1f dB' % (tr('reduction'), float(meters.get('reduction_db', 0.0))))
         plot.end()
         if node['params'].get('learn'):
-            imgui.text_colored((1.0, 0.6, 0.2, 1.0), tr('Learning the noise profile: play a noise-only passage, then switch Learn off.'))
+            imgui.text_colored(cyui.vec(cyui.palette().warning), tr('Learning the noise profile: play a noise-only passage, then switch Learn off.'))
         self.knob_row(owner, node, spec.params)
 
     def ui_pattern(self, owner, node, spec, renderer, width):
@@ -832,12 +817,14 @@ class EffectUI:
                 if index:
                     imgui.same_line(0, 3)
                 imgui.push_id(index)
-                colour = (0.98, 0.62, 0.2, 1.0) if index == current else ((0.2, 0.5, 0.75, 1.0) if on else (0.25, 0.27, 0.32, 1.0))
-                imgui.push_style_color(imgui.Col_.button, colour)
+                p = cyui.palette()
+                ground = p.warning if index == current else (p.accent if on else p.bg3)
+                imgui.push_style_color(imgui.Col_.button, cyui.vec(ground))
+                imgui.push_style_color(imgui.Col_.text, cyui.vec(cyui.contrast_text(ground) if (on or index == current) else p.textDim))
                 if imgui.button('%d' % (index + 1), (max(22.0, (width - 80) / 16 - 3), 26)):
                     steps[index] = not on
                     changed = True
-                imgui.pop_style_color()
+                imgui.pop_style_color(2)
                 imgui.pop_id()
             if changed:
                 self._record(owner, tr('Pattern'))
@@ -862,9 +849,8 @@ class EffectUI:
         imgui.same_line()
         plot = Plot(220.0, 60.0, (-1.0, 1.0), (0.0, 1.0))
         plot.draw.add_line((plot.px(0), plot.y0), (plot.px(0), plot.y1), text_col(0.3))
-        ar, ag, ab = accent()
         x = plot.px(float(np.clip(correction, -1.0, 1.0)))
-        plot.draw.add_rect_filled((min(x, plot.px(0)), plot.y0 + 8), (max(x, plot.px(0)), plot.y1 - 8), col(ar, ag, ab, 0.85))
+        plot.draw.add_rect_filled((min(x, plot.px(0)), plot.y0 + 8), (max(x, plot.px(0)), plot.y1 - 8), accent_col(0.85))
         plot.draw.add_text((plot.x0 + 4, plot.y0 + 2), text_col(0.6), '-1 st')
         plot.draw.add_text((plot.x1 - 34, plot.y0 + 2), text_col(0.6), '+1 st')
         plot.end()
@@ -912,7 +898,7 @@ class EffectUI:
         self.header(node, renderer, width)
         error = renderer.errors.get(node['id'])
         if error:
-            imgui.text_colored((1.0, 0.5, 0.4, 1.0), error)
+            imgui.text_colored(cyui.vec(cyui.palette().error), error)
         description = node.get('_description') or {}
         imgui.text(f"{node.get('pluginName') or Path(node['plugin']).stem}  {description.get('manufacturer', '')} {description.get('version', '')}")
         imgui.text_disabled(str(node['plugin']))

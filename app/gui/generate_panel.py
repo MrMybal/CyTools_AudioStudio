@@ -6,7 +6,8 @@ from imgui_bundle import imgui
 
 from audiostudio.paths import DATA, INPUTS
 from audiostudio import audio_io
-from .widgets import status_line, help_marker, Row, multiline, field, thumbnail
+from .widgets import status_line, multiline, field, thumbnail
+from . import cyui
 from .recorder import MicRecorder
 
 QWEN_MODELS = ['1.7B-CustomVoice', '0.6B-CustomVoice', '1.7B-Base', '0.6B-Base', '1.7B-VoiceDesign']
@@ -56,15 +57,25 @@ class GeneratePanel:
     def workflow_names(self):
         return [''] + [w['name'] for w in self.app.workflows.saved]
 
+    def _prop(self, label, help=None):
+        cyui.property(self.tr(label), self.tr(help) if help else None)
+
+    @staticmethod
+    def _begin(id):
+        return cyui.begin_properties(id, 190)
+
     def _post_combo(self, state, key='post'):
+        """Post workflow row (inside a property table)."""
         names = self.workflow_names()
         index = names.index(state[key]) if state[key] in names else 0
-        imgui.push_item_width(240)
-        changed, index = imgui.combo(self.tr('Post workflow') + '###post', index, [self.tr('(none)')] + names[1:])
-        imgui.pop_item_width()
+        self._prop('Post workflow', 'Saved workflow applied to the generated audio, with tail rendering.')
+        changed, index = imgui.combo('###post', index, [self.tr('(none)')] + names[1:])
         if changed:
             state[key] = names[index]
-        help_marker(self.tr('Saved workflow applied to the generated audio, with tail rendering.'))
+
+    def _actions(self):
+        """A little room before the action row of a form."""
+        cyui.space(6.0)
 
     def _on_result(self, label):
         def callback(job):
@@ -94,6 +105,8 @@ class GeneratePanel:
         tr = self.tr
         forced = getattr(self.app, 'test_subtab', None)
         imgui.begin_child('generate-scroll', (0, 0))
+        cyui.panel_header(tr('Generate'), tr('Sound effects, music and voices; results can go straight to the editor.'))
+        cyui.space(4.0)
         if imgui.begin_tab_bar('##generate'):
             for name, draw in (('Sound effects', self._sfx), ('Music', self._music), ('Voices', self._voices)):
                 flags = imgui.TabItemFlags_.set_selected if forced == name else 0
@@ -102,30 +115,37 @@ class GeneratePanel:
                     imgui.end_tab_item()
             imgui.end_tab_bar()
         self.app.test_subtab = None
-        imgui.separator()
-        _, self.app.auto_import = imgui.checkbox(tr('Add results to the editor automatically') + '###autoimport', self.app.auto_import)
+        cyui.divider()
+        _, self.app.auto_import = cyui.toggle_switch(tr('Add results to the editor automatically') + '###autoimport', self.app.auto_import)
         self._jobs_row()
-        if self.results:
-            imgui.separator_text(tr('Results'))
-            for index, (label, file) in enumerate(self.results[:8]):
-                imgui.push_id(index)
-                duration = thumbnail(file, 240, 34)
-                imgui.same_line()
-                imgui.begin_group()
-                imgui.text(f'{label}: {Path(file).name}' + (f'  ({duration:.2f} s)' if duration else ''))
-                row = Row()
-                if row.button('Play', tr, small=True):
-                    self.app.preview_file(file)
-                if row.button('Add to editor', tr, small=True):
-                    self.app.editor.import_files([file])
-                if row.button('Use as voice reference', tr, small=True):
-                    self.voice['reference'] = str(file)
-                if row.button('Folder', tr, small=True):
-                    self.app.open_folder(Path(file).parent)
-                imgui.end_group()
-                imgui.pop_id()
-        if self.message:
-            status_line(self.message)
+        cyui.space(4.0)
+        cyui.heading(tr('Results'), 3)
+        if not self.results:
+            cyui.text_faint(tr('Generated files appear here: listen to them, add them to the editor or use them as a voice reference.'))
+        for index, (label, file) in enumerate(self.results[:8]):
+            imgui.push_id(index)
+            cyui.begin_card('##result', None)
+            duration = thumbnail(file, 240, 34)
+            imgui.same_line()
+            imgui.begin_group()
+            cyui.badge(tr(label).upper(), cyui.ACCENT)
+            imgui.same_line(0, 6)
+            imgui.align_text_to_frame_padding()
+            imgui.text(Path(file).name + (f'  ({duration:.2f} s)' if duration else ''))
+            if cyui.icon_text_button(cyui.icon.play, tr('Play') + '###play', cyui.GHOST):
+                self.app.preview_file(file)
+            imgui.same_line(0, 2)
+            if cyui.icon_text_button(cyui.icon.add, tr('Add to editor') + '###add', cyui.GHOST):
+                self.app.editor.import_files([file])
+            imgui.same_line(0, 2)
+            if cyui.icon_text_button(cyui.icon.microphone, tr('Use as voice reference') + '###ref', cyui.GHOST):
+                self.voice['reference'] = str(file)
+            imgui.same_line(0, 2)
+            if cyui.icon_text_button(cyui.icon.folder, tr('Folder') + '###folder', cyui.GHOST):
+                self.app.open_folder(Path(file).parent)
+            imgui.end_group()
+            cyui.end_card()
+            imgui.pop_id()
         imgui.end_child()
 
     def _jobs_row(self):
@@ -133,9 +153,10 @@ class GeneratePanel:
         jobs = self.app.jobs
         for job in jobs.running():
             progress = job.get('progress') or {}
-            imgui.progress_bar(float(progress.get('percent', 0)) / 100.0, (320, 0), jobs.progress_text(job)[:80])
+            percent = float(progress.get('percent', 0)) / 100.0
+            cyui.progress_bar(percent if percent > 0 else -1.0, (cyui.dp(360.0), 0), jobs.progress_text(job)[:80])
             imgui.same_line()
-            if imgui.small_button(tr('Cancel') + '###cancel' + job['jobId']):
+            if cyui.icon_button(cyui.icon.close, tr('Cancel this job'), id='cancel' + job['jobId'], fallback='x'):
                 jobs.cancel(job['jobId'])
 
     # ------------------------------------------------------------------ sound effects
@@ -143,74 +164,98 @@ class GeneratePanel:
         tr = self.tr
         s = self.sfx
         _, s['prompt'] = multiline('Description', s['prompt'], 60, 'sfx-prompt', tr)
-        imgui.push_item_width(240)
-        _, s['backend'] = imgui.combo(tr('Backend') + '###sfxbackend', s['backend'], [tr('Procedural (instant, no model)'), tr('AudioLDM (AI model)')])
-        _, s['duration'] = imgui.slider_float(tr('Duration (s, 0 = natural)') + '###sfxdur', s['duration'], 0.0, 30.0, '%.1f')
-        _, s['seed'] = imgui.input_int(tr('Seed') + '###sfxseed', s['seed'])
-        _, s['variations'] = imgui.slider_int(tr('Variations') + '###sfxvar', s['variations'], 1, 4)
-        if s['backend'] == 1:
-            _, s['steps'] = imgui.slider_int(tr('Steps') + '###sfxsteps', s['steps'], 5, 100)
-            _, s['guidance'] = imgui.slider_float(tr('Guidance') + '###sfxguid', s['guidance'], 1.0, 15.0, '%.1f')
-            _, s['device'] = imgui.combo(tr('Device') + '###sfxdev', s['device'], ['cuda', 'cpu'])
-        imgui.pop_item_width()
-        self._post_combo(s)
-        row = Row()
-        if row.button('Generate sound', tr):
+        if self._begin('##sfx-form'):
+            self._prop('Engine', 'Procedural: instant, no model, follows the words of the description. AudioLDM: an AI model (GPU).')
+            _, s['backend'] = imgui.combo('###sfxbackend', s['backend'], [tr('Procedural (instant, no model)'), tr('AudioLDM (AI model)')])
+            self._prop('Duration (s, 0 = natural)')
+            _, s['duration'] = cyui.slider_bar('###sfxdur', s['duration'], 0.0, 30.0, '%.1f s', -1)
+            self._prop('Seed', 'The same seed and description give the same sound.')
+            _, s['seed'] = imgui.input_int('###sfxseed', s['seed'])
+            self._prop('Variations')
+            _, s['variations'] = imgui.slider_int('###sfxvar', s['variations'], 1, 4)
+            if s['backend'] == 1:
+                self._prop('Steps')
+                _, s['steps'] = imgui.slider_int('###sfxsteps', s['steps'], 5, 100)
+                self._prop('Guidance')
+                _, s['guidance'] = cyui.slider_bar('###sfxguid', s['guidance'], 1.0, 15.0, '%.1f', -1)
+                self._prop('Device')
+                _, s['device'] = imgui.combo('###sfxdev', s['device'], ['cuda', 'cpu'])
+            self._post_combo(s)
+            cyui.end_properties()
+        self._actions()
+        if cyui.primary_button(cyui.icon_label(cyui.icon.play, tr('Generate sound')) + '###Generate sound'):
             params = {'prompt': s['prompt'], 'seed': max(0, s['seed']), 'variations': s['variations'], 'post_workflow': s['post']}
             if s['duration'] > 0:
                 params['duration_seconds'] = s['duration']
             if s['backend'] == 1:
                 params.update({'steps': s['steps'], 'guidance_scale': s['guidance'], 'device': ['cuda', 'cpu'][s['device']]})
             self.app.jobs.submit('generate_sfx', params, self._on_result('SFX'), tr('Sound effect'), backend_id=['sfx_procedural', 'audioldm'][s['backend']])
-        if s['backend'] == 0 and row.button('Preview recipe', tr):
-            try:
-                recipe = self.app.jobs.run_sync('preview_sfx_recipe', {'prompt': s['prompt'], 'seed': max(0, s['seed'])})
-                self.message = 'Recipe: ' + ' + '.join(l['archetype'] for l in recipe['layers']) + (' | ' + tr('unrecognised: ') + ', '.join(recipe['unrecognized_words']) if recipe.get('unrecognized_words') else '')
-            except Exception as exc:
-                self.message = str(exc)
+        if s['backend'] == 0:
+            imgui.same_line()
+            if cyui.ghost_button(tr('Preview recipe') + '###Preview recipe'):
+                try:
+                    recipe = self.app.jobs.run_sync('preview_sfx_recipe', {'prompt': s['prompt'], 'seed': max(0, s['seed'])})
+                    self.message = 'Recipe: ' + ' + '.join(l['archetype'] for l in recipe['layers']) + (' | ' + tr('unrecognised: ') + ', '.join(recipe['unrecognized_words']) if recipe.get('unrecognized_words') else '')
+                except Exception as exc:
+                    self.message = str(exc)
+            cyui.tooltip(tr('Shows which sound layers the description gives, without rendering'))
 
     # ------------------------------------------------------------------ music
     def _music(self):
         tr = self.tr
         m = self.music
-        imgui.push_item_width(240)
-        _, m['mode'] = imgui.combo(tr('Task') + '###mtask', m['mode'], [tr('Generate a song'), tr('Remix a recording'), tr('Repaint a section'), tr('Write lyrics (LM only)')])
-        imgui.pop_item_width()
+        if self._begin('##music-task'):
+            self._prop('Task')
+            _, m['mode'] = imgui.combo('###mtask', m['mode'], [tr('Generate a song'), tr('Remix a recording'), tr('Repaint a section'), tr('Write lyrics (LM only)')])
+            cyui.end_properties()
         if m['mode'] == 3:
             _, m['idea'] = multiline('Idea', m['idea'], 50, 'm-idea', tr)
         _, m['caption'] = multiline('Caption (style)', m['caption'], 50, 'm-caption', tr)
         _, m['lyrics'] = multiline('Lyrics', m['lyrics'], 90, 'm-lyrics', tr)
-        imgui.push_item_width(240)
-        _, m['instrumental'] = imgui.checkbox(tr('Instrumental') + '###minstr', m['instrumental'])
-        _, m['language'] = imgui.combo(tr('Language') + '###mlang', m['language'], LANGS_ACE)
+        if self._begin('##music-form'):
+            self._prop('Instrumental')
+            _, m['instrumental'] = cyui.toggle_switch('###minstr', m['instrumental'])
+            self._prop('Language')
+            _, m['language'] = imgui.combo('###mlang', m['language'], LANGS_ACE)
+            if m['mode'] == 0:
+                self._prop('Duration (s)')
+                _, m['duration'] = cyui.slider_bar('###mdur', m['duration'], 10.0, 600.0, '%.0f s', -1)
+                self._prop('Plan with the language model', '+6 GiB VRAM: the language model plans the structure before the song is generated.')
+                _, m['plan'] = cyui.toggle_switch('###mplan', m['plan'])
+            elif m['mode'] == 1:
+                self._prop('Similarity')
+                _, m['similarity'] = cyui.slider_bar('###msim', m['similarity'], 0.0, 1.0, '%.2f', -1)
+            elif m['mode'] == 2:
+                self._prop('Start (s)')
+                _, m['start'] = imgui.input_float('###mstart', m['start'])
+                self._prop('End (s, -1 = end)')
+                _, m['end'] = imgui.input_float('###mend', m['end'])
+                self._prop('Mode')
+                _, m['repaint_mode'] = imgui.combo('###mrmode', m['repaint_mode'], ['conservative', 'balanced', 'aggressive'])
+                self._prop('Strength')
+                _, m['repaint_strength'] = cyui.slider_bar('###mrstr', m['repaint_strength'], 0.0, 1.0, '%.2f', -1)
+            if m['mode'] != 3:
+                self._prop('Seed (-1 = random)')
+                _, m['seed'] = imgui.input_int('###mseed', m['seed'])
+                self._prop('Tracks')
+                _, m['tracks'] = imgui.slider_int('###mtracks', m['tracks'], 1, 4)
+                self._prop('Steps')
+                _, m['steps'] = imgui.slider_int('###msteps', m['steps'], 1, 60)
+                self._prop('Format')
+                _, m['format'] = imgui.combo('###mfmt', m['format'], ['flac', 'wav', 'mp3'])
+                self._post_combo(m)
+            cyui.end_properties()
         if m['mode'] == 0:
-            _, m['duration'] = imgui.slider_float(tr('Duration (s)') + '###mdur', m['duration'], 10.0, 600.0, '%.0f')
-            _, m['plan'] = imgui.checkbox(tr('Plan with the language model (+6 GiB VRAM)') + '###mplan', m['plan'])
-            imgui.pop_item_width()
             self._file_picker('Reference recording (optional)', m, 'reference', 'music-reference')
-            imgui.push_item_width(240)
-            _, m['reference_strength'] = imgui.slider_float(tr('Reference strength') + '###mrefs', m['reference_strength'], 0.0, 1.0, '%.2f')
+            if m['reference'] and self._begin('##music-reference'):
+                self._prop('Reference strength')
+                _, m['reference_strength'] = cyui.slider_bar('###mrefs', m['reference_strength'], 0.0, 1.0, '%.2f', -1)
+                cyui.end_properties()
         elif m['mode'] in (1, 2):
-            imgui.pop_item_width()
             self._file_picker('Source recording', m, 'source', 'music-source')
-            imgui.push_item_width(240)
-            if m['mode'] == 1:
-                _, m['similarity'] = imgui.slider_float(tr('Similarity') + '###msim', m['similarity'], 0.0, 1.0, '%.2f')
-            else:
-                _, m['start'] = imgui.input_float(tr('Start (s)') + '###mstart', m['start'])
-                _, m['end'] = imgui.input_float(tr('End (s, -1 = end)') + '###mend', m['end'])
-                _, m['repaint_mode'] = imgui.combo(tr('Mode') + '###mrmode', m['repaint_mode'], ['conservative', 'balanced', 'aggressive'])
-                _, m['repaint_strength'] = imgui.slider_float(tr('Strength') + '###mrstr', m['repaint_strength'], 0.0, 1.0, '%.2f')
-        if m['mode'] != 3:
-            _, m['seed'] = imgui.input_int(tr('Seed (-1 = random)') + '###mseed', m['seed'])
-            _, m['tracks'] = imgui.slider_int(tr('Tracks') + '###mtracks', m['tracks'], 1, 4)
-            _, m['steps'] = imgui.slider_int(tr('Steps') + '###msteps', m['steps'], 1, 60)
-            _, m['format'] = imgui.combo(tr('Format') + '###mfmt', m['format'], ['flac', 'wav', 'mp3'])
-        imgui.pop_item_width()
-        if m['mode'] != 3:
-            self._post_combo(m)
-        row = Row()
-        if row.button('Write lyrics' if m['mode'] == 3 else 'Generate music', tr):
+        self._actions()
+        label = 'Write lyrics' if m['mode'] == 3 else 'Generate music'
+        if cyui.primary_button(cyui.icon_label(cyui.icon.note, tr(label)) + '###' + label):
             common = {'caption': m['caption'], 'lyrics': m['lyrics'], 'instrumental': m['instrumental'], 'language': LANGS_ACE[m['language']]}
             if m['mode'] == 3:
                 self.app.jobs.submit('write_lyrics', {'mode': 'create' if m['idea'].strip() else 'format', 'idea': m['idea'], **common}, self._on_result('Lyrics'), tr('Lyrics'))
@@ -230,13 +275,14 @@ class GeneratePanel:
         """Path field with Browse and 'editor selection' buttons, plus a thumbnail when set."""
         tr = self.tr
         _, state[key] = field(label, state[key], purpose, tr)
-        row = Row()
-        if row.button('Browse###' + purpose, tr):
+        if cyui.icon_text_button(cyui.icon.folder, tr('Browse') + '###' + purpose, cyui.SECONDARY):
             self.app.dialogs.open_file(purpose, tr(label))
-        if row.button('Use editor selection###sel-' + purpose, tr):
+        imgui.same_line(0, 3)
+        if cyui.ghost_button(tr('Use editor selection') + '###sel-' + purpose):
             path = self.app.export_selection_temp()
             if path:
                 state[key] = str(path)
+        cyui.tooltip(tr('Uses the selected region of the selected track in the editor'))
         if state[key] and Path(state[key]).is_file():
             thumbnail(state[key], 300, 30)
         event = self.app.dialogs.poll() if self.app.dialogs.purpose == purpose else None
@@ -250,113 +296,136 @@ class GeneratePanel:
     def _voices(self):
         tr = self.tr
         v = self.voice
-        imgui.push_item_width(240)
-        _, v['backend'] = imgui.combo(tr('Voice engine') + '###vengine', v['backend'], ['Piper (CPU)', 'Qwen3-TTS', 'Fish Speech S2 Pro', tr('Saved preset')])
-        imgui.pop_item_width()
+        if self._begin('##voice-engine'):
+            self._prop('Voice engine')
+            _, v['backend'] = imgui.combo('###vengine', v['backend'], ['Piper (CPU)', 'Qwen3-TTS', 'Fish Speech S2 Pro', tr('Saved preset')])
+            cyui.end_properties()
         _, v['text'] = multiline('Text to speak', v['text'], 90, 'v-text', tr)
         backend = v['backend']
-        imgui.push_item_width(240)
         if backend == 0:
-            keys = [m['voiceKey'] for m in self.piper_voices] or ['fr_FR-siwis-medium']
-            index = keys.index(v['piper_voice']) if v['piper_voice'] in keys else 0
-            _, index = imgui.combo(tr('Voice') + '###pvoice', index, keys)
-            v['piper_voice'] = keys[index]
-            _, v['piper_speed'] = imgui.slider_float(tr('Length scale (speed)') + '###pspeed', v['piper_speed'], 0.5, 2.0, '%.2f')
-            _, v['piper_volume'] = imgui.slider_float(tr('Volume') + '###pvol', v['piper_volume'], 0.1, 2.0, '%.2f')
-            imgui.pop_item_width()
-            imgui.text_disabled(tr('Piper cannot copy a voice. To clone a voice, choose Qwen3-TTS (mode Clone) or Fish Speech.'))
-            imgui.text_disabled(tr('More voices: install them in the Models tab (177 languages/voices).'))
+            if self._begin('##piper-form'):
+                keys = [m['voiceKey'] for m in self.piper_voices] or ['fr_FR-siwis-medium']
+                index = keys.index(v['piper_voice']) if v['piper_voice'] in keys else 0
+                self._prop('Voice')
+                _, index = imgui.combo('###pvoice', index, keys)
+                v['piper_voice'] = keys[index]
+                self._prop('Length scale (speed)')
+                _, v['piper_speed'] = cyui.slider_bar('###pspeed', v['piper_speed'], 0.5, 2.0, '%.2f', -1)
+                self._prop('Volume')
+                _, v['piper_volume'] = cyui.slider_bar('###pvol', v['piper_volume'], 0.1, 2.0, '%.2f', -1)
+                self._post_combo(v)
+                cyui.end_properties()
+            cyui.text_wrapped_faint(tr('Piper cannot copy a voice. To clone a voice, choose Qwen3-TTS (mode Clone) or Fish Speech.'))
+            cyui.text_wrapped_faint(tr('More voices: install them in the Models tab (177 languages/voices).'))
         elif backend == 1:
-            changed, v['qwen_mode'] = imgui.combo(tr('Mode') + '###qmode', v['qwen_mode'], [tr('Preset speaker (custom)'), tr('Clone a voice from a recording'), tr('Design from a description')])
-            if changed:
-                # Each mode needs its own model family: pick the matching 1.7B variant.
-                wanted = '1.7B-' + QWEN_MODE_SUFFIX[self._qwen_mode()]
-                v['qwen_model'] = QWEN_MODELS.index(wanted)
-            models = [m for m in QWEN_MODELS if m.endswith(QWEN_MODE_SUFFIX[self._qwen_mode()])]
-            current = QWEN_MODELS[v['qwen_model']] if QWEN_MODELS[v['qwen_model']] in models else models[0]
-            _, index = imgui.combo(tr('Model') + '###qmodel', models.index(current), models)
-            v['qwen_model'] = QWEN_MODELS.index(models[index])
-            _, v['qwen_language'] = imgui.combo(tr('Language') + '###qlang', v['qwen_language'], QWEN_LANGUAGES)
-            if self._qwen_mode() == 'custom':
-                _, v['qwen_speaker'] = imgui.combo(tr('Speaker') + '###qspeaker', v['qwen_speaker'], QWEN_SPEAKERS)
-            imgui.pop_item_width()
+            if self._begin('##qwen-form'):
+                self._prop('Mode')
+                changed, v['qwen_mode'] = imgui.combo('###qmode', v['qwen_mode'], [tr('Preset speaker (custom)'), tr('Clone a voice from a recording'), tr('Design from a description')])
+                if changed:
+                    # Each mode needs its own model family: pick the matching 1.7B variant.
+                    wanted = '1.7B-' + QWEN_MODE_SUFFIX[self._qwen_mode()]
+                    v['qwen_model'] = QWEN_MODELS.index(wanted)
+                models = [m for m in QWEN_MODELS if m.endswith(QWEN_MODE_SUFFIX[self._qwen_mode()])]
+                current = QWEN_MODELS[v['qwen_model']] if QWEN_MODELS[v['qwen_model']] in models else models[0]
+                self._prop('Model')
+                _, index = imgui.combo('###qmodel', models.index(current), models)
+                v['qwen_model'] = QWEN_MODELS.index(models[index])
+                self._prop('Language')
+                _, v['qwen_language'] = imgui.combo('###qlang', v['qwen_language'], QWEN_LANGUAGES)
+                if self._qwen_mode() == 'custom':
+                    self._prop('Speaker')
+                    _, v['qwen_speaker'] = imgui.combo('###qspeaker', v['qwen_speaker'], QWEN_SPEAKERS)
+                cyui.end_properties()
             if self._qwen_mode() in ('custom', 'design'):
                 label = 'Voice description (design)' if self._qwen_mode() == 'design' else 'Delivery instruction (1.7B)'
                 _, v['instruction'] = multiline(label, v['instruction'], 40, 'q-instruction', tr)
             if self._qwen_mode() == 'clone':
                 self._reference_section(allow_embedding_only=True)
-            imgui.push_item_width(240)
-            if self._qwen_mode() == 'custom':
-                _, v['annotations'] = imgui.checkbox(tr('Inline annotations [tone: ...] [pause: 500ms] (1.7B CustomVoice)') + '###qann', v['annotations'])
-            _, v['delivery'] = imgui.combo(tr('Split text') + '###qsplit', v['delivery'], ['paragraphs', 'segments', 'complete'])
-            _, v['device'] = imgui.combo(tr('Device') + '###qdev', v['device'], ['cuda', 'cpu'])
-            _, v['seed'] = imgui.input_int(tr('Seed') + '###qseed', v['seed'])
-            _, v['temperature'] = imgui.slider_float(tr('Temperature') + '###qtemp', v['temperature'], 0.1, 2.0, '%.2f')
-            imgui.pop_item_width()
+            if self._begin('##qwen-options'):
+                if self._qwen_mode() == 'custom':
+                    self._prop('Inline annotations', '[tone: ...] [pause: 500ms] in the text (1.7B CustomVoice).')
+                    _, v['annotations'] = cyui.toggle_switch('###qann', v['annotations'])
+                self._prop('Split text')
+                _, v['delivery'] = imgui.combo('###qsplit', v['delivery'], ['paragraphs', 'segments', 'complete'])
+                self._prop('Device')
+                _, v['device'] = imgui.combo('###qdev', v['device'], ['cuda', 'cpu'])
+                self._prop('Seed')
+                _, v['seed'] = imgui.input_int('###qseed', v['seed'])
+                self._prop('Temperature')
+                _, v['temperature'] = cyui.slider_bar('###qtemp', v['temperature'], 0.1, 2.0, '%.2f', -1)
+                self._post_combo(v)
+                cyui.end_properties()
         elif backend == 2:
-            _, v['fish_expression'] = imgui.input_text(tr('Expression (whisper, excited, ...)') + '###fexpr', v['fish_expression'])
-            imgui.pop_item_width()
-            imgui.text_disabled(tr('Optional: give a reference to copy a voice; without it the model picks a voice.'))
+            if self._begin('##fish-form'):
+                self._prop('Expression', 'whisper, excited, ...')
+                _, v['fish_expression'] = imgui.input_text('###fexpr', v['fish_expression'])
+                self._prop('Seed')
+                _, v['seed'] = imgui.input_int('###fseed', v['seed'])
+                self._post_combo(v)
+                cyui.end_properties()
+            cyui.text_wrapped_faint(tr('Optional: give a reference to copy a voice; without it the model picks a voice.'))
             self._reference_section(allow_embedding_only=False)
-            imgui.push_item_width(240)
-            _, v['seed'] = imgui.input_int(tr('Seed') + '###fseed', v['seed'])
-            imgui.pop_item_width()
-            imgui.text_disabled(tr('Multi-speaker dialogues: use the Advanced operations tab (turns[]) or MCP.'))
+            cyui.text_wrapped_faint(tr('Multi-speaker dialogues: use the Advanced operations tab (turns[]) or MCP.'))
         else:
-            labels = [f"{p['name']} [{p['backend']}]" + (f" - {p['references']} ref." if p.get('references') else '') for p in self.presets] or [tr('(no preset saved)')]
-            _, v['preset_index'] = imgui.combo(tr('Preset') + '###vpreset', min(v['preset_index'], len(labels) - 1), labels)
-            imgui.pop_item_width()
-            row = Row()
-            if row.button('Refresh', tr):
+            if self._begin('##preset-form'):
+                labels = [f"{p['name']} [{p['backend']}]" + (f" - {p['references']} ref." if p.get('references') else '') for p in self.presets] or [tr('(no preset saved)')]
+                self._prop('Preset')
+                _, v['preset_index'] = imgui.combo('###vpreset', min(v['preset_index'], len(labels) - 1), labels)
+                self._post_combo(v)
+                cyui.end_properties()
+            if cyui.icon_button(cyui.icon.refresh, tr('Refresh the list of presets'), id='Refresh', fallback='R'):
                 self.refresh_catalogues()
-            if self.presets and row.button('Delete preset', tr):
-                preset = self.presets[min(v['preset_index'], len(self.presets) - 1)]
-                try:
-                    self.app.jobs.run_sync('delete_voice_preset', {'preset': preset['id']})
-                    self.message = tr('Preset deleted: ') + preset['name']
-                except Exception as exc:
-                    self.message = str(exc)
-                self.refresh_catalogues()
-        self._post_combo(v)
-        row = Row()
-        if row.button('Generate voice', tr):
+            if self.presets:
+                imgui.same_line(0, 3)
+                if cyui.danger_button(tr('Delete preset') + '###Delete preset'):
+                    preset = self.presets[min(v['preset_index'], len(self.presets) - 1)]
+                    try:
+                        self.app.jobs.run_sync('delete_voice_preset', {'preset': preset['id']})
+                        self.message = tr('Preset deleted: ') + preset['name']
+                    except Exception as exc:
+                        self.message = str(exc)
+                    self.refresh_catalogues()
+        self._actions()
+        if cyui.primary_button(cyui.icon_label(cyui.icon.microphone, tr('Generate voice')) + '###Generate voice'):
             self._submit_voice()
         if backend != 3:
-            row.next(220)
-            imgui.push_item_width(160)
-            _, v['preset_name'] = imgui.input_text(tr('Preset name') + '###vpresetname', v['preset_name'])
+            imgui.same_line(0, 12)
+            imgui.push_item_width(cyui.dp(170.0))
+            _, v['preset_name'] = imgui.input_text_with_hint('###vpresetname', tr('Preset name'), v['preset_name'])
             imgui.pop_item_width()
-            if row.button('Save as preset', tr):
+            imgui.same_line(0, 3)
+            if cyui.icon_text_button(cyui.icon.save, tr('Save as preset') + '###Save as preset'):
                 self._save_preset()
-            if imgui.is_item_hovered():
-                imgui.set_tooltip(tr('Keeps the engine, model, every setting and a copy of the reference recording, to regenerate the same voice later.'))
+            cyui.tooltip(tr('Keeps the engine, model, every setting and a copy of the reference recording, to regenerate the same voice later.'))
 
     def _reference_section(self, allow_embedding_only):
         """Reference voice: file, editor selection or microphone; transcription (typed or Whisper)."""
         tr = self.tr
         v = self.voice
-        imgui.separator_text(tr('Voice to copy'))
-        imgui.text_wrapped(tr('Give 3 to 30 seconds of clean speech from the voice to copy (no music, one speaker).'))
-        row = Row()
-        if row.button('Choose a file', tr):
+        cyui.space(4.0)
+        cyui.heading(tr('Voice to copy'), 3)
+        cyui.text_wrapped_dim(tr('Give 3 to 30 seconds of clean speech from the voice to copy (no music, one speaker).'))
+        if cyui.icon_text_button(cyui.icon.folder, tr('Choose a file') + '###Choose a file'):
             self.app.dialogs.open_file('voice-reference', tr('Recording of the voice to copy'), str(INPUTS))
-        if row.button('Use editor selection', tr):
+        imgui.same_line(0, 3)
+        if cyui.ghost_button(tr('Use editor selection') + '###Use editor selection'):
             path = self.app.export_selection_temp()
             if path:
                 v['reference'] = str(path)
+        imgui.same_line(0, 3)
         if not self.mic.active:
-            if row.button('Record from microphone', tr):
+            if cyui.icon_text_button(cyui.icon.microphone, tr('Record from microphone') + '###Record from microphone'):
                 self.mic.device = self.app.player.input_device
                 self.mic.samplerate = 48000
                 self.mic.start()
         else:
-            if row.button('Stop recording', tr):
+            if cyui.icon_text_button(cyui.icon.stop, tr('Stop recording') + '###Stop recording', cyui.DANGER):
                 path = self.mic.stop()
                 if path:
                     v['reference'] = str(path)
                     self.message = tr('Recording saved: ') + str(path)
-            row.next(160)
-            imgui.progress_bar(min(1.0, self.mic.level), (100, 0), f'{self.mic.seconds():.1f} s')
+            imgui.same_line()
+            cyui.progress_bar(min(1.0, self.mic.level), (cyui.dp(120.0), 0), f'{self.mic.seconds():.1f} s', cyui.ERROR)
         if self.mic.error:
             status_line(self.mic.error, error=True)
         event = self.app.dialogs.poll() if self.app.dialogs.purpose == 'voice-reference' else None
@@ -365,14 +434,14 @@ class GeneratePanel:
         if v['reference']:
             path = Path(v['reference'])
             if path.is_file():
-                duration = thumbnail(path, 320, 36, (0.55, 0.85, 0.5))
+                duration = thumbnail(path, 320, 36, cyui.palette().success)
                 imgui.same_line()
                 imgui.begin_group()
                 imgui.text(path.name + (f'  ({duration:.1f} s)' if duration else ''))
-                row = Row()
-                if row.button('Listen', tr, small=True):
+                if cyui.icon_text_button(cyui.icon.play, tr('Listen') + '###Listen', cyui.GHOST):
                     self.app.preview_file(path)
-                if row.button('Remove', tr, small=True):
+                imgui.same_line(0, 2)
+                if cyui.icon_text_button(cyui.icon.close, tr('Remove') + '###Remove', cyui.GHOST):
                     v['reference'] = ''
                 imgui.end_group()
                 if duration and duration > REFERENCE_MAX_SECONDS:
@@ -382,17 +451,17 @@ class GeneratePanel:
             else:
                 status_line(tr('Reference file not found: ') + str(path), error=True)
         _, v['reference_text'] = multiline('Exact transcription of the reference', v['reference_text'], 40, 'v-reftext', tr)
-        row = Row()
-        imgui.push_item_width(80)
-        _, v['transcribe_language'] = row.combo('whisperlang', v['transcribe_language'], [tr('auto')] + WHISPER_LANGS[1:], 80)
+        imgui.push_item_width(cyui.dp(80.0))
+        _, v['transcribe_language'] = imgui.combo('##whisperlang', v['transcribe_language'], [tr('auto')] + WHISPER_LANGS[1:])
         imgui.pop_item_width()
+        cyui.tooltip(tr('Language spoken in the reference (auto: detected by Whisper)'))
+        imgui.same_line(0, 3)
         busy = self.app.jobs.is_running('transcribe_audio')
-        imgui.begin_disabled(busy or not v['reference'])
-        if row.button('Transcribe automatically (Whisper)', tr):
-            self._transcribe()
-        imgui.end_disabled()
+        with cyui.scoped_disabled(busy or not v['reference']):
+            if cyui.icon_text_button(cyui.icon.document, tr('Transcribe automatically (Whisper)') + '###Transcribe automatically (Whisper)'):
+                self._transcribe()
         if allow_embedding_only:
-            _, v['x_vector'] = row.checkbox('Without transcription (voice timbre only, lower fidelity)', v['x_vector'], tr)
+            _, v['x_vector'] = cyui.toggle_switch(tr('Without transcription (voice timbre only, lower fidelity)') + '###Without transcription', v['x_vector'])
 
     def _transcribe(self):
         v = self.voice

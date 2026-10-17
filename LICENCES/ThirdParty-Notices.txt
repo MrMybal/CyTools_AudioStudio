@@ -20,6 +20,12 @@ LICENCES/CyToolsCore-MIT.txt (SDK), and for each Python package its own .dist-in
            notice in LICENCES/LICENSE-CyToolsCore.txt, pinned revision in LICENCES/SOURCES.txt.
            The MIT licence of the SDK does not change the GPL-3.0 licence of the application.
 
+[Library] CyUI - themes, widgets and layout of the Cy* interfaces (Python port in app/gui/cyui)
+  Licence: GPL-3.0-only (as part of the application code)
+  Notes:   Ported from the C++ CyUI library (D:/_Project/CyImgui_Interface) of the same author,
+           Cyberalien. Fonts and icons are the Windows system fonts Segoe UI, Segoe UI Semibold,
+           Consolas and Segoe MDL2 Assets: they are read from C:/Windows/Fonts and not shipped.
+
 [Engine] pedalboard (Spotify) - native effects and VST3 hosting, built on JUCE
   Licence: GPL-3.0
   Source:  https://github.com/spotify/pedalboard

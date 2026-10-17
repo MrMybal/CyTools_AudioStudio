@@ -33,13 +33,19 @@ TaskFiles.md) before changing anything.
    file by file (`audiostudio/models`): a folder that exists is not an installed model. Licences
    requiring acceptance are accepted by the user in the Models tab, never in code or settings.
    Tokens come from the OS keyring only; never in argv, jobs, logs or configurations.
-7. Every visible string of `gui/*.py` and `dsp/effects.py` needs an English source and a French
+7. The interface follows CyUI (`gui/cyui`, rules of D:/_Project/CyImgui_Interface/docs/AI_GUIDE.md):
+   colours from `cyui.palette()` by role only, sizes through `cyui.dp()` or the style, one primary
+   button per view, icon buttons with a tooltip naming the action and its shortcut and a stable
+   identity (`id=`), property tables in forms, empty panels that say why, messages through the
+   panels' `message` (status bar and notification). Check a change in the five themes
+   (`desktop.py --ui-test-tab=Editor --ui-test-theme=<key>`).
+8. Every visible string of `gui/*.py` and `dsp/effects.py` needs an English source and a French
    entry (`tests/test_locales.py` enforces it). Never translate identifiers, paths, model names,
    prompts or user text.
-8. Evidence before claims: `platform-tested.json` and `data/reports/VALIDATION.md` only record
+9. Evidence before claims: `platform-tested.json` and `data/reports/VALIDATION.md` only record
    executions that really happened on this machine. Linux is declared, not tested. ASIO is out of
    scope (no Steinberg SDK licence); VST2 is out of scope.
-9. The five superseded Tools (AudioGen, ACE-Step 1.5, FishSpeech S2 Pro, Piper TTS, Qwen3-TTS)
+10. The five superseded Tools (AudioGen, ACE-Step 1.5, FishSpeech S2 Pro, Piper TTS, Qwen3-TTS)
    are gone: their weights live in `data/models/<backend>` (receipt
    `data/reports/migration-legacy.json`) and their reference code in
    `../runtime/backups/legacy-reference/`. Do not resurrect a dependency on them.
