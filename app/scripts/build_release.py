@@ -59,6 +59,10 @@ def write_sum(path):
 
 
 def app_files():
+    if sys.platform == 'win32':
+        worker = APP / 'native/bin/Windows-AMD64/AudioStudioPluginWorker.exe'
+        if not worker.is_file():
+            raise RuntimeError('Build the CLAP/LV2/JSFX host before packaging: python app/scripts/build_plugin_host.py')
     for path in sorted(APP.rglob('*')):
         if path.is_dir():
             continue

@@ -104,7 +104,7 @@ MCP client configuration (absolute paths):
                                 "args": ["<path>/CyTools_AudioStudio/app/tool.py", "--data-dir", "<path>/CyTools_AudioStudio/data/jobs-mcp", "mcp"]}}}
 ```
 
-## Operations (40)
+## Operations (43)
 
 Processing: `process_audio`, `batch_process`, `convert_audio`, `analyze_audio`, `master_audio`, `render_session`
 (mix a saved editor session with its inserts, automation and master bus, tail included), `edit_session`
@@ -389,3 +389,12 @@ for a venv, `runtime/python/` for the portable build). `publish_release.py` crea
 The application logo lives in `assets/branding/logo.png`. `build_icon.ps1` creates
 the Windows icon and the portable HelloImGui window icon. The launcher build embeds
 the icon resource; `branding.py` configures the application identity and asset folder.
+
+
+### CLAP, LV2 et JSFX
+
+Les effets CLAP, LV2 et JSFX se chargent dans l’onglet Plugins et s’utilisent en insertion de piste/master
+et dans les workflows. Un éditeur EEL2 est disponible dans Plugins > JSFX script editor.
+Les nouveaux formats utilisent un worker natif isolé. Depuis un clone source, compilez-le avec
+`runtime/python/Scripts/python.exe app/scripts/build_plugin_host.py` (depuis la racine du produit).
+Voir [Docs/PluginFormats.md](Docs/PluginFormats.md).

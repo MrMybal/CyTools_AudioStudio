@@ -1,0 +1,24 @@
+desc:CyDAW Stereo Delay
+author:CyDAW
+// SPDX-License-Identifier: MIT
+slider1:250<1,1800,1>Delay (ms)
+slider2:0.3<0,0.92,0.01>Feedback
+slider3:0.25<0,1,0.01>Mix
+in_pin:Left
+in_pin:Right
+out_pin:Left
+out_pin:Right
+@init
+length=max(2,floor(srate*2));
+left=0; right=length; position=0;
+memset(0,0,length*2);
+@slider
+delay=max(1,min(length-1,floor(slider1*srate/1000)));
+@sample
+read=(position-delay+length)%length;
+dl=left[read]; dr=right[read];
+left[position]=spl0+dl*slider2;
+right[position]=spl1+dr*slider2;
+spl0=spl0*(1-slider3)+dl*slider3;
+spl1=spl1*(1-slider3)+dr*slider3;
+position=(position+1)%length;

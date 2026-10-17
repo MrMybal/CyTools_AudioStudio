@@ -120,14 +120,26 @@ def scan(request, reporter):
             continue
         cached = cache['plugins'].get(key)
         if cached and cached.get('signature') == signature and not request.get('force'):
-            results.append(cached)
+            reused = [v for k, v in cache['plugins'].items() if (k == key or k.startswith(key + '|')) and v.get('signature') == signature]
+            results.extend(reused)
+            failures.extend({'path': v['path'], 'error': v.get('error', 'Previous scan failed')} for v in reused if v.get('state') != 'ok')
             continue
+        for stale in [k for k in cache['plugins'] if k.startswith(key + '|')]:
+            del cache['plugins'][stale]
         # Mark as pending first: if the plugin crashes this process, the host sees which one.
         cache['plugins'][key] = {'path': str(bundle), 'signature': signature, 'state': 'scanning'}
         if cache_dir:
             host.write_cache(cache_dir, cache)
         try:
-            info = host.describe(bundle)
+            names = host.plugin_names(bundle)
+            if not names:
+                raise ValueError('No plugin found')
+            descriptions = [host.describe(bundle, name) for name in names]
+            for info in descriptions[:-1]:
+                info.update({'signature': signature, 'state': 'ok', 'scannedAt': time.time()})
+                cache['plugins'][key + '|' + (info.get('pluginId') or info['name'])] = info
+                results.append(info)
+            info = descriptions[-1]
             info.update({'signature': signature, 'state': 'ok', 'scannedAt': time.time()})
         except Exception as exc:
             info = {'path': str(bundle), 'signature': signature, 'state': 'failed', 'error': str(exc)[:500], 'scannedAt': time.time()}
@@ -148,16 +160,31 @@ def describe(request, reporter):
 def editor(request, reporter):
     """Open the plugin's native window; returns the state when the window is closed."""
     from audiostudio.vst import host
-    plugin = _plugin_cache().get(request['plugin'], request.get('plugin_name') or None)
-    host.apply_settings(plugin, request.get('params'), request.get('state'))
-    reporter.progress(10, step='Plugin window open', message='Close the plugin window to continue')
+    native = host.plugin_format(request['plugin']) != 'vst3'
+    plugin = host.load(request['plugin'], request.get('plugin_name') or None) if native else _plugin_cache().get(request['plugin'], request.get('plugin_name') or None)
     try:
-        plugin.show_editor()
-    except Exception as exc:
-        raise WorkerError('EditorUnavailable', 'This plugin cannot show an editor here: ' + str(exc))
-    snapshot = host.capture(plugin)
-    reporter.progress(100, step='Editor closed')
-    return snapshot
+        host.apply_settings(plugin, request.get('params'), request.get('state'))
+        reporter.progress(10, step='Plugin window open', message='Close the plugin window to continue')
+        try:
+            plugin.show_editor()
+        except Exception as exc:
+            raise WorkerError('EditorUnavailable', 'This plugin cannot show an editor here: ' + str(exc))
+        snapshot = host.capture(plugin)
+        reporter.progress(100, step='Editor closed')
+        return snapshot
+    finally:
+        if native:
+            plugin.close()
+
+
+def validate_jsfx(request, reporter):
+    from audiostudio.plugins.scripts import validate_source
+    return validate_source(request['source'], request.get('directory') or None)
+
+
+def save_jsfx(request, reporter):
+    from audiostudio.plugins.scripts import save_source
+    return save_source(request['name'], request['source'], request.get('overwrite', False))
 
 
 def analyze(request, reporter):
@@ -358,7 +385,7 @@ def status(request, reporter):
     return {'pedalboard': pedalboard.__version__, 'pluginsLoaded': len(_cache.plugins) if _cache else 0}
 
 
-HANDLERS = {'render': render, 'render_buffer': render_buffer, 'scan': scan, 'describe': describe, 'editor': editor,
+HANDLERS = {'render': render, 'render_buffer': render_buffer, 'scan': scan, 'describe': describe, 'validate_jsfx': validate_jsfx, 'save_jsfx': save_jsfx, 'editor': editor,
             'analyze': analyze, 'convert': convert, 'master': master, 'render_session': render_session, 'edit_session': edit_session,
             'batch_session': batch_session, 'status': status}
 

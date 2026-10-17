@@ -4,7 +4,7 @@ from pathlib import Path
 
 from cytools_core import CyToolError
 
-from ..paths import WORKFLOWS, default_vst3_directories
+from ..paths import WORKFLOWS, default_plugin_directories
 from ..dsp import effects
 from ..workflow import model as workflow_model
 from ..vst import host as vst_host
@@ -170,7 +170,7 @@ def register(runtime, services):
         return {'path': str(target), 'name': document['name'], 'summary': workflow_model.summary(document)}
 
     def scan_plugins(context, parameters):
-        directories = [str(d) for d in default_vst3_directories()] + [d for d in parameters.get('directories', []) if d]
+        directories = [str(d) for d in default_plugin_directories()] + [d for d in parameters.get('directories', []) if d]
         settings = _plugin_settings()
         directories += [d for d in settings.get('directories', []) if d not in directories]
         return services.run_dsp(context, 'scan', {'directories': directories, 'cache_dir': str(plugin_cache_dir()), 'force': bool(parameters.get('force'))})
@@ -178,13 +178,30 @@ def register(runtime, services):
     def list_plugins(context, parameters):
         cache = vst_host.read_cache(plugin_cache_dir())
         plugins = sorted(cache.get('plugins', {}).values(), key=lambda p: (p.get('name') or Path(p.get('path', '')).stem).lower())
-        return {'plugins': plugins, 'count': len(plugins), 'directories': [str(d) for d in default_vst3_directories()] + _plugin_settings().get('directories', [])}
+        return {'plugins': plugins, 'count': len(plugins), 'directories': [str(d) for d in default_plugin_directories()] + _plugin_settings().get('directories', [])}
 
     def describe_plugin(context, parameters):
         plugin = parameters['plugin']
         if not Path(plugin).exists():
             raise CyToolError('MissingInput', 'Plugin not found: ' + plugin, recoverable=True)
-        return services.run_dsp(context, 'describe', {'plugin': plugin})
+        return services.run_dsp(context, 'describe', {'plugin': plugin, 'plugin_name': parameters.get('plugin_name', '')})
+
+    def read_jsfx(context, parameters):
+        from ..plugins.scripts import read_source
+        source = Path(parameters['script'])
+        if not source.is_file():
+            raise CyToolError('MissingInput', 'JSFX source not found: ' + str(source), recoverable=True)
+        return {'path': str(source), 'source': read_source(source)}
+
+    def validate_jsfx(context, parameters):
+        return services.run_dsp(context, 'validate_jsfx', parameters)
+
+    def save_jsfx(context, parameters):
+        return services.run_dsp(context, 'save_jsfx', parameters)
+
+    runtime.register('read_jsfx', read_jsfx)
+    runtime.register('validate_jsfx', validate_jsfx)
+    runtime.register('save_jsfx', save_jsfx)
 
     def master_audio(context, parameters):
         from .common import post_process

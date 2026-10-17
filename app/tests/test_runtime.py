@@ -466,6 +466,30 @@ class RuntimeTests(unittest.TestCase):
         rendered, _ = audio_io.load(outputs['file'])
         self.assertAlmostEqual(rms_db(rendered) - rms_db(self.audio), 20 * np.log10(0.25), delta=0.2)
 
+    def test_jsfx_operations_use_real_worker_and_import_external_source(self):
+        from audiostudio.plugins.native import worker_executable
+        from tests.test_plugin_formats import SOURCE
+        try:
+            worker_executable()
+        except RuntimeError as exc:
+            self.skipTest(str(exc))
+        original = self.root / 'fixtures' / 'external.jsfx'
+        original.write_text(SOURCE, 'utf-8')
+        read = self.completed('read_jsfx', {'script': str(original)})
+        self.assertEqual(read['source'], SOURCE)
+        self.assertNotEqual(Path(read['path']), original)
+        checked = self.completed('validate_jsfx', {'source': SOURCE})
+        self.assertTrue(checked['valid'])
+        import uuid
+        name = 'AudioStudio-Test-' + uuid.uuid4().hex
+        saved = self.completed('save_jsfx', {'name': name, 'source': SOURCE})
+        target = Path(saved['path'])
+        try:
+            self.assertEqual(target.read_text('utf-8'), SOURCE)
+            self.assertEqual(self.completed('describe_plugin', {'plugin': str(target)})['format'], 'JSFX')
+        finally:
+            target.unlink(missing_ok=True)
+
 
 if __name__ == '__main__':
     unittest.main()

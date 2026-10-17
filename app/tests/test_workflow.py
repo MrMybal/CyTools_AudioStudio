@@ -200,7 +200,7 @@ class RenderEngineTests(unittest.TestCase):
         cache = engine.PluginCache()
         levels = {}
         for gain in (1.0, 0.25):
-            workflow = model.new_workflow('VST', nodes=[{'kind': 'vst3', 'plugin': str(CYDAW_PLUGIN), 'params': {'gain_x': gain}}], tail={'max_seconds': 0.5})
+            workflow = model.new_workflow('VST', nodes=[{'id': 'gain-under-test', 'kind': 'vst3', 'plugin': str(CYDAW_PLUGIN), 'params': {'gain_x': gain}}], tail={'max_seconds': 0.5})
             result = engine.render(self.audio, RATE, workflow, plugin_cache=cache)
             self.assertEqual(result.audio.shape, self.audio.shape)
             self.assertTrue(np.isfinite(result.audio).all())
@@ -212,7 +212,7 @@ class RenderEngineTests(unittest.TestCase):
         # The bundle folder and the inner DLL resolve to the same cache entry.
         from audiostudio.vst import host
         self.assertEqual(host.bundle_path(host.loadable_path(CYDAW_PLUGIN)), CYDAW_PLUGIN)
-        cache.get(host.loadable_path(CYDAW_PLUGIN))
+        cache.get(host.loadable_path(CYDAW_PLUGIN), instance_id='gain-under-test')
         self.assertEqual(len(cache.plugins), 1)
 
     def test_render_file_writes_a_file(self):

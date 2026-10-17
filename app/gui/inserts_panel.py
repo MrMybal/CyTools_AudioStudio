@@ -103,7 +103,7 @@ class InsertsPanel:
 
     def add_plugin(self, owner, info):
         params = {name: p.get('value') for name, p in info.get('parameters', {}).items() if isinstance(p.get('value'), (int, float, bool, str))}
-        node = workflow_model.new_node('vst3', plugin=info['path'], pluginName=info.get('name', ''), params=params)
+        node = workflow_model.new_node(info.get('format', 'VST3').lower(), plugin=info['path'], pluginName=info.get('pluginId') or info.get('name', ''), params=params)
         node['_description'] = info
         node = self.document.add_insert(owner, node)
         self.selected[owner.id] = node['id']
@@ -136,7 +136,7 @@ class InsertsPanel:
         block, _ = renderer.clip_block(track, offset, track.frames)
         tail = document.tail
         extra = int(float(tail.get('max_seconds', 10.0)) * document.samplerate) if (tail.get('enabled', True) and any(
-            n.get('enabled', True) and (n['kind'] == 'vst3' or effects.REGISTRY[n['effect']].stateful) for n in track.inserts)) else 0
+            n.get('enabled', True) and (n['kind'] in ('vst3', 'clap', 'lv2', 'jsfx') or effects.REGISTRY[n['effect']].stateful) for n in track.inserts)) else 0
         audio = np.concatenate([block, np.zeros((2, extra), np.float32)], axis=1) if extra else block
         parts = []
         for start in range(0, audio.shape[1], 4096):
@@ -197,7 +197,7 @@ class InsertsPanel:
                 document.touch()
             cyui.tooltip(tr('Enable or bypass this insert'))
             imgui.same_line(0, 4)
-            title = tr(effects.REGISTRY[node['effect']].name) if node['kind'] == 'effect' and node['effect'] in effects.REGISTRY else (node.get('pluginName') or Path(node.get('plugin', '')).stem)
+            title = tr(effects.REGISTRY[node['effect']].name) if node['kind'] == 'effect' and node['effect'] in effects.REGISTRY else ((node.get('_description') or {}).get('name') or node.get('pluginName') or Path(node.get('plugin', '')).stem)
             error = renderer.errors.get(node['id'])
             colour = p.error if error else (p.text if node.get('enabled', True) else p.textFaint)
             buttons = imgui.get_frame_height() * 3 + 8
@@ -258,7 +258,7 @@ class InsertsPanel:
         with cyui.scoped_disabled(not catalogue):
             if cyui.button(tr('Add') + '###Add insert plugin') and catalogue:
                 self.add_plugin(owner, catalogue[self.plugin_index])
-        cyui.tooltip(tr('Add the chosen VST3 plugin at the end of the chain'))
+        cyui.tooltip(tr('Add the chosen plugin at the end of the chain'))
         cyui.space(2.0)
         if cyui.ghost_button(tr('From workflow') + '###From workflow'):
             try:
@@ -284,7 +284,7 @@ class InsertsPanel:
         self.editor_rect = (position.x, position.y, position.x + size.x, position.y + size.y)     # for scripted hover sweeps
         node = self.selected_node(owner)
         if node is None:
-            cyui.empty_state(tr('No effect in this chain'), tr('Add an effect or a VST3 plugin to this chain.'), icon.equalizer)
+            cyui.empty_state(tr('No effect in this chain'), tr('Add an effect or a plugin to this chain.'), icon.equalizer)
         else:
             width = imgui.get_content_region_avail().x
             imgui.push_id(node['id'])
@@ -328,9 +328,9 @@ class InsertsPanel:
             cyui.divider(3.0)
             if node['kind'] == 'effect':
                 self.effect_ui.draw(owner, node, renderer, width)
-            elif node['kind'] == 'vst3':
+            elif node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx'):
                 if node.get('_description') is None:
-                    node['_description'] = next((p_ for p_ in catalogue if p_.get('path', '').lower() == str(node['plugin']).lower()), None) or {'parameters': {}}
+                    node['_description'] = next((p_ for p_ in catalogue if p_.get('path', '').lower() == str(node['plugin']).lower() and (not node.get('pluginName') or node['pluginName'] in (p_.get('name'), p_.get('pluginId')))), None) or {'parameters': {}}
                 self.effect_ui.draw_vst(owner, node, renderer, width)
             imgui.pop_id()
         imgui.end_child()

@@ -71,8 +71,8 @@ class Renderer:
     def _signature(self, node):
         if node['kind'] == 'effect':
             return ('effect', node.get('effect'), self.document.samplerate)
-        if node['kind'] == 'vst3':
-            return ('vst3', str(node.get('plugin', '')).lower(), node.get('pluginName', ''), self.document.samplerate)
+        if node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx'):
+            return (node['kind'], str(node.get('plugin', '')), node.get('pluginName', ''), self.document.samplerate)
         return ('unsupported', node['kind'])
 
     def processor_for(self, node):
@@ -80,6 +80,8 @@ class Renderer:
         signature = self._signature(node)
         entry = self.processors.get(node['id'])
         if entry is None or entry['signature'] != signature:
+            if entry is not None:
+                self.forget(node['id'])
             processor = self._build(node)
             entry = {'signature': signature, 'processor': processor, 'params': dict(node.get('params') or {}), 'state': node.get('state', '')}
             self.processors[node['id']] = entry
@@ -88,9 +90,9 @@ class Renderer:
         if processor is None:
             return None
         params = node.get('params') or {}
-        if params != entry['params'] or (node['kind'] == 'vst3' and node.get('state', '') != entry.get('state', '')):
+        if params != entry['params'] or (node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx') and node.get('state', '') != entry.get('state', '')):
             try:
-                if node['kind'] == 'vst3' and node.get('state', '') != entry.get('state', ''):
+                if node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx') and node.get('state', '') != entry.get('state', ''):
                     processor.restore_state(node.get('state', ''))
                 processor.set_params(params)
             except Exception as exc:
@@ -106,8 +108,8 @@ class Renderer:
                 if processor is None:
                     self.errors[node['id']] = 'This effect works on whole files only (use it on a selection)'
                 return processor
-            if node['kind'] == 'vst3':
-                key = (str(node.get('plugin', '')).lower(), node.get('pluginName', '') or '')
+            if node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx'):
+                key = (node['id'], str(node.get('plugin', '')), node.get('pluginName', '') or '')
                 plugin = self.plugins.get(key)
                 if plugin is None:
                     plugin = self.plugin_loader(node['plugin'], node.get('pluginName', ''))
@@ -130,7 +132,14 @@ class Renderer:
             tap.__init__(tap.frames)
 
     def forget(self, node_id):
-        self.processors.pop(node_id, None)
+        entry = self.processors.pop(node_id, None)
+        if entry is not None:
+            plugin = getattr(entry.get('processor'), 'plugin', None)
+            if hasattr(plugin, 'close'):
+                plugin.close()
+        for key in list(self.plugins):
+            if key[0] == node_id:
+                self.plugins.pop(key, None)
         self.taps.pop(node_id, None)
         self.errors.pop(node_id, None)
 

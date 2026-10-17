@@ -18,12 +18,21 @@ import time
 import numpy as np
 
 CACHE_VERSION = 1
+PLUGIN_KINDS = ('vst3', 'clap', 'lv2', 'jsfx')
+
+
+def plugin_format(path):
+    suffix = Path(path).suffix.lower().lstrip('.')
+    return suffix if suffix in PLUGIN_KINDS else 'jsfx'
+
 
 
 def loadable_path(path):
     """Resolve a bundle folder or a plain DLL to the file pedalboard can load."""
     path = Path(path)
     if path.is_file():
+        return path
+    if path.is_dir() and path.suffix.lower() in ('.lv2', '.clap'):
         return path
     if path.is_dir():
         if sys.platform == 'win32':
@@ -45,7 +54,7 @@ def bundle_path(path):
     """Canonical bundle path (folder ending with .vst3, or the file itself)."""
     path = Path(path)
     for parent in [path] + list(path.parents):
-        if parent.suffix.lower() == '.vst3' and parent.is_dir():
+        if parent.suffix.lower() in ('.vst3', '.clap', '.lv2') and parent.is_dir():
             return parent
     return path
 
@@ -66,8 +75,8 @@ def find_bundles(directories, max_depth=6):
             except OSError:
                 continue
             for entry in entries:
-                if entry.suffix.lower() == '.vst3':
-                    key = str(entry.resolve()).lower()
+                if entry.suffix.lower() in ('.vst3', '.clap', '.lv2', '.jsfx') or (entry.is_file() and not entry.suffix and _is_jsfx(entry)):
+                    key = str(entry.resolve()).casefold() if sys.platform == 'win32' else str(entry.resolve())
                     if key not in seen:
                         seen.add(key)
                         found.append(entry)
@@ -76,7 +85,19 @@ def find_bundles(directories, max_depth=6):
     return sorted(found, key=lambda p: p.name.lower())
 
 
+def _is_jsfx(path):
+    try:
+        with path.open('r', encoding='utf-8-sig', errors='replace') as f:
+            head = f.read(16384)
+        return 'desc:' in head and any(section in head for section in ('@sample', '@block', '@init'))
+    except OSError:
+        return False
+
+
 def load(path, plugin_name=None):
+    if plugin_format(path) != 'vst3':
+        from ..plugins.native import NativePlugin
+        return NativePlugin(path, plugin_name)
     from pedalboard import load_plugin
     file = loadable_path(path)
     if plugin_name:
@@ -102,6 +123,9 @@ def describe_parameter(name, parameter):
     valid = getattr(parameter, 'valid_values', None)
     if valid and len(valid) <= 64:
         info['choices'] = [str(v) for v in valid]
+    if hasattr(parameter, 'text'):
+        info['displayValue'] = parameter.text
+        info['normalized'] = True
     info['type'] = getattr(parameter, 'type', None).__name__ if getattr(parameter, 'type', None) else 'float'
     return info
 
@@ -119,13 +143,21 @@ def describe(path, plugin_name=None):
     """Load a plugin and report its identity and parameters (runs in a worker)."""
     started = time.monotonic()
     plugin = load(path, plugin_name)
+    try:
+        return _describe_loaded(path, plugin, started)
+    finally:
+        if hasattr(plugin, 'close'):
+            plugin.close()
+
+
+def _describe_loaded(path, plugin, started):
     parameters = {}
     for name in list(plugin.parameters):
         try:
             parameters[name] = describe_parameter(name, plugin.parameters[name])
         except Exception as exc:
             parameters[name] = {'id': name, 'error': str(exc)}
-    return {'path': str(bundle_path(path)), 'file': str(loadable_path(path)), 'name': plugin.name,
+    return {'format': plugin_format(path).upper(), 'pluginId': getattr(plugin, 'metadata', {}).get('pluginId', ''), 'path': str(bundle_path(path)), 'file': str(loadable_path(path)), 'name': plugin.name,
             'manufacturer': plugin.manufacturer_name, 'version': plugin.version, 'category': getattr(plugin, 'category', ''),
             'isEffect': bool(plugin.is_effect), 'isInstrument': bool(plugin.is_instrument),
             'latencySamples': int(getattr(plugin, 'reported_latency_samples', 0) or 0),
@@ -133,6 +165,9 @@ def describe(path, plugin_name=None):
 
 
 def plugin_names(path):
+    if plugin_format(path) != 'vst3':
+        from ..plugins.native import probe
+        return [row['name'] for row in probe(path)]
     from pedalboard import VST3Plugin
     return list(VST3Plugin.get_plugin_names_for_file(str(loadable_path(path))))
 
@@ -162,6 +197,8 @@ def apply_settings(plugin, params=None, state=None):
 
 def capture(plugin):
     """Serialisable snapshot of a plugin: explicit parameters plus opaque state."""
+    if hasattr(plugin, 'refresh'):
+        plugin.refresh()
     params = {}
     for name in list(plugin.parameters):
         try:
@@ -178,8 +215,15 @@ def process(plugin, audio, samplerate, reset=True):
 
 def cache_key(path):
     file = loadable_path(path)
-    stat = file.stat()
-    return hashlib.sha1(f'{file.resolve()}|{stat.st_size}|{int(stat.st_mtime)}|{CACHE_VERSION}'.encode('utf-8')).hexdigest()
+    files = sorted(p for p in file.rglob('*') if p.is_file()) if file.is_dir() else [file]
+    # JSFX includes live beside the script; changing one invalidates the description.
+    if plugin_format(path) == 'jsfx':
+        files = sorted(p for p in file.parent.rglob('*') if p.is_file() and p.suffix.lower() in ('', '.jsfx', '.jsfx-inc'))
+    digest = hashlib.sha256(f'{file.resolve()}|formats-v2'.encode())
+    for item in files:
+        stat = item.stat()
+        digest.update(f'{item}|{stat.st_size}|{stat.st_mtime_ns}'.encode('utf-8'))
+    return digest.hexdigest()
 
 
 def read_cache(cache_dir):

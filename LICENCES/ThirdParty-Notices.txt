@@ -86,3 +86,20 @@ LICENCES/CyToolsCore-MIT.txt (SDK), and for each Python package its own .dist-in
 [Dependency] Dear ImGui / imgui-bundle
   Licence: MIT
   Source:  https://github.com/pthom/imgui_bundle
+
+[Library] JUCE 8.0.15 — isolated native plugin host (including Lilv/Serd/Sord/Sratom LV2 host libraries)
+  Licence: AGPL-3.0 / commercial (native host uses AGPL-compatible distribution)
+  Source:  https://github.com/juce-framework/JUCE
+  Notes:   Pinned 91ad83ae34a81e0833b1a2b0866f54846370ae53. Full notices app/native/licenses.
+           Separate executable; application remains GPL-3.0-only.
+
+[Library] CLAP headers
+  Licence: MIT
+  Source:  https://github.com/free-audio/clap
+  Notes:   Pinned a47f6badb49d948fd009998f28309cdab78979c9. app/native/third_party/clap/LICENSE.
+
+[Library] ysfx — EEL2 / JSFX runtime, WDL, dr_libs, stb
+  Licence: Apache-2.0; dependencies keep zlib / MIT-0 / MIT / public-domain notices
+  Source:  https://github.com/jpcima/ysfx
+  Notes:   Pinned 8077347ccf4115567aed81400281dca57acbb0cc. Full sources and notices
+           app/native/third_party/ysfx. Imported JSFX scripts keep their own licences.

@@ -18,6 +18,7 @@ from cytools_core import Runtime, load_manifest  # noqa: E402
 from cytools_core.transports.cli import run_cli  # noqa: E402
 
 INPUT_FIELDS = {
+    'read_jsfx': ['script'],
     'process_audio': ['input'], 'batch_process': ['inputs.*'], 'convert_audio': ['input'], 'analyze_audio': ['input'],
     'generate_music': ['reference_audio'], 'remix_music': ['source_audio'], 'repaint_music': ['source_audio'],
     'voice_qwen3tts': ['reference_audio'], 'transcribe_audio': ['input'], 'master_audio': ['input', 'reference'], 'voice_fishspeech': ['references.*.audio'],

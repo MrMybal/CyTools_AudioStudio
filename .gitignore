@@ -28,3 +28,6 @@ Thumbs.db
 # Local secrets (tokens live in the system keyring, never in files)
 .env
 *.token
+
+# Native plugin host binaries are built before packaging.
+app/native/bin/

@@ -20,7 +20,8 @@ import uuid
 
 FORMAT = 'cytools-audiostudio-workflow'
 SCHEMA_VERSION = 1
-NODE_KINDS = ('effect', 'vst3', 'model')
+PLUGIN_KINDS = ('vst3', 'clap', 'lv2', 'jsfx')
+NODE_KINDS = ('effect', *PLUGIN_KINDS, 'model')
 MAX_NODES = 64
 
 
@@ -69,16 +70,16 @@ def normalize_node(node):
             raise WorkflowError('Unknown effect: ' + effect_id)
         result['effect'] = effect_id
         result['params'] = spec.normalize(result['params'])
-    elif kind == 'vst3':
+    elif kind in ('vst3', 'clap', 'lv2', 'jsfx'):
         plugin = str(node.get('plugin', '') or '')
         if not plugin:
-            raise WorkflowError('VST3 node requires a plugin path')
+            raise WorkflowError('Plugin node requires a plugin path')
         result['plugin'] = plugin
         result['pluginName'] = str(node.get('pluginName', '') or '')
         result['params'] = {str(k): v for k, v in result['params'].items() if isinstance(v, (int, float, str, bool))}
         state = node.get('state', '')
         if state and not isinstance(state, str):
-            raise WorkflowError('VST3 state must be a base64 string')
+            raise WorkflowError('Plugin state must be a base64 string')
         result['state'] = state or ''
     elif kind == 'model':
         model = str(node.get('model', '') or '')
@@ -170,8 +171,8 @@ def summary(document):
             continue
         if node['kind'] == 'effect':
             parts.append(node['effect'])
-        elif node['kind'] == 'vst3':
-            parts.append('vst3:' + (node.get('pluginName') or Path(node['plugin']).stem))
+        elif node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx'):
+            parts.append(node['kind'] + ':' + (node.get('pluginName') or Path(node['plugin']).stem))
         else:
             parts.append('model:' + node['model'])
     return ' > '.join(parts) if parts else '(empty)'

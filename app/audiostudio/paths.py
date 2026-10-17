@@ -69,3 +69,29 @@ def default_vst3_directories():
             seen.add(key)
             result.append(path)
     return result
+
+
+def default_plugin_directories():
+    """Existing VST3, CLAP, LV2 and REAPER JSFX folders; preserve user additions."""
+    paths = list(default_vst3_directories())
+    if sys.platform == 'win32':
+        for var in ('CommonProgramFiles', 'CommonProgramW6432'):
+            if os.environ.get(var):
+                paths.append(Path(os.environ[var]) / 'CLAP')
+        if os.environ.get('LOCALAPPDATA'):
+            paths += [Path(os.environ['LOCALAPPDATA']) / 'Programs/Common/CLAP', Path(os.environ['LOCALAPPDATA']) / 'LV2']
+        if os.environ.get('APPDATA'):
+            paths += [Path(os.environ['APPDATA']) / 'LV2', Path(os.environ['APPDATA']) / 'REAPER/Effects']
+        paths.append(Path(os.environ.get('CommonProgramFiles', 'C:/Program Files/Common Files')) / 'LV2')
+    elif sys.platform == 'darwin':
+        for base in (Path('/Library/Audio/Plug-Ins'), Path.home() / 'Library/Audio/Plug-Ins'):
+            paths += [base / 'CLAP', base / 'LV2']
+        paths.append(Path.home() / 'Library/Application Support/REAPER/Effects')
+    else:
+        paths += [Path('/usr/lib/clap'), Path('/usr/local/lib/clap'), Path.home() / '.clap',
+                  Path('/usr/lib/lv2'), Path('/usr/local/lib/lv2'), Path.home() / '.lv2',
+                  Path.home() / '.config/REAPER/Effects']
+    for env in ('CLAP_PATH', 'LV2_PATH', 'JSFX_PATH'):
+        paths += [Path(part) for part in os.environ.get(env, '').split(os.pathsep) if part]
+    paths += [APP / 'examples/JSFX', DATA / 'scripts/JSFX']
+    return list(dict.fromkeys(p for p in paths if p.is_dir()))

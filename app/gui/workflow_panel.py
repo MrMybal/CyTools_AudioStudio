@@ -36,7 +36,7 @@ class WorkflowPanel:
         try:
             from audiostudio.paths import PLUGIN_CACHE
             cache = vst_host.read_cache(PLUGIN_CACHE)
-            self.plugin_catalogue = sorted([p for p in cache.get('plugins', {}).values() if p.get('state') == 'ok'], key=lambda p: p.get('name', '').lower())
+            self.plugin_catalogue = sorted([p for p in cache.get('plugins', {}).values() if p.get('state') == 'ok' and p.get('isEffect', True)], key=lambda p: p.get('name', '').lower())
         except Exception:
             self.plugin_catalogue = []
 
@@ -46,7 +46,7 @@ class WorkflowPanel:
 
     def add_plugin(self, info):
         params = {name: p.get('value') for name, p in info.get('parameters', {}).items() if isinstance(p.get('value'), (int, float, bool, str))}
-        node = workflow_model.new_node('vst3', plugin=info['path'], pluginName=info.get('name', ''), params=params)
+        node = workflow_model.new_node(info.get('format', 'VST3').lower(), plugin=info['path'], pluginName=info.get('pluginId') or info.get('name', ''), params=params)
         node['_description'] = info
         self.document['nodes'].append(node)
 
@@ -75,7 +75,7 @@ class WorkflowPanel:
     def draw(self):
         tr = self.tr
         icon = cyui.icon
-        cyui.panel_header(tr('Workflows'), tr('A chain of effects and VST3 plugins, saved as a file, applied to a selection, to tracks or to files.'))
+        cyui.panel_header(tr('Workflows'), tr('A chain of effects and plugins (VST3, CLAP, LV2, JSFX), saved as a file, applied to a selection, to tracks or to files.'))
         cyui.space(4.0)
         # -- workflow file
         with cyui.toolbar('##workflow-file'):
@@ -139,12 +139,12 @@ class WorkflowPanel:
         if cyui.icon_text_button(icon.add, tr('Add effect') + '###Add effect'):
             self.add_effect(list(effects.REGISTRY)[self.effect_index])
         imgui.same_line(0, 12)
-        plugin_labels = [f"{p.get('name')} ({p.get('manufacturer', '')})" for p in self.plugin_catalogue] or [tr('(scan plugins in the Plugins tab)')]
+        plugin_labels = [f"[{p.get('format', 'VST3')}] {p.get('name')} ({p.get('manufacturer', '')})" for p in self.plugin_catalogue] or [tr('(scan plugins in the Plugins tab)')]
         _, self.plugin_index = search_combo('addplugin', min(self.plugin_index, max(0, len(plugin_labels) - 1)), plugin_labels, cyui.dp(260.0),
                                             haystacks=[plugin_haystack(p) for p in self.plugin_catalogue] or None, tr=tr)
         imgui.same_line(0, 4)
         with cyui.scoped_disabled(not self.plugin_catalogue):
-            if cyui.icon_text_button(icon.add, tr('Add VST3') + '###Add VST3') and self.plugin_catalogue:
+            if cyui.icon_text_button(icon.add, tr('Add plugin') + '###Add VST3') and self.plugin_catalogue:
                 self.add_plugin(self.plugin_catalogue[self.plugin_index])
         cyui.space(4.0)
         # -- chain
@@ -155,10 +155,10 @@ class WorkflowPanel:
         remove = None
         move = None
         if not self.document['nodes']:
-            cyui.empty_state(tr('No node yet'), tr('Add an effect or a VST3 plugin above; they run from top to bottom.'), icon.equalizer)
+            cyui.empty_state(tr('No node yet'), tr('Add an effect or a plugin above; they run from top to bottom.'), icon.equalizer)
         for index, node in enumerate(self.document['nodes']):
             imgui.push_id(node['id'])
-            title = node.get('effect') if node['kind'] == 'effect' else ('VST3: ' + (node.get('pluginName') or Path(node['plugin']).stem)) if node['kind'] == 'vst3' else 'model: ' + node.get('model', '')
+            title = node.get('effect') if node['kind'] == 'effect' else (node['kind'].upper() + ': ' + (node.get('pluginName') or Path(node['plugin']).stem)) if node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx') else 'model: ' + node.get('model', '')
             if node['kind'] == 'effect' and node.get('effect') in effects.REGISTRY:
                 title = tr(effects.REGISTRY[node['effect']].name)
             _, node['enabled'] = imgui.checkbox('##on', bool(node.get('enabled', True)))
@@ -184,10 +184,10 @@ class WorkflowPanel:
                     imgui.push_item_width(cyui.dp(260.0))
                     draw_effect_params(spec, node['params'], tr)
                     imgui.pop_item_width()
-                elif node['kind'] == 'vst3':
+                elif node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx'):
                     description = node.get('_description')
                     if description is None:
-                        description = next((p_ for p_ in self.plugin_catalogue if p_.get('path', '').lower() == str(node['plugin']).lower()), None)
+                        description = next((p_ for p_ in self.plugin_catalogue if p_.get('path', '').lower() == str(node['plugin']).lower() and (not node.get('pluginName') or node['pluginName'] in (p_.get('name'), p_.get('pluginId')))), None)
                         node['_description'] = description or {'parameters': {}}
                     cyui.text_faint(str(node['plugin']))
                     if cyui.icon_text_button(icon.new_window, tr('Open plugin window') + '###Open plugin window'):

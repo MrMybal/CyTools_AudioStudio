@@ -900,7 +900,7 @@ class EffectUI:
         if error:
             imgui.text_colored(cyui.vec(cyui.palette().error), error)
         description = node.get('_description') or {}
-        imgui.text(f"{node.get('pluginName') or Path(node['plugin']).stem}  {description.get('manufacturer', '')} {description.get('version', '')}")
+        imgui.text(f"{description.get('name') or node.get('pluginName') or Path(node['plugin']).stem}  {description.get('manufacturer', '')} {description.get('version', '')}")
         imgui.text_disabled(str(node['plugin']))
         latency = renderer.latency.get(node['id'], 0)
         if latency:
@@ -956,6 +956,8 @@ class EffectUI:
             shown += 1
             imgui.push_id(name)
             label = str(info.get('label') or name)
+            if info.get('normalized'):
+                label += ' (0–1)'
             current = node['params'].get(name, info.get('value'))
             key = node['id'] + '.' + name
             lane = owner.automation.get(key)

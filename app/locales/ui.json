@@ -16214,5 +16214,229 @@
   "Préférences de l'interface": {
     "en": "Interface preferences",
     "fr": "Préférences de l’interface"
+  },
+  "VST3, CLAP, LV2 and JSFX audio effects. CLAP, LV2 and JSFX run in separate native workers.": {
+    "en": "VST3, CLAP, LV2 and JSFX audio effects. CLAP, LV2 and JSFX run in separate native workers.",
+    "fr": "Effets audio VST3, CLAP, LV2 et JSFX. CLAP, LV2 et JSFX utilisent des processus natifs séparés."
+  },
+  "Effets audio VST3, CLAP, LV2 et JSFX. CLAP, LV2 et JSFX utilisent des processus natifs séparés.": {
+    "en": "VST3, CLAP, LV2 and JSFX audio effects. CLAP, LV2 and JSFX run in separate native workers.",
+    "fr": "Effets audio VST3, CLAP, LV2 et JSFX. CLAP, LV2 et JSFX utilisent des processus natifs séparés."
+  },
+  "Browse for a plugin folder": {
+    "en": "Browse for a plugin folder",
+    "fr": "Choisir un dossier de plugins"
+  },
+  "Choisir un dossier de plugins": {
+    "en": "Browse for a plugin folder",
+    "fr": "Choisir un dossier de plugins"
+  },
+  "Plugin folder": {
+    "en": "Plugin folder",
+    "fr": "Dossier de plugins"
+  },
+  "Dossier de plugins": {
+    "en": "Plugin folder",
+    "fr": "Dossier de plugins"
+  },
+  "Scan the folders to list VST3, CLAP, LV2 and JSFX plugins.": {
+    "en": "Scan the folders to list VST3, CLAP, LV2 and JSFX plugins.",
+    "fr": "Analysez les dossiers pour lister les plugins VST3, CLAP, LV2 et JSFX."
+  },
+  "Analysez les dossiers pour lister les plugins VST3, CLAP, LV2 et JSFX.": {
+    "en": "Scan the folders to list VST3, CLAP, LV2 and JSFX plugins.",
+    "fr": "Analysez les dossiers pour lister les plugins VST3, CLAP, LV2 et JSFX."
+  },
+  "Edit JSFX source": {
+    "en": "Edit JSFX source",
+    "fr": "Modifier le code JSFX"
+  },
+  "Modifier le code JSFX": {
+    "en": "Edit JSFX source",
+    "fr": "Modifier le code JSFX"
+  },
+  "JSFX script editor": {
+    "en": "JSFX script editor",
+    "fr": "Éditeur de scripts JSFX"
+  },
+  "Éditeur de scripts JSFX": {
+    "en": "JSFX script editor",
+    "fr": "Éditeur de scripts JSFX"
+  },
+  "JSFX script": {
+    "en": "JSFX script",
+    "fr": "Script JSFX"
+  },
+  "Script JSFX": {
+    "en": "JSFX script",
+    "fr": "Script JSFX"
+  },
+  "Edit EEL2 source, compile in an isolated worker, then save to the user JSFX folder. A failed compilation keeps the previous script.": {
+    "en": "Edit EEL2 source, compile in an isolated worker, then save to the user JSFX folder. A failed compilation keeps the previous script.",
+    "fr": "Modifiez le code EEL2, compilez dans un processus isolé puis enregistrez dans le dossier JSFX utilisateur. Un échec de compilation préserve le script précédent."
+  },
+  "Modifiez le code EEL2, compilez dans un processus isolé puis enregistrez dans le dossier JSFX utilisateur. Un échec de compilation préserve le script précédent.": {
+    "en": "Edit EEL2 source, compile in an isolated worker, then save to the user JSFX folder. A failed compilation keeps the previous script.",
+    "fr": "Modifiez le code EEL2, compilez dans un processus isolé puis enregistrez dans le dossier JSFX utilisateur. Un échec de compilation préserve le script précédent."
+  },
+  "Open JSFX script": {
+    "en": "Open JSFX script",
+    "fr": "Ouvrir un script JSFX"
+  },
+  "Ouvrir un script JSFX": {
+    "en": "Open JSFX script",
+    "fr": "Ouvrir un script JSFX"
+  },
+  "New JSFX script": {
+    "en": "New JSFX script",
+    "fr": "Nouveau script JSFX"
+  },
+  "Nouveau script JSFX": {
+    "en": "New JSFX script",
+    "fr": "Nouveau script JSFX"
+  },
+  "Script name": {
+    "en": "Script name",
+    "fr": "Nom du script"
+  },
+  "Nom du script": {
+    "en": "Script name",
+    "fr": "Nom du script"
+  },
+  "Replace existing script": {
+    "en": "Replace existing script",
+    "fr": "Remplacer le script existant"
+  },
+  "Remplacer le script existant": {
+    "en": "Replace existing script",
+    "fr": "Remplacer le script existant"
+  },
+  "Compile JSFX": {
+    "en": "Compile JSFX",
+    "fr": "Compiler le JSFX"
+  },
+  "Compiler le JSFX": {
+    "en": "Compile JSFX",
+    "fr": "Compiler le JSFX"
+  },
+  "Save JSFX": {
+    "en": "Save JSFX",
+    "fr": "Enregistrer le JSFX"
+  },
+  "Enregistrer le JSFX": {
+    "en": "Save JSFX",
+    "fr": "Enregistrer le JSFX"
+  },
+  "JSFX compilation succeeded.": {
+    "en": "JSFX compilation succeeded.",
+    "fr": "Compilation JSFX réussie."
+  },
+  "Compilation JSFX réussie.": {
+    "en": "JSFX compilation succeeded.",
+    "fr": "Compilation JSFX réussie."
+  },
+  "JSFX saved. Scan plugins to use it in an insert or workflow.": {
+    "en": "JSFX saved. Scan plugins to use it in an insert or workflow.",
+    "fr": "JSFX enregistré. Analysez les plugins pour l’utiliser en insertion ou dans un workflow."
+  },
+  "JSFX enregistré. Analysez les plugins pour l’utiliser en insertion ou dans un workflow.": {
+    "en": "JSFX saved. Scan plugins to use it in an insert or workflow.",
+    "fr": "JSFX enregistré. Analysez les plugins pour l’utiliser en insertion ou dans un workflow."
+  },
+  "Scan audio plugins": {
+    "en": "Scan audio plugins",
+    "fr": "Analyser les plugins audio"
+  },
+  "Analyser les plugins audio": {
+    "en": "Scan audio plugins",
+    "fr": "Analyser les plugins audio"
+  },
+  "List audio plugins": {
+    "en": "List audio plugins",
+    "fr": "Lister les plugins audio"
+  },
+  "Lister les plugins audio": {
+    "en": "List audio plugins",
+    "fr": "Lister les plugins audio"
+  },
+  "Describe audio plugin": {
+    "en": "Describe audio plugin",
+    "fr": "Décrire un plugin audio"
+  },
+  "Décrire un plugin audio": {
+    "en": "Describe audio plugin",
+    "fr": "Décrire un plugin audio"
+  },
+  "Read JSFX script": {
+    "en": "Read JSFX script",
+    "fr": "Lire un script JSFX"
+  },
+  "Lire un script JSFX": {
+    "en": "Read JSFX script",
+    "fr": "Lire un script JSFX"
+  },
+  "Compile JSFX script": {
+    "en": "Compile JSFX script",
+    "fr": "Compiler un script JSFX"
+  },
+  "Compiler un script JSFX": {
+    "en": "Compile JSFX script",
+    "fr": "Compiler un script JSFX"
+  },
+  "Save JSFX script": {
+    "en": "Save JSFX script",
+    "fr": "Enregistrer un script JSFX"
+  },
+  "Enregistrer un script JSFX": {
+    "en": "Save JSFX script",
+    "fr": "Enregistrer un script JSFX"
+  },
+  "A chain of effects and plugins (VST3, CLAP, LV2, JSFX), saved as a file, applied to a selection, to tracks or to files.": {
+    "en": "A chain of effects and plugins (VST3, CLAP, LV2, JSFX), saved as a file, applied to a selection, to tracks or to files.",
+    "fr": "Une chaîne d’effets et de plugins (VST3, CLAP, LV2, JSFX), enregistrée dans un fichier, applicable à une sélection, aux pistes ou aux fichiers."
+  },
+  "Une chaîne d’effets et de plugins (VST3, CLAP, LV2, JSFX), enregistrée dans un fichier, applicable à une sélection, aux pistes ou aux fichiers.": {
+    "en": "A chain of effects and plugins (VST3, CLAP, LV2, JSFX), saved as a file, applied to a selection, to tracks or to files.",
+    "fr": "Une chaîne d’effets et de plugins (VST3, CLAP, LV2, JSFX), enregistrée dans un fichier, applicable à une sélection, aux pistes ou aux fichiers."
+  },
+  "Add plugin": {
+    "en": "Add plugin",
+    "fr": "Ajouter un plugin"
+  },
+  "Ajouter un plugin": {
+    "en": "Add plugin",
+    "fr": "Ajouter un plugin"
+  },
+  "Add an effect or a plugin above; they run from top to bottom.": {
+    "en": "Add an effect or a plugin above; they run from top to bottom.",
+    "fr": "Ajoutez un effet ou un plugin ci-dessus ; ils s’exécutent de haut en bas."
+  },
+  "Ajoutez un effet ou un plugin ci-dessus ; ils s’exécutent de haut en bas.": {
+    "en": "Add an effect or a plugin above; they run from top to bottom.",
+    "fr": "Ajoutez un effet ou un plugin ci-dessus ; ils s’exécutent de haut en bas."
+  },
+  "Add the chosen plugin at the end of the chain": {
+    "en": "Add the chosen plugin at the end of the chain",
+    "fr": "Ajouter le plugin sélectionné à la fin de la chaîne"
+  },
+  "Ajouter le plugin sélectionné à la fin de la chaîne": {
+    "en": "Add the chosen plugin at the end of the chain",
+    "fr": "Ajouter le plugin sélectionné à la fin de la chaîne"
+  },
+  "Add an effect or a plugin to this chain.": {
+    "en": "Add an effect or a plugin to this chain.",
+    "fr": "Ajoutez un effet ou un plugin à cette chaîne."
+  },
+  "Ajoutez un effet ou un plugin à cette chaîne.": {
+    "en": "Add an effect or a plugin to this chain.",
+    "fr": "Ajoutez un effet ou un plugin à cette chaîne."
+  },
+  "This audio editor accepts effects; instrument sequencing requires MIDI tracks.": {
+    "en": "This audio editor accepts effects; instrument sequencing requires MIDI tracks.",
+    "fr": "Cet éditeur audio accueille les effets ; le séquençage des instruments nécessite des pistes MIDI."
+  },
+  "Cet éditeur audio accueille les effets ; le séquençage des instruments nécessite des pistes MIDI.": {
+    "en": "This audio editor accepts effects; instrument sequencing requires MIDI tracks.",
+    "fr": "Cet éditeur audio accueille les effets ; le séquençage des instruments nécessite des pistes MIDI."
   }
 }

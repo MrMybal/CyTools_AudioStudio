@@ -1,0 +1,17 @@
+desc:CyDAW Tremolo
+author:CyDAW
+// SPDX-License-Identifier: MIT
+slider1:4<0.1,20,0.1>Rate (Hz)
+slider2:0.5<0,1,0.01>Depth
+in_pin:Left
+in_pin:Right
+out_pin:Left
+out_pin:Right
+@init
+phase=0;
+@block
+increment=2*$pi*slider1/max(1,srate);
+@sample
+level=1-slider2*0.5+sin(phase)*slider2*0.5;
+spl0*=level; spl1*=level;
+phase=(phase+increment)%(2*$pi);

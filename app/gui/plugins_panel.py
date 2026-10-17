@@ -1,10 +1,10 @@
-"""Plugins tab: scan VST3 folders, browse the catalogue, inspect and test a plugin."""
+"""Plugins tab: scan Plugin folders, browse the catalogue, inspect and test a plugin."""
 import json
 from pathlib import Path
 
 from imgui_bundle import imgui
 
-from audiostudio.paths import SETTINGS, PLUGIN_CACHE, default_vst3_directories
+from audiostudio.paths import SETTINGS, PLUGIN_CACHE, default_plugin_directories
 from audiostudio.vst import host as vst_host
 from . import cyui
 
@@ -20,6 +20,8 @@ class PluginsPanel:
         self.catalogue = []
         self.failures = []
         self.message = ''
+        from .jsfx_editor import JsfxEditor
+        self.jsfx_editor = JsfxEditor(app)
         self.refresh()
 
     def tr(self, text):
@@ -55,10 +57,11 @@ class PluginsPanel:
         tr = self.tr
         icon = cyui.icon
         p = cyui.palette()
-        cyui.panel_header(tr('Plugins'), tr('VST3 plugins are loaded in a separate worker process: a crashing plugin never closes the application. VST2 is not supported (no licence).'))
+        cyui.panel_header(tr('Plugins'), tr('VST3, CLAP, LV2 and JSFX audio effects. CLAP, LV2 and JSFX run in separate native workers.'))
         cyui.space(4.0)
+        self.jsfx_editor.draw()
         if cyui.begin_section(tr('Folders') + '###folders'):
-            for folder in default_vst3_directories():
+            for folder in default_plugin_directories():
                 cyui.text_dim(str(folder))
                 imgui.same_line()
                 cyui.badge(tr('standard'))
@@ -78,8 +81,8 @@ class PluginsPanel:
             _, self.new_directory = imgui.input_text_with_hint('##add-folder', tr('Add folder'), self.new_directory)
             imgui.pop_item_width()
             imgui.same_line(0, 3)
-            if cyui.icon_button(icon.folder, tr('Browse for a VST3 folder'), id='plugdir', fallback='...'):
-                self.app.dialogs.select_folder('plugin-dir', tr('VST3 folder'))
+            if cyui.icon_button(icon.folder, tr('Browse for a plugin folder'), id='plugdir', fallback='...'):
+                self.app.dialogs.select_folder('plugin-dir', tr('Plugin folder'))
             imgui.same_line(0, 3)
             with cyui.scoped_disabled(not self.new_directory.strip()):
                 if cyui.button(tr('Add') + '###Add folder') and self.new_directory.strip():
@@ -106,14 +109,14 @@ class PluginsPanel:
         cyui.space(4.0)
         cyui.heading(tr('Catalogue') + f' ({len(self.catalogue)})', 3)
         _, self.filter = cyui.search_field('##filter', self.filter, tr('Filter'), cyui.dp(320.0))
-        shown = [pl for pl in self.catalogue if self.filter.lower() in (pl.get('name', '') + pl.get('manufacturer', '')).lower()]
+        shown = [pl for pl in self.catalogue if self.filter.lower() in (pl.get('name', '') + pl.get('manufacturer', '') + pl.get('format', 'VST3')).lower()]
         height = max(160.0, imgui.get_content_region_avail().y - cyui.dp(4.0))
         with cyui.scoped_colour((imgui.Col_.child_bg, p.bg0)):
             imgui.begin_child('##pluginlist', (cyui.dp(320.0), height), imgui.ChildFlags_.borders)
         if not shown and not self.failures:
-            cyui.empty_state(tr('No plugin'), tr('Scan the folders to list the VST3 plugins.'), icon.audio)
+            cyui.empty_state(tr('No plugin'), tr('Scan the folders to list VST3, CLAP, LV2 and JSFX plugins.'), icon.audio)
         for index, plugin in enumerate(shown):
-            if imgui.selectable(f"{plugin.get('name')}  -  {plugin.get('manufacturer', '')}##{index}", index == self.selected)[0]:
+            if imgui.selectable(f"[{plugin.get('format', 'VST3')}] {plugin.get('name')}  -  {plugin.get('manufacturer', '')}##{index}", index == self.selected)[0]:
                 self.selected = index
         for failure in self.failures:
             cyui.text_coloured(p.error, Path(failure.get('path', '')).name + ': ' + str(failure.get('error', ''))[:60])
@@ -123,6 +126,10 @@ class PluginsPanel:
         if shown and self.selected < len(shown):
             plugin = shown[self.selected]
             cyui.heading(str(plugin.get('name')), 2)
+            cyui.badge(plugin.get('format', 'VST3'))
+            if plugin.get('format') == 'JSFX':
+                if cyui.button(tr('Edit JSFX source') + '###edit-source'):
+                    self.jsfx_editor.open(plugin['path'])
             cyui.text_faint(str(plugin.get('path')))
             cyui.space(4.0)
             if cyui.begin_properties('##plugin-props', 140):
@@ -136,19 +143,21 @@ class PluginsPanel:
                 imgui.text(f"{plugin.get('latencySamples', 0)} " + tr('samples'))
                 cyui.end_properties()
             cyui.space(4.0)
-            if cyui.primary_button(cyui.icon_label(icon.add, tr('Add to workflow')) + '###Add to workflow'):
+            if plugin.get('isInstrument'):
+                cyui.text_wrapped_dim(tr('This audio editor accepts effects; instrument sequencing requires MIDI tracks.'))
+            if not plugin.get('isInstrument') and cyui.primary_button(cyui.icon_label(icon.add, tr('Add to workflow')) + '###Add to workflow'):
                 self.app.workflows.add_plugin(plugin)
                 self.message = tr('Added to the current workflow: ') + str(plugin.get('name'))
             imgui.same_line(0, 4)
             if cyui.icon_text_button(icon.new_window, tr('Open plugin window') + '###Open plugin window'):
-                node = {'plugin': plugin['path'], 'pluginName': plugin.get('name', ''), 'params': {}, 'state': ''}
+                node = {'plugin': plugin['path'], 'pluginName': plugin.get('pluginId') or plugin.get('name', ''), 'params': {}, 'state': ''}
                 self.app.open_plugin_editor(node)
             cyui.space(4.0)
             cyui.section_title(tr('Parameters') + f" ({len(plugin.get('parameters', {}))})")
             if cyui.begin_properties('##plugin-params', 200):
                 for name, info in list(plugin.get('parameters', {}).items())[:80]:
                     cyui.property(str(info.get('label', name)))
-                    imgui.text(f"{info.get('value')} {info.get('units', '')}")
+                    imgui.text(str(info.get('displayValue', info.get('value'))) + ' ' + info.get('units', ''))
                 cyui.end_properties()
         else:
             cyui.empty_state(tr('No plugin selected'), tr('Select a plugin, or scan first.'), icon.audio)

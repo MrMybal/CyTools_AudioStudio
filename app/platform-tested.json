@@ -39,6 +39,20 @@
           "CLI: describe (41 operations), convert_audio on a file outside the Tool",
           "MCP stdio: 62 tools, invalid parameter refused, CanRun with waitingForConcurrency, process_audio on an external file with tail rendering, runtime status 1 running / 0 unknown worker, cy_export_job outside the runtime, cy_finish_task: deletion deferred while the DSP worker is alive, workspace removed once release_workers stopped it, exported copy and source file kept"
         ]
+      },
+      {
+        "osVersion": "Windows-10-10.0.19044-SP0",
+        "device": "CPU — native plugin workers, no model inference",
+        "runtime": "CPython 3.11 / CyToolsCore 0.10.1 / JUCE 8.0.15 native worker / ysfx 8077347",
+        "date": "2026-10-18",
+        "status": "Supported",
+        "executed": [
+          "245 unit tests passed, including real VST3, CLAP, LV2 and JSFX processing. CLAP/LV2 fixtures: native CyCrossGain exports; JSFX: original gain, imports and echo fixtures.",
+          "CLAP/LV2 native editor windows opened and closed; JSFX parameter editor, state restore before processing, independent instances, sample-rate change, automation, tails and worker crash isolation verified.",
+          "Plugins tab with JSFX source editor rendered successfully in all five CyUI themes (mid-grey, light-grey, amber-night, violet, navy).",
+          "CLI describe and describe_plugin on JSFX passed; MCP stdio exposes multi-format scan/describe and read/validate/save JSFX, with successful real calls. No GPU generation executed.",
+          "Application update ZIP built and verified to include native worker, source and AGPL/LV2 dependency notices. No Linux or macOS execution."
+        ]
       }
     ]
   }

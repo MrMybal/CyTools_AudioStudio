@@ -58,13 +58,30 @@ class PluginCache:
 
     def __init__(self):
         self.plugins = {}
+        self.signatures = {}
 
-    def get(self, path, plugin_name=None):
+    def get(self, path, plugin_name=None, instance_id=None):
         from ..vst import host
-        key = (str(host.loadable_path(path)).lower(), plugin_name or '')
+        key = (str(host.loadable_path(path)), plugin_name or '', instance_id)
+        signature = host.cache_key(path) if host.plugin_format(path) != 'vst3' else None
+        if key in self.plugins and self.signatures.get(key) != signature:
+            old = self.plugins.pop(key)
+            if hasattr(old, 'close'):
+                old.close()
         if key not in self.plugins:
             self.plugins[key] = host.load(path, plugin_name)
+            self.signatures[key] = signature
         return self.plugins[key]
+
+    def retain(self, nodes):
+        """A persistent DSP worker must not accumulate processes for old workflows."""
+        alive = {n['id'] for n in nodes}
+        for key in list(self.plugins):
+            if key[2] is not None and key[2] not in alive:
+                plugin = self.plugins.pop(key)
+                self.signatures.pop(key, None)
+                if hasattr(plugin, 'close'):
+                    plugin.close()
 
 
 def render(audio, samplerate, workflow, progress=None, cancel=None, model_runner=None, plugin_cache=None):
@@ -80,9 +97,10 @@ def render(audio, samplerate, workflow, progress=None, cancel=None, model_runner
     reports = []
     # A length-changing node (time stretch, trim) breaks the "original length" reference:
     # the tail extension is added only when at least one stateful node exists.
-    stateful = any(n['kind'] == 'vst3' or (n['kind'] == 'effect' and effects.get(n['effect']).stateful) for n in nodes)
+    stateful = any(n['kind'] in ('vst3', 'clap', 'lv2', 'jsfx') or (n['kind'] == 'effect' and effects.get(n['effect']).stateful) for n in nodes)
     current = extend(audio, rate, tail) if stateful else audio
     cache = plugin_cache or PluginCache()
+    cache.retain(nodes)
     total = max(1, len(nodes))
     for index, node in enumerate(nodes):
         _check(cancel)
@@ -109,9 +127,9 @@ def render(audio, samplerate, workflow, progress=None, cancel=None, model_runner
             else:
                 plugin = spec.build(values)
                 current = np.ascontiguousarray(plugin(current, float(rate), reset=True).astype(np.float32))
-        elif node['kind'] == 'vst3':
+        elif node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx'):
             from ..vst import host
-            plugin = cache.get(node['plugin'], node.get('pluginName') or None)
+            plugin = cache.get(node['plugin'], node.get('pluginName') or None, node['id'])
             host.apply_settings(plugin, node.get('params'), node.get('state'))
             current = host.process(plugin, current, rate, reset=True)
         elif node['kind'] == 'model':

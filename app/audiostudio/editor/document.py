@@ -983,7 +983,7 @@ class Document:
             for node in owner.inserts:
                 if not node.get('enabled', True) or node.get('_preview'):
                     continue
-                if node['kind'] == 'vst3':
+                if node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx'):
                     return True
                 spec = effects.REGISTRY.get(node.get('effect')) if node['kind'] == 'effect' else None
                 if spec is not None and spec.stateful:
@@ -1014,7 +1014,7 @@ class Document:
                     lo = param.minimum if param.minimum is not None else -100.0
                     hi = param.maximum if param.maximum is not None else 100.0
                     return float(lo), float(hi), float(current), param.kind
-        elif node['kind'] == 'vst3':
+        elif node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx'):
             description = node.get('_description') or {}
             info = description.get('parameters', {}).get(param_id, {})
             current = node.get('params', {}).get(param_id, info.get('value', 0.0))
@@ -1036,7 +1036,7 @@ class Document:
                 for param in spec.params:
                     if param.automatable and param.kind in ('float', 'int', 'bool'):
                         keys.append((node['id'] + '.' + param.id, spec.name + ': ' + param.label))
-            elif node['kind'] == 'vst3':
+            elif node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx'):
                 description = node.get('_description') or {}
                 for param_id, info in list(description.get('parameters', {}).items())[:64]:
                     if info.get('choices'):

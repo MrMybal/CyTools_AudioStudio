@@ -186,7 +186,7 @@ def music_common():
 def build():
     ops = []
     # ------------------------------------------------------------------ processing
-    ops.append(operation('process_audio', 'Process audio', 'Render a workflow (effects, VST3 plugins, models) over a file, with tail rendering so reverb and delay decays are never cut. A selection processes only that region and overlaps its tail onto the following audio.',
+    ops.append(operation('process_audio', 'Process audio', 'Render a workflow (effects, VST3/CLAP/LV2/JSFX plugins, models) over a file, with tail rendering so reverb and delay decays are never cut. A selection processes only that region and overlaps its tail onto the following audio.',
         OBJECT({'input': FILE('Audio file to process'), 'workflow': WORKFLOW_DOC, 'workflow_name': WORKFLOW_NAME, 'output_format': OUTPUT_FORMAT, 'subtype': SUBTYPE,
                 'bitrate_kbps': BITRATE, 'selection_start': SELECTION_START, 'selection_end': SELECTION_END, 'tail': TAIL,
                 'output_name': STRING('Output file name without extension; default = input name + suffix', '', 200)}, required=('input',)),
@@ -244,14 +244,20 @@ def build():
     ops.append(operation('save_workflow', 'Save workflow', 'Persist a workflow document under data/workflows (explicit user action).',
         OBJECT({'name': STRING('Workflow name', None, 80, 1), 'workflow': {**WORKFLOW_DOC, 'x-cy-ui': {}}, 'overwrite': BOOLEAN('Replace an existing workflow of that name', False)}, required=('name', 'workflow')),
         OBJECT({'path': STRING('Saved path'), 'name': STRING('Name'), 'summary': STRING('Chain summary')}, required=('path',), additional=True), ram=64 * MiB, progress=False, cancel=False))
-    ops.append(operation('scan_plugins', 'Scan VST3 plugins', 'Scan folders for VST3 plugins in an isolated worker process and cache their parameters. A crashing plugin is reported, not fatal.',
-        OBJECT({'directories': {'type': 'array', 'items': {'type': 'string', 'maxLength': 1024}, 'maxItems': 32, 'default': [], 'description': 'Extra folders; the standard VST3 folders are always scanned', 'x-cy-kind': 'Array'},
+    ops.append(operation('scan_plugins', 'Scan audio plugins', 'Scan folders for VST3, CLAP, LV2 and JSFX plugins in an isolated worker process and cache their parameters. A crashing plugin is reported, not fatal.',
+        OBJECT({'directories': {'type': 'array', 'items': {'type': 'string', 'maxLength': 1024}, 'maxItems': 32, 'default': [], 'description': 'Extra folders; the standard plugin folders are always scanned', 'x-cy-kind': 'Array'},
                 'force': BOOLEAN('Rescan plugins already cached', False)}),
         OBJECT({'plugins': {'type': 'array', 'items': ANY}, 'failures': {'type': 'array', 'items': ANY}, 'count': INTEGER('Plugins found', 0)}, required=('plugins', 'count'), additional=True),
         ram=1 * GiB, output_items=(('plugins', 'Object', 'Plugin catalogue'),)))
-    ops.append(operation('list_plugins', 'List VST3 plugins', 'Cached VST3 catalogue (run scan_plugins first).', OBJECT({}), ANY, ram=64 * MiB, progress=False, cancel=False))
-    ops.append(operation('describe_plugin', 'Describe VST3 plugin', 'Load one VST3 plugin in a worker and return its parameters.',
-        OBJECT({'plugin': FILE('Path to a .vst3 bundle', 'File')}, required=('plugin',)), ANY, ram=1 * GiB, progress=False))
+    ops.append(operation('list_plugins', 'List audio plugins', 'Cached VST3, CLAP, LV2 and JSFX catalogue (run scan_plugins first).', OBJECT({}), ANY, ram=64 * MiB, progress=False, cancel=False))
+    ops.append(operation('describe_plugin', 'Describe audio plugin', 'Load one VST3, CLAP, LV2 or JSFX plugin in a worker and return its parameters.',
+        OBJECT({'plugin': FILE('Path to a VST3, CLAP, LV2 bundle or JSFX script', 'File'), 'plugin_name': STRING('Plugin name or ID within a bundle', '', 1024)}, required=('plugin',)), ANY, ram=1 * GiB, progress=False))
+    ops.append(operation('read_jsfx', 'Read JSFX script', 'Read a JSFX script without executing it.',
+        OBJECT({'script': FILE('JSFX source path', 'File')}, required=('script',)), ANY, ram=64 * MiB, progress=False))
+    ops.append(operation('validate_jsfx', 'Compile JSFX script', 'Compile source in an isolated process. Relative imports resolve beside the selected source directory. Does not replace any script.',
+        OBJECT({'source': STRING('JSFX source code', None, 2097152, 1, multiline=True), 'directory': STRING('Directory for relative JSFX imports', '', 1024)}, required=('source',)), ANY, ram=256 * MiB))
+    ops.append(operation('save_jsfx', 'Save JSFX script', 'Compile first, then save under data/scripts/JSFX. A compilation error preserves the existing script.',
+        OBJECT({'name': STRING('Script name without extension', None, 80, 1), 'source': STRING('JSFX source code', None, 2097152, 1, multiline=True), 'overwrite': BOOLEAN('Replace existing script', False)}, required=('name', 'source')), ANY, ram=256 * MiB))
     # ------------------------------------------------------------------ SFX
     ops.append(operation('generate_sfx', 'Generate sound effect', 'Text to sound effect. Backend sfx_procedural synthesises deterministically from a catalogue of 36 archetypes (no model, instant); backend audioldm runs the AudioLDM diffusion model on CPU or CUDA.',
         OBJECT({'prompt': STRING('Description of the sound (English or French)', None, 600, 1, multiline=True),
@@ -404,10 +410,10 @@ def build():
     models_by_backend = {b: model_catalog.manifest_models(b) for b in backends.BACKENDS}
     manifest = {
         'schemaVersion': 1, 'protocolVersion': '1.0', 'id': TOOL_ID, 'name': TOOL_NAME, 'version': __version__,
-        'description': 'Audio studio: multitrack editor, effects and VST3 workflows with tail rendering, sound-effect, music and voice generation (procedural, AudioLDM, ACE-Step 1.5, Piper, Qwen3-TTS, Fish Speech S2 Pro), voice presets, mastering tools. Standalone Dear ImGui application, CLI and MCP on one runtime.',
+        'description': 'Audio studio: multitrack editor, effects and VST3/CLAP/LV2/JSFX workflows with tail rendering, sound-effect, music and voice generation (procedural, AudioLDM, ACE-Step 1.5, Piper, Qwen3-TTS, Fish Speech S2 Pro), voice presets, mastering tools. Standalone Dear ImGui application, CLI and MCP on one runtime.',
         'vendor': 'Cyberalien', 'author': 'Cyberalien', 'license': 'GPL-3.0-only (Tool code, see LICENSE). CyToolsCore SDK: MIT (LICENCES/CyToolsCore-MIT.txt). Engines and model weights keep their own licences: see backends, app/licenses.json and LICENCES/.',
         'executable': 'runtime/python/Scripts/python.exe app/tool.py', 'categories': ['audio', 'generation', 'processing'],
-        'tags': ['audio', 'editor', 'vst3', 'workflow', 'tts', 'music', 'sfx', 'mastering'],
+        'tags': ['audio', 'editor', 'vst3', 'clap', 'lv2', 'jsfx', 'workflow', 'tts', 'music', 'sfx', 'mastering'],
         'capabilities': ['jobs', 'cancellation', 'progress', 'backends', 'models'],
         'backends': backends.manifest_entries(models_by_backend), 'platforms': platforms,
         'interfaces': ['Native', 'CLI', 'JSONL', 'HTTP', 'MCP', 'ImGui'],

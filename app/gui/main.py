@@ -522,6 +522,8 @@ def main():
         actor = runtime.authenticate(runtime.create_client('ImGui', permissions=('network',))['token'])
         session = runtime.create_session(actor, temporary=False)['sessionId']
         app = App(runtime, actor, session)
+        if '--ui-demo-jsfx' in sys.argv:
+            app.plugins.jsfx_editor.open(APP / 'examples/JSFX/CyDAW Gain.jsfx')
         if test_tab:
             app.requested_tab = test_tab
         demo = next((a.split('=', 1)[1] for a in sys.argv if a.startswith('--ui-demo-files=')), None)

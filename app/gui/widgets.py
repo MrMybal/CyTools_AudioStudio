@@ -50,6 +50,8 @@ def draw_plugin_params(description, values, tr=lambda t: t, max_shown=64):
         shown += 1
         imgui.push_id(name)
         label = str(info.get('label') or name)
+        if info.get('normalized'):
+            label += ' (0–1)'
         current = values.get(name, info.get('value'))
         if info.get('choices'):
             choices = info['choices']

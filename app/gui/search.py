@@ -29,4 +29,4 @@ def effect_haystack(spec, tr=lambda t: t):
 
 
 def plugin_haystack(info):
-    return ' '.join(str(info.get(key) or '') for key in ('name', 'manufacturer', 'category', 'path'))
+    return ' '.join(str(info.get(key) or '') for key in ('name', 'manufacturer', 'category', 'format', 'path'))

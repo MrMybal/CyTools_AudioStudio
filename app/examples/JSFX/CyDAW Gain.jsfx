@@ -1,0 +1,21 @@
+desc:CyDAW Gain
+author:CyDAW
+// SPDX-License-Identifier: MIT
+slider1:0<-60,12,0.1>Gain (dB)
+in_pin:Left
+in_pin:Right
+out_pin:Left
+out_pin:Right
+@init
+peak=0;
+@slider
+gain=10^(slider1/20);
+@sample
+spl0*=gain; spl1*=gain;
+peak=max(max(abs(spl0),abs(spl1)),peak*0.9998);
+@gfx 420 140
+gfx_clear=0x262626;
+gfx_set(1,0.52,0.12,1);
+gfx_x=16; gfx_y=16;
+gfx_drawstr("CyDAW JSFX Gain");
+gfx_rect(16,50,max(1,min(388,peak*388)),24);
