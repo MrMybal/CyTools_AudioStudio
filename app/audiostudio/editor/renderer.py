@@ -198,23 +198,26 @@ class Renderer:
 
     # ------------------------------------------------------------------ blocks
     def clip_block(self, track, start, frames):
-        """Stereo block of a clip for document frames [start, start + frames) with its fades."""
+        """Stereo block of the clips of a track for document frames [start, start + frames), with their
+        fades (overlapping clips are summed). The second value is False when no clip is in the range."""
         out = np.zeros((2, frames), np.float32)
         stop = start + frames
-        a, b = max(start, track.offset), min(stop, track.end)
-        if b <= a:
-            return out, False
-        local_a, local_b = a - track.offset, b - track.offset
-        block = track.view()[:, local_a:local_b]
-        envelope = self.document._fade_gain(track, local_a, local_b)
-        if envelope is not None:
-            block = block * envelope
-        if track.channels == 1:
-            out[0, a - start:b - start] = block[0]
-            out[1, a - start:b - start] = block[0]
-        else:
-            out[:, a - start:b - start] = block[:2]
-        return out, True
+        audible = False
+        for clip in track.clips:
+            a, b = max(start, clip.offset), min(stop, clip.end)
+            if b <= a:
+                continue
+            local_a, local_b = a - clip.offset, b - clip.offset
+            block = clip.view()[:, local_a:local_b]
+            envelope = self.document._fade_gain(clip, local_a, local_b)
+            if envelope is not None:
+                block = block * envelope
+            if clip.channels == 1:
+                out[:, a - start:b - start] += block[0]
+            else:
+                out[:, a - start:b - start] += block[:2]
+            audible = True
+        return out, audible
 
     def sidechain_block(self, track_id, start, frames):
         track = self.document.track(track_id)

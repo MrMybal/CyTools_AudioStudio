@@ -175,20 +175,22 @@ class EditingTests(unittest.TestCase):
         self.assertFalse(self.doc.split())          # cursor at 0: nothing to split
         self.doc.cursor = 0.5
         self.assertTrue(self.doc.split())
-        self.assertEqual(len(self.doc.tracks), 2)
-        left, right = self.doc.tracks
+        self.assertEqual(len(self.doc.tracks), 1)                    # both halves stay on the track (same inserts)
+        left, right = self.track.clips
         self.assertEqual((left.frames, right.frames, right.offset), (24000, 24000, 24000))
         self.assertEqual(right.name, 'Ramp (2)')
-        self.assertTrue(np.array_equal(np.concatenate([left.audio, right.audio], axis=1), self.original))
+        self.assertTrue(np.array_equal(np.concatenate([left.view(), right.view()], axis=1), self.original))
+        self.assertTrue(np.array_equal(self.track.view(), self.original))
         self.doc.selected_track = 0
         self.doc.cursor = 0.25
         self.assertTrue(self.doc.insert_silence(0.5, all_tracks=True))
         self.assertEqual(left.frames, 24000 + 24000)
-        self.assertTrue(np.all(left.audio[:, 12000:36000] == 0.0))
-        self.assertTrue(np.array_equal(left.audio[:, 36000:], self.original[:, 12000:24000]))
-        self.assertEqual(right.offset, 24000 + 24000)   # tracks after the cursor move later
-        self.doc.set_offset(right, 3.0)
+        self.assertTrue(np.all(left.view()[:, 12000:36000] == 0.0))
+        self.assertTrue(np.array_equal(left.view()[:, 36000:], self.original[:, 12000:24000]))
+        self.assertEqual(right.offset, 24000 + 24000)   # clips after the cursor move later
+        self.doc.set_offset(self.track, 3.0, clip=right)
         self.assertEqual(right.offset, 3 * RATE)
+        self.assertEqual(left.offset, 0)
         self.assertFalse(editor.Document(RATE).split())
 
     def test_apply_with_tail_overlap(self):
@@ -242,14 +244,14 @@ class EditingTests(unittest.TestCase):
         doc.cursor = 0.5
         doc.selected_track = 0
         self.assertTrue(doc.split())
-        self.assertEqual(len(doc.tracks), 3)
+        self.assertEqual(len(self.track.clips), 2)
         self.assertEqual(doc.undo(), 'Split')
-        self.assertEqual(len(doc.tracks), 2)
+        self.assertEqual(len(self.track.clips), 1)
         self.assertEqual(self.track.frames, RATE)
-        self.assertTrue(np.array_equal(self.track.audio, self.original))
+        self.assertTrue(np.array_equal(self.track.view(), self.original))
         self.assertEqual(doc.redo(), 'Split')
-        self.assertEqual(len(doc.tracks), 3)
-        self.assertEqual(self.track.frames, 24000)
+        self.assertEqual(len(self.track.clips), 2)
+        self.assertEqual(self.track.clips[0].frames, 24000)
         # A new edit clears the redo stack.
         doc.undo()
         doc.selection = (0.1, 0.2)
@@ -458,3 +460,127 @@ class ClipTrimAndFadeTests(unittest.TestCase):
         self.assertEqual(track.total_frames, self.track.total_frames)
         self.assertAlmostEqual(track.fade_in, 0.2)
         self.assertAlmostEqual(track.fade_out, 0.3)
+
+
+class MultiClipTests(unittest.TestCase):
+    """A track holds several clips; a clip moved to another track goes through that track's inserts."""
+
+    def setUp(self):
+        self.doc = Document(RATE)
+        self.a = self.doc.add_track(np.full((1, RATE), 0.25, np.float32), 'A')
+        self.b = self.doc.add_track(np.full((1, RATE), 0.5, np.float32), 'B', offset_seconds=0.5)
+
+    def test_a_clip_added_where_another_one_is_goes_after_it(self):
+        clip = self.doc.add_clip(self.a, np.ones((1, 1000), np.float32), RATE, offset_seconds=0.2, name='late')
+        self.assertEqual((len(self.a.clips), clip.offset), (2, RATE))      # 0.2 s is taken: after the last clip
+        free = self.doc.add_clip(self.a, np.ones((1, 1000), np.float32), RATE, offset_seconds=3.0, name='free')
+        self.assertEqual(free.offset, 3 * RATE)                              # a free place is kept
+        self.assertEqual((self.a.offset, self.a.end), (0, 3 * RATE + 1000))
+        self.assertEqual(self.doc.undo(), 'Add clip free')
+        self.assertEqual(len(self.a.clips), 2)
+        resampled = self.doc.add_clip(self.b, np.ones((2, 500), np.float32), RATE // 2, offset_seconds=0.0)
+        self.assertEqual((resampled.frames, resampled.channels), (1000, 2))
+
+    def test_the_mix_sums_every_clip_of_a_track(self):
+        self.doc.add_clip(self.a, np.full((1, RATE), 0.25, np.float32), RATE, offset_seconds=2.0)
+        mix = self.doc.mixdown(channels=1, tail={'enabled': False})
+        self.assertEqual(mix.shape[1], 3 * RATE)
+        self.assertAlmostEqual(float(mix[0, 100]), 0.25, places=4)
+        self.assertAlmostEqual(float(mix[0, int(0.75 * RATE)]), 0.75, places=4)
+        self.assertAlmostEqual(float(mix[0, int(1.75 * RATE)]), 0.0, places=4)       # the gap is silent
+        self.assertAlmostEqual(float(mix[0, int(2.5 * RATE)]), 0.25, places=4)
+
+    def test_moving_a_clip_to_another_track_uses_that_track_and_undoes(self):
+        clip = self.a.clips[0]
+        self.b.gain_db = -6.0206
+        self.assertIs(self.doc.move_clip(self.a, clip, self.b, offset_seconds=2.0), clip)
+        self.assertEqual((len(self.a.clips), len(self.b.clips)), (0, 2))
+        self.assertEqual(self.b.clips[-1].offset, 2 * RATE)
+        mix = self.doc.mixdown(channels=1, tail={'enabled': False})
+        self.assertAlmostEqual(float(mix[0, int(2.5 * RATE)]), 0.125, places=3)        # B's gain now applies to it
+        self.assertEqual(self.doc.undo(), 'Move clip')
+        self.assertEqual((len(self.a.clips), len(self.b.clips)), (1, 1))
+        self.assertEqual(self.a.clips[0].offset, 0)
+        self.assertEqual(self.doc.redo(), 'Move clip')
+        self.assertEqual((len(self.a.clips), len(self.b.clips)), (0, 2))
+
+    def test_a_drag_opened_on_the_source_track_also_restores_the_target(self):
+        clip = self.a.clips[0]
+        self.doc.edit('Move clip', [self.a.id])                  # what the timeline does when the drag starts
+        clip.offset = RATE // 4
+        self.doc.move_clip(self.a, clip, self.b, record=False)
+        self.assertEqual(len(self.b.clips), 2)
+        self.assertEqual(self.doc.undo(), 'Move clip')
+        self.assertEqual((len(self.a.clips), len(self.b.clips)), (1, 1))
+        self.assertEqual(self.a.clips[0].offset, 0)
+
+    def test_delete_duplicate_and_edits_across_clips(self):
+        first = self.a.clips[0]
+        twin = self.doc.duplicate_clip(self.a, first)
+        self.assertEqual((twin.offset, len(self.a.clips)), (RATE, 2))
+        self.assertIsNot(twin.audio, first.audio)
+        self.doc.selected_track = 0
+        self.doc.selection = (0.75, 1.25)                        # over the joint of the two clips
+        self.assertTrue(self.doc.silence())
+        self.assertTrue(np.all(first.view()[:, int(0.75 * RATE):] == 0.0))
+        self.assertTrue(np.all(twin.view()[:, :int(0.25 * RATE)] == 0.0))
+        self.assertTrue(self.doc.delete())                       # ripple: the second clip moves back
+        self.assertEqual((first.frames, twin.offset, twin.frames), (int(0.75 * RATE), int(0.75 * RATE), int(0.75 * RATE)))
+        self.assertTrue(self.doc.remove_clip(self.a, twin))
+        self.assertEqual(len(self.a.clips), 1)
+        self.assertEqual(self.doc.undo(), 'Delete clip A')
+        self.assertEqual(len(self.a.clips), 2)
+
+    def test_sessions_keep_the_clips_and_old_sessions_load(self):
+        self.doc.add_clip(self.a, np.full((1, 2000), 0.1, np.float32), RATE, offset_seconds=4.0, name='second')
+        self.doc.set_fade(self.a, 'in', 0.01, clip=self.a.clips[1])
+        expected = self.doc.mixdown(tail={'enabled': False})
+        with tempfile.TemporaryDirectory() as folder:
+            self.doc.save_session(folder)
+            loaded = Document.load_session(folder)
+            self.assertEqual([c.name for c in loaded.tracks[0].clips], ['A', 'second'])
+            self.assertAlmostEqual(loaded.tracks[0].clips[1].fade_in, 0.01)
+            self.assertTrue(np.allclose(loaded.mixdown(tail={'enabled': False}), expected, atol=1e-6))
+            # a schema 2 session (one clip per track, fields on the track) still opens
+            import json
+            index = json.loads((Path(folder) / 'session.json').read_text('utf-8'))
+            legacy = dict(index, schemaVersion=2)
+            legacy['tracks'] = [{k: v for k, v in item.items() if k != 'clips'} for item in index['tracks']]
+            for item, original in zip(legacy['tracks'], index['tracks']):
+                clip = original['clips'][0]
+                item.update(file=clip['file'], offset=clip['offset'], start=clip['start'], length=clip['length'], fadeIn=clip['fadeIn'], fadeOut=clip['fadeOut'])
+            (Path(folder) / 'session.json').write_text(json.dumps(legacy), 'utf-8')
+            old = Document.load_session(folder)
+        self.assertEqual([len(t.clips) for t in old.tracks], [1, 1])
+        self.assertEqual(old.tracks[1].offset, RATE // 2)
+
+    def test_an_empty_track_has_no_clip_and_keeps_its_channels(self):
+        empty = self.doc.add_empty_track(channels=1)
+        self.assertEqual((empty.clips, empty.frames, empty.channels, empty.audio.shape), ([], 0, 1, (1, 0)))
+        self.doc.fill_track(empty, np.ones((1, 100), np.float32), RATE, offset_seconds=1.0)
+        self.assertEqual((len(empty.clips), empty.offset), (1, RATE))
+
+    def test_reverse_keeps_the_trimmed_audio_and_undoes(self):
+        material = ramp(RATE)
+        track = self.doc.add_track(material.copy(), 'R')
+        clip = track.clips[0]
+        self.doc.resize_clip(track, 'left', 0.25, clip=clip)                 # window = material[12000:48000]
+        self.doc.resize_clip(track, 'right', 0.75, clip=clip)                # window = material[12000:36000]
+        shown = clip.view().copy()
+        self.assertIs(self.doc.reverse_clip(track, clip), clip)
+        self.assertTrue(np.array_equal(clip.view(), shown[:, ::-1]))
+        self.assertEqual((clip.offset, clip.frames, clip.total_frames), (12000, 24000, RATE))    # same place, nothing lost
+        self.doc.resize_clip(track, 'right', 1.0, clip=clip)                 # the hidden audio is still there
+        self.assertEqual(clip.frames, 36000)
+        self.assertEqual(self.doc.undo(), 'Resize clip')
+        self.assertEqual(self.doc.undo(), 'Reverse clip R')
+        self.assertTrue(np.array_equal(clip.view(), shown) or np.array_equal(track.clips[0].view(), shown))
+        again = track.clips[0]
+        self.doc.reverse_clip(track, again)
+        self.doc.reverse_clip(track, again)
+        self.assertTrue(np.array_equal(again.view(), shown))
+        self.a.mute = self.b.mute = True                                     # only this clip in the mix
+        mono = self.doc.mixdown(channels=1, tail={'enabled': False})
+        self.doc.reverse_clip(track, again)
+        backwards = self.doc.mixdown(channels=1, tail={'enabled': False})
+        self.assertTrue(np.allclose(backwards[0, 12000:36000], mono[0, 12000:36000][::-1], atol=1e-6))

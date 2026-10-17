@@ -17,10 +17,16 @@ Onglets :
   couper/copier/coller/supprimer/rogner/silence/scinder, annuler/rétablir, effets sur la sélection
   avec pré-écoute, application d'un workflow à la sélection, export du mixage (wav/flac/mp3/ogg/aac),
   sessions (dossier `data/sessions`).
-  Gestes sur un clip : glisser sa barre de titre pour le déplacer, glisser un bord gauche ou droit
-  pour le rogner (l'audio est conservé, on peut revenir en arrière), glisser une poignée d'angle pour
-  un fondu entrant ou sortant, clic droit pour le menu (supprimer, dupliquer, scinder, déplacer au
-  curseur). Glisser dans la forme d'onde sélectionne une zone.
+  La barre au-dessus de la timeline est rangée en groupes titrés : Session, Transport, Sortie,
+  Affichage, Options, Export ; chaque contrôle a une info-bulle. Le bouton **+ Piste** (coin en haut
+  à gauche de la timeline) ajoute une piste vide.
+  Une piste contient plusieurs clips, qui passent tous par les effets de la piste. Gestes sur un clip :
+  glisser sa barre de titre pour le déplacer dans le temps, ou vers le haut / le bas pour le mettre
+  sur une autre piste (il prend alors les effets de cette piste) ; glisser un bord gauche ou droit
+  pour le rogner (l'audio est conservé, on peut revenir en arrière) ; glisser la poignée carrée d'un
+  coin du haut pour un fondu entrant ou sortant (la poignée suit la fin du fondu) ; clic droit pour
+  le menu (supprimer le clip, dupliquer, inverser (lecture à l'envers), scinder en deux clips, déplacer au curseur, déplacer vers
+  une autre piste). Glisser dans la forme d'onde sélectionne une zone.
   Navigation : molette = zoom, Maj+molette, glisser avec le bouton droit ou le bouton du milieu,
   Espace+glisser, l'outil **Main** (H), la barre de défilement ou la **vue d'ensemble** en bas
   (double-clic = tout afficher) = se déplacer de gauche à droite ; clic ou glisser dans la règle =
@@ -39,11 +45,12 @@ Onglets :
   **Les effets appartiennent à une piste ou au master**, jamais à tout l'éditeur : un clic sur une
   piste (ou sur la ligne Master) affiche sa chaîne dans le panneau FX ; ajouter, retirer, contourner,
   glisser pour réordonner, figer dans le clip, ou envoyer vers l'onglet Workflows.
-  **Glisser-déposer** : un son déposé depuis l'Explorateur devient une piste à l'instant sous la
-  souris (sous la piste survolée), ou remplit une piste vide créée avec le bouton **+** sous les
-  pistes (ses inserts sont conservés) ; un dossier de session l'ouvre, un workflow .json le charge, une
-  réponse impulsionnelle déposée sur l'effet de convolution est utilisée par lui. Les inserts et les
-  éléments de chaîne se réordonnent par glisser-déposer.
+  **Glisser-déposer** : un son déposé sur une piste devient un clip de cette piste, à l'instant sous
+  la souris si la place est libre, sinon juste après son dernier clip ; déposé sous les pistes, il
+  crée une nouvelle piste ; une piste vide (bouton **+ Piste**) le prend en gardant ses inserts. Un
+  dossier de session l'ouvre, un workflow .json le charge, une réponse impulsionnelle déposée sur
+  l'effet de convolution est utilisée par lui. Les inserts et les éléments de chaîne se réordonnent
+  par glisser-déposer.
   **Recherche** : chaque liste d'effets ou de plugins a un champ de recherche (sans accents ni
   majuscules, sur le nom, la catégorie et la description ; Entrée = premier résultat).
   **Automation** : le bouton **A** d'une piste (ou du master) choisit la courbe affichée (volume,

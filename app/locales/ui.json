@@ -15106,5 +15106,477 @@
   "Les effets appartiennent à une piste ou au master. Cliquez sur une piste (ou sur la ligne Master) pour afficher sa chaîne.": {
     "en": "Effects belong to one track or to the master. Click a track (or the master lane) to show its chain.",
     "fr": "Les effets appartiennent à une piste ou au master. Cliquez sur une piste (ou sur la ligne Master) pour afficher sa chaîne."
+  },
+  "Session": {
+    "en": "Session",
+    "fr": "Session"
+  },
+  "Transport": {
+    "en": "Transport",
+    "fr": "Transport"
+  },
+  "View": {
+    "en": "View",
+    "fr": "Affichage"
+  },
+  "Affichage": {
+    "en": "View",
+    "fr": "Affichage"
+  },
+  "Export": {
+    "en": "Export",
+    "fr": "Export"
+  },
+  "History": {
+    "en": "History",
+    "fr": "Historique"
+  },
+  "Historique": {
+    "en": "History",
+    "fr": "Historique"
+  },
+  "Edit the selection": {
+    "en": "Edit the selection",
+    "fr": "Éditer la sélection"
+  },
+  "Éditer la sélection": {
+    "en": "Edit the selection",
+    "fr": "Éditer la sélection"
+  },
+  "Clips": {
+    "en": "Clips",
+    "fr": "Clips"
+  },
+  "Open audio...": {
+    "en": "Open audio...",
+    "fr": "Ouvrir un son..."
+  },
+  "Ouvrir un son...": {
+    "en": "Open audio...",
+    "fr": "Ouvrir un son..."
+  },
+  "Open...": {
+    "en": "Open...",
+    "fr": "Ouvrir..."
+  },
+  "Ouvrir...": {
+    "en": "Open...",
+    "fr": "Ouvrir..."
+  },
+  "Save as...": {
+    "en": "Save as...",
+    "fr": "Enregistrer sous..."
+  },
+  "Enregistrer sous...": {
+    "en": "Save as...",
+    "fr": "Enregistrer sous..."
+  },
+  "Export mix...": {
+    "en": "Export mix...",
+    "fr": "Exporter le mix..."
+  },
+  "Exporter le mix...": {
+    "en": "Export mix...",
+    "fr": "Exporter le mix..."
+  },
+  "Effects panel": {
+    "en": "Effects panel",
+    "fr": "Panneau d'effets"
+  },
+  "Panneau d'effets": {
+    "en": "Effects panel",
+    "fr": "Panneau d'effets"
+  },
+  "Loop": {
+    "en": "Loop",
+    "fr": "Boucle"
+  },
+  "Boucle": {
+    "en": "Loop",
+    "fr": "Boucle"
+  },
+  "Rec": {
+    "en": "Rec",
+    "fr": "Enr."
+  },
+  "Enr.": {
+    "en": "Rec",
+    "fr": "Enr."
+  },
+  "Selection": {
+    "en": "Selection",
+    "fr": "Sélection"
+  },
+  "Sélection": {
+    "en": "Selection",
+    "fr": "Sélection"
+  },
+  "Buffer": {
+    "en": "Buffer",
+    "fr": "Tampon"
+  },
+  "Tampon": {
+    "en": "Buffer",
+    "fr": "Tampon"
+  },
+  "Bitrate": {
+    "en": "Bitrate",
+    "fr": "Débit"
+  },
+  "Débit": {
+    "en": "Bitrate",
+    "fr": "Débit"
+  },
+  "Move to track": {
+    "en": "Move to track",
+    "fr": "Déplacer vers la piste"
+  },
+  "Déplacer vers la piste": {
+    "en": "Move to track",
+    "fr": "Déplacer vers la piste"
+  },
+  "Release to move the clip to ": {
+    "en": "Release to move the clip to ",
+    "fr": "Relâcher pour déplacer le clip sur "
+  },
+  "Relâcher pour déplacer le clip sur ": {
+    "en": "Release to move the clip to ",
+    "fr": "Relâcher pour déplacer le clip sur "
+  },
+  "Add audio files as new tracks at the cursor": {
+    "en": "Add audio files as new tracks at the cursor",
+    "fr": "Ajouter des fichiers audio comme nouvelles pistes au curseur"
+  },
+  "Ajouter des fichiers audio comme nouvelles pistes au curseur": {
+    "en": "Add audio files as new tracks at the cursor",
+    "fr": "Ajouter des fichiers audio comme nouvelles pistes au curseur"
+  },
+  "Open a saved session (folder with session.json)": {
+    "en": "Open a saved session (folder with session.json)",
+    "fr": "Ouvrir une session enregistrée (dossier avec session.json)"
+  },
+  "Ouvrir une session enregistrée (dossier avec session.json)": {
+    "en": "Open a saved session (folder with session.json)",
+    "fr": "Ouvrir une session enregistrée (dossier avec session.json)"
+  },
+  "Save the session (tracks, clips, effects, automation)": {
+    "en": "Save the session (tracks, clips, effects, automation)",
+    "fr": "Enregistrer la session (pistes, clips, effets, automation)"
+  },
+  "Enregistrer la session (pistes, clips, effets, automation)": {
+    "en": "Save the session (tracks, clips, effects, automation)",
+    "fr": "Enregistrer la session (pistes, clips, effets, automation)"
+  },
+  "Save the session in another folder": {
+    "en": "Save the session in another folder",
+    "fr": "Enregistrer la session dans un autre dossier"
+  },
+  "Enregistrer la session dans un autre dossier": {
+    "en": "Save the session in another folder",
+    "fr": "Enregistrer la session dans un autre dossier"
+  },
+  "Close this session and start an empty one": {
+    "en": "Close this session and start an empty one",
+    "fr": "Fermer cette session et en commencer une vide"
+  },
+  "Fermer cette session et en commencer une vide": {
+    "en": "Close this session and start an empty one",
+    "fr": "Fermer cette session et en commencer une vide"
+  },
+  "Back to the start": {
+    "en": "Back to the start",
+    "fr": "Retour au début"
+  },
+  "Retour au début": {
+    "en": "Back to the start",
+    "fr": "Retour au début"
+  },
+  "Play from the cursor (Space)": {
+    "en": "Play from the cursor (Space)",
+    "fr": "Lire depuis le curseur (Espace)"
+  },
+  "Lire depuis le curseur (Espace)": {
+    "en": "Play from the cursor (Space)",
+    "fr": "Lire depuis le curseur (Espace)"
+  },
+  "Stop and go back to the cursor": {
+    "en": "Stop and go back to the cursor",
+    "fr": "Arrêter et revenir au curseur"
+  },
+  "Arrêter et revenir au curseur": {
+    "en": "Stop and go back to the cursor",
+    "fr": "Arrêter et revenir au curseur"
+  },
+  "Record from the microphone; the take becomes a new track": {
+    "en": "Record from the microphone; the take becomes a new track",
+    "fr": "Enregistrer depuis le micro ; la prise devient une nouvelle piste"
+  },
+  "Enregistrer depuis le micro ; la prise devient une nouvelle piste": {
+    "en": "Record from the microphone; the take becomes a new track",
+    "fr": "Enregistrer depuis le micro ; la prise devient une nouvelle piste"
+  },
+  "Channels recorded from the microphone": {
+    "en": "Channels recorded from the microphone",
+    "fr": "Canaux enregistrés depuis le micro"
+  },
+  "Canaux enregistrés depuis le micro": {
+    "en": "Channels recorded from the microphone",
+    "fr": "Canaux enregistrés depuis le micro"
+  },
+  "Add the take as a new track": {
+    "en": "Add the take as a new track",
+    "fr": "Ajouter la prise comme nouvelle piste"
+  },
+  "Ajouter la prise comme nouvelle piste": {
+    "en": "Add the take as a new track",
+    "fr": "Ajouter la prise comme nouvelle piste"
+  },
+  "Repeat the selection while playing": {
+    "en": "Repeat the selection while playing",
+    "fr": "Répéter la sélection pendant la lecture"
+  },
+  "Répéter la sélection pendant la lecture": {
+    "en": "Repeat the selection while playing",
+    "fr": "Répéter la sélection pendant la lecture"
+  },
+  "Position (cursor or playhead)": {
+    "en": "Position (cursor or playhead)",
+    "fr": "Position (curseur ou tête de lecture)"
+  },
+  "Position (curseur ou tête de lecture)": {
+    "en": "Position (cursor or playhead)",
+    "fr": "Position (curseur ou tête de lecture)"
+  },
+  "Length of the session": {
+    "en": "Length of the session",
+    "fr": "Durée de la session"
+  },
+  "Durée de la session": {
+    "en": "Length of the session",
+    "fr": "Durée de la session"
+  },
+  "Listening volume (not part of the mix or the export)": {
+    "en": "Listening volume (not part of the mix or the export)",
+    "fr": "Volume d'écoute (n'affecte ni le mix ni l'export)"
+  },
+  "Volume d'écoute (n'affecte ni le mix ni l'export)": {
+    "en": "Listening volume (not part of the mix or the export)",
+    "fr": "Volume d'écoute (n'affecte ni le mix ni l'export)"
+  },
+  "Output level, left and right (green / yellow above -12 dB / red above -3 dB)": {
+    "en": "Output level, left and right (green / yellow above -12 dB / red above -3 dB)",
+    "fr": "Niveau de sortie gauche et droite (vert / jaune au-dessus de -12 dB / rouge au-dessus de -3 dB)"
+  },
+  "Niveau de sortie gauche et droite (vert / jaune au-dessus de -12 dB / rouge au-dessus de -3 dB)": {
+    "en": "Output level, left and right (green / yellow above -12 dB / red above -3 dB)",
+    "fr": "Niveau de sortie gauche et droite (vert / jaune au-dessus de -12 dB / rouge au-dessus de -3 dB)"
+  },
+  "Time spent computing the audio, in percent of the buffer duration": {
+    "en": "Time spent computing the audio, in percent of the buffer duration",
+    "fr": "Temps de calcul de l'audio, en pourcentage de la durée du tampon"
+  },
+  "Temps de calcul de l'audio, en pourcentage de la durée du tampon": {
+    "en": "Time spent computing the audio, in percent of the buffer duration",
+    "fr": "Temps de calcul de l'audio, en pourcentage de la durée du tampon"
+  },
+  "Show the whole session": {
+    "en": "Show the whole session",
+    "fr": "Afficher toute la session"
+  },
+  "Afficher toute la session": {
+    "en": "Show the whole session",
+    "fr": "Afficher toute la session"
+  },
+  "Zoom on the selection": {
+    "en": "Zoom on the selection",
+    "fr": "Zoomer sur la sélection"
+  },
+  "Zoomer sur la sélection": {
+    "en": "Zoom on the selection",
+    "fr": "Zoomer sur la sélection"
+  },
+  "Zoom in (mouse wheel over the tracks)": {
+    "en": "Zoom in (mouse wheel over the tracks)",
+    "fr": "Zoom avant (molette sur les pistes)"
+  },
+  "Zoom avant (molette sur les pistes)": {
+    "en": "Zoom in (mouse wheel over the tracks)",
+    "fr": "Zoom avant (molette sur les pistes)"
+  },
+  "Zoom out": {
+    "en": "Zoom out",
+    "fr": "Zoom arrière"
+  },
+  "Zoom arrière": {
+    "en": "Zoom out",
+    "fr": "Zoom arrière"
+  },
+  "Waveform height (Ctrl + wheel over the tracks)": {
+    "en": "Waveform height (Ctrl + wheel over the tracks)",
+    "fr": "Hauteur des formes d'onde (Ctrl + molette sur les pistes)"
+  },
+  "Hauteur des formes d'onde (Ctrl + molette sur les pistes)": {
+    "en": "Waveform height (Ctrl + wheel over the tracks)",
+    "fr": "Hauteur des formes d'onde (Ctrl + molette sur les pistes)"
+  },
+  "Keep the playhead in view while playing": {
+    "en": "Keep the playhead in view while playing",
+    "fr": "Garder la tête de lecture visible pendant la lecture"
+  },
+  "Garder la tête de lecture visible pendant la lecture": {
+    "en": "Keep the playhead in view while playing",
+    "fr": "Garder la tête de lecture visible pendant la lecture"
+  },
+  "Show the effects (inserts) of the selected track or of the master under the timeline": {
+    "en": "Show the effects (inserts) of the selected track or of the master under the timeline",
+    "fr": "Afficher sous la timeline les effets (inserts) de la piste sélectionnée ou du master"
+  },
+  "Afficher sous la timeline les effets (inserts) de la piste sélectionnée ou du master": {
+    "en": "Show the effects (inserts) of the selected track or of the master under the timeline",
+    "fr": "Afficher sous la timeline les effets (inserts) de la piste sélectionnée ou du master"
+  },
+  "File format of the exported mix": {
+    "en": "File format of the exported mix",
+    "fr": "Format du fichier exporté"
+  },
+  "Format du fichier exporté": {
+    "en": "File format of the exported mix",
+    "fr": "Format du fichier exporté"
+  },
+  "Sample format (bit depth)": {
+    "en": "Sample format (bit depth)",
+    "fr": "Format d'échantillon (profondeur)"
+  },
+  "Format d'échantillon (profondeur)": {
+    "en": "Sample format (bit depth)",
+    "fr": "Format d'échantillon (profondeur)"
+  },
+  "Export only the selected time range": {
+    "en": "Export only the selected time range",
+    "fr": "Exporter seulement la plage sélectionnée"
+  },
+  "Exporter seulement la plage sélectionnée": {
+    "en": "Export only the selected time range",
+    "fr": "Exporter seulement la plage sélectionnée"
+  },
+  "Render the mix (effects, automation, master, reverb tails) to a file": {
+    "en": "Render the mix (effects, automation, master, reverb tails) to a file",
+    "fr": "Calculer le mix (effets, automation, master, queues de réverb) dans un fichier"
+  },
+  "Calculer le mix (effets, automation, master, queues de réverb) dans un fichier": {
+    "en": "Render the mix (effects, automation, master, reverb tails) to a file",
+    "fr": "Calculer le mix (effets, automation, master, queues de réverb) dans un fichier"
+  },
+  "Undo the last edit (Ctrl+Z)": {
+    "en": "Undo the last edit (Ctrl+Z)",
+    "fr": "Annuler la dernière modification (Ctrl+Z)"
+  },
+  "Annuler la dernière modification (Ctrl+Z)": {
+    "en": "Undo the last edit (Ctrl+Z)",
+    "fr": "Annuler la dernière modification (Ctrl+Z)"
+  },
+  "Redo (Ctrl+Y)": {
+    "en": "Redo (Ctrl+Y)",
+    "fr": "Rétablir (Ctrl+Y)"
+  },
+  "Rétablir (Ctrl+Y)": {
+    "en": "Redo (Ctrl+Y)",
+    "fr": "Rétablir (Ctrl+Y)"
+  },
+  "Cut the selection of the selected track": {
+    "en": "Cut the selection of the selected track",
+    "fr": "Couper la sélection de la piste sélectionnée"
+  },
+  "Couper la sélection de la piste sélectionnée": {
+    "en": "Cut the selection of the selected track",
+    "fr": "Couper la sélection de la piste sélectionnée"
+  },
+  "Copy the selection of the selected track": {
+    "en": "Copy the selection of the selected track",
+    "fr": "Copier la sélection de la piste sélectionnée"
+  },
+  "Copier la sélection de la piste sélectionnée": {
+    "en": "Copy the selection of the selected track",
+    "fr": "Copier la sélection de la piste sélectionnée"
+  },
+  "Insert the copied audio at the cursor or the selection start": {
+    "en": "Insert the copied audio at the cursor or the selection start",
+    "fr": "Insérer l'audio copié au curseur ou au début de la sélection"
+  },
+  "Insérer l'audio copié au curseur ou au début de la sélection": {
+    "en": "Insert the copied audio at the cursor or the selection start",
+    "fr": "Insérer l'audio copié au curseur ou au début de la sélection"
+  },
+  "Delete the selected region (Shift: on every track). To delete a whole clip: right-click it.": {
+    "en": "Delete the selected region (Shift: on every track). To delete a whole clip: right-click it.",
+    "fr": "Supprimer la zone sélectionnée (Maj : sur toutes les pistes). Pour supprimer un clip entier : clic droit dessus."
+  },
+  "Supprimer la zone sélectionnée (Maj : sur toutes les pistes). Pour supprimer un clip entier : clic droit dessus.": {
+    "en": "Delete the selected region (Shift: on every track). To delete a whole clip: right-click it.",
+    "fr": "Supprimer la zone sélectionnée (Maj : sur toutes les pistes). Pour supprimer un clip entier : clic droit dessus."
+  },
+  "Keep only the selection": {
+    "en": "Keep only the selection",
+    "fr": "Ne garder que la sélection"
+  },
+  "Ne garder que la sélection": {
+    "en": "Keep only the selection",
+    "fr": "Ne garder que la sélection"
+  },
+  "Replace the selection by silence": {
+    "en": "Replace the selection by silence",
+    "fr": "Remplacer la sélection par du silence"
+  },
+  "Remplacer la sélection par du silence": {
+    "en": "Replace the selection by silence",
+    "fr": "Remplacer la sélection par du silence"
+  },
+  "Cut the clip under the cursor in two clips of the same track": {
+    "en": "Cut the clip under the cursor in two clips of the same track",
+    "fr": "Couper le clip sous le curseur en deux clips de la même piste"
+  },
+  "Couper le clip sous le curseur en deux clips de la même piste": {
+    "en": "Cut the clip under the cursor in two clips of the same track",
+    "fr": "Couper le clip sous le curseur en deux clips de la même piste"
+  },
+  "Length of the silence to insert": {
+    "en": "Length of the silence to insert",
+    "fr": "Durée du silence à insérer"
+  },
+  "Durée du silence à insérer": {
+    "en": "Length of the silence to insert",
+    "fr": "Durée du silence à insérer"
+  },
+  "Insert silence at the cursor; what follows moves later": {
+    "en": "Insert silence at the cursor; what follows moves later",
+    "fr": "Insérer du silence au curseur ; la suite est décalée"
+  },
+  "Insérer du silence au curseur ; la suite est décalée": {
+    "en": "Insert silence at the cursor; what follows moves later",
+    "fr": "Insérer du silence au curseur ; la suite est décalée"
+  },
+  "Drag to move the clip, up or down to put it on another track": {
+    "en": "Drag to move the clip, up or down to put it on another track",
+    "fr": "Glisser pour déplacer le clip, vers le haut ou le bas pour le mettre sur une autre piste"
+  },
+  "Glisser pour déplacer le clip, vers le haut ou le bas pour le mettre sur une autre piste": {
+    "en": "Drag to move the clip, up or down to put it on another track",
+    "fr": "Glisser pour déplacer le clip, vers le haut ou le bas pour le mettre sur une autre piste"
+  },
+  "+ Track": {
+    "en": "+ Track",
+    "fr": "+ Piste"
+  },
+  "+ Piste": {
+    "en": "+ Track",
+    "fr": "+ Piste"
+  },
+  "Reverse clip": {
+    "en": "Reverse clip",
+    "fr": "Inverser le clip"
+  },
+  "Inverser le clip": {
+    "en": "Reverse clip",
+    "fr": "Inverser le clip"
   }
 }

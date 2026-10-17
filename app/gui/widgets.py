@@ -1,4 +1,5 @@
 """Shared widgets: parameter editors from effect specs / plugin descriptions, file dialogs."""
+from contextlib import contextmanager
 from pathlib import Path
 
 from imgui_bundle import imgui, portable_file_dialogs as pfd
@@ -229,6 +230,70 @@ class Row:
     def text(self, text, disabled=False):
         self.next(Row.text_width(text))
         (imgui.text_disabled if disabled else imgui.text)(text)
+
+
+class Toolbar:
+    """Framed groups of controls with a small title ("Session", "Transport"...), side by side and
+    wrapping to the next line when the window is too narrow::
+
+        bar = Toolbar()
+        with bar.group('transport', tr('Transport')):
+            imgui.button(...); imgui.same_line(); imgui.button(...)
+
+    A group keeps the width it had at the previous frame to decide whether it fits on the line.
+    Groups must not be nested (they share the draw-list channels of the window).
+    """
+    PAD = 5.0
+    GAP = 6.0
+    _widths = {}
+
+    def __init__(self):
+        origin = imgui.get_cursor_screen_pos()
+        self.left = self.x = origin.x
+        self.right = origin.x + imgui.get_content_region_avail().x
+        self.top = self.bottom = origin.y          # current line of groups
+        self.first = True
+
+    @contextmanager
+    def group(self, key, title):
+        # Positions are computed here rather than with same_line(): a same_line() followed by a
+        # cursor move would put the second widget of the group on the line of the previous group.
+        width = Toolbar._widths.get(key)
+        if not self.first and (width is None or self.x + width > self.right):
+            self.x, self.top = self.left, self.bottom + self.GAP
+        self.first = False
+        draw = imgui.get_window_draw_list()
+        caption = imgui.get_font_size() * 0.72
+        origin = imgui.ImVec2(self.x, self.top)
+        draw.channels_split(2)
+        draw.channels_set_current(1)
+        imgui.set_cursor_screen_pos((origin.x + self.PAD, origin.y + caption + 2))
+        imgui.begin_group()
+        try:
+            yield
+        finally:
+            imgui.end_group()
+            inner = imgui.get_item_rect_max()
+            title_width = caption / imgui.get_font_size() * imgui.calc_text_size(title.upper()).x
+            right = max(inner.x, origin.x + self.PAD + title_width) + self.PAD
+            bottom = inner.y + self.PAD - 1
+            draw.channels_set_current(0)
+            draw.add_rect_filled(origin, (right, bottom), imgui.get_color_u32((0.16, 0.17, 0.21, 1.0)), 4.0)
+            draw.add_rect(origin, (right, bottom), imgui.get_color_u32((0.32, 0.35, 0.43, 1.0)), 4.0)
+            draw.add_text(imgui.get_font(), caption, (origin.x + self.PAD, origin.y + 1), imgui.get_color_u32((0.62, 0.7, 0.85, 1.0)), title.upper())
+            draw.channels_merge()
+            Toolbar._widths[key] = right - origin.x
+            self.x = right + self.GAP
+            self.bottom = max(self.bottom, bottom)
+            # one item covering the line so far: the window knows its size and the cursor goes below the bar
+            imgui.set_cursor_screen_pos((self.left, self.top))
+            imgui.dummy((max(1.0, right - self.left), self.bottom - self.top))
+
+
+def tooltip(text):
+    """Tooltip of the last item (also when it is disabled)."""
+    if imgui.is_item_hovered(imgui.HoveredFlags_.allow_when_disabled):
+        imgui.set_tooltip(text)
 
 
 def multiline(label, value, height, key, tr=lambda t: t):

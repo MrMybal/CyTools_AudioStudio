@@ -4,14 +4,21 @@ run a "slot" batch (the same project rendered once per input sound).
 Actions (``apply_actions``), each a dict with an ``action`` key:
   add_track      file, name?, offset_seconds?, gain_db?, pan?, mute?, solo?, inserts_from? (track whose chain
                  and lanes are copied), workflow_name? / nodes? (chain to install)
-  replace_audio  track, file, offset_seconds?     keeps the track's chain, lanes, gain, pan
+  replace_audio  track, file, offset_seconds?     every clip of the track is replaced by the file; keeps the
+                 track's chain, lanes, gain, pan
   remove_track   track
+  add_clip       track, file, name?, offset_seconds?, after_clips? (default true: a position already taken
+                 by a clip moves the new one after the last clip of the track)
+  move_clip      track, clip, to_track?, offset_seconds?   the clip then goes through the inserts of to_track
+  remove_clip    track, clip
+  reverse_clip   track, clip                     the clip plays backwards (again = original)
   set_track      track, name?, offset_seconds?, gain_db?, pan?, mute?, solo?
   set_inserts    target (track name/id or 'master'), workflow_name? / nodes? (empty = clear)
   set_master     gain_db?, mute?
   clear_automation  target, key? (all lanes when omitted)
   set_tail       enabled?, threshold_db?, max_seconds?, hold_seconds?
-Tracks are addressed by id or by exact name (first match). Every action is validated before it is
+Tracks are addressed by id or by exact name (first match); clips by id, exact name or index ("0" = the
+earliest clip of the track, "-1" = the last). Every action is validated before it is
 applied and reported back with what it did.
 """
 from pathlib import Path
@@ -35,6 +42,21 @@ def find_track(document, key):
     if track is None:
         raise BatchError('MissingInput', 'No track named or identified "%s" (tracks: %s)' % (key, ', '.join(t.name for t in document.tracks) or 'none'))
     return track
+
+
+def find_clip(track, key):
+    key = str(key)
+    clip = track.clip(key) or next((c for c in track.clips if c.name == key), None)
+    if clip is None and key.lstrip('-').isdigit() and -len(track.clips) <= int(key) < len(track.clips):
+        clip = track.clips[int(key)]
+    if clip is None:
+        raise BatchError('MissingInput', 'Track "%s" has no clip "%s" (clips: %s)' % (track.name, key, ', '.join(c.name for c in track.clips) or 'none'))
+    return clip
+
+
+def _clip_report(document, track, clip):
+    return {'track': track.id, 'clip': clip.id, 'name': clip.name, 'offsetSeconds': document.frame_to_seconds(clip.offset),
+            'durationSeconds': document.frame_to_seconds(clip.frames)}
 
 
 def _owner(document, key):
@@ -110,14 +132,39 @@ def apply_actions(document, actions, load_workflow=None):
             if rate != document.samplerate:
                 audio = audio_io.resample(audio, rate, document.samplerate)
             document.edit('Replace audio', [track.id])
-            track.audio = audio[:2] if audio.shape[0] > 2 else audio
-            track.start, track.length = 0, -1
-            track.source = str(file)
-            track.invalidate()
+            track.set_audio(audio, track.offset, str(file), name=Path(str(file)).stem)      # every clip of the slot is replaced
             if action.get('offset_seconds') is not None:
                 track.offset = max(0, document.seconds_to_frame(float(action['offset_seconds'])))
             document.touch()
             report.update({'track': track.id, 'name': track.name, 'frames': track.frames})
+        elif kind == 'add_clip':
+            track = find_track(document, action.get('track'))
+            file = action.get('file')
+            if not file or not Path(str(file)).is_file():
+                raise BatchError('MissingInput', 'add_clip: file not found: %s' % file)
+            offset = action.get('offset_seconds')
+            clip = document.import_clip(track, str(file), offset_seconds=float(offset) if offset is not None else None,
+                                        after_clips=bool(action.get('after_clips', True)))
+            if action.get('name'):
+                clip.name = str(action['name'])
+            report.update(_clip_report(document, track, clip))
+        elif kind == 'move_clip':
+            track = find_track(document, action.get('track'))
+            clip = find_clip(track, action.get('clip'))
+            target = find_track(document, action['to_track']) if action.get('to_track') else track
+            offset = action.get('offset_seconds')
+            document.move_clip(track, clip, target, offset_seconds=float(offset) if offset is not None else None)
+            report.update(_clip_report(document, target, clip), fromTrack=track.id)
+        elif kind == 'reverse_clip':
+            track = find_track(document, action.get('track'))
+            clip = find_clip(track, action.get('clip'))
+            document.reverse_clip(track, clip)
+            report.update(_clip_report(document, track, clip))
+        elif kind == 'remove_clip':
+            track = find_track(document, action.get('track'))
+            clip = find_clip(track, action.get('clip'))
+            document.remove_clip(track, clip)
+            report.update({'track': track.id, 'clip': clip.id, 'name': clip.name})
         elif kind == 'remove_track':
             track = find_track(document, action.get('track'))
             document.remove_track(track.id)
@@ -161,6 +208,8 @@ def describe(document):
     return {'samplerate': document.samplerate, 'durationSeconds': document.duration,
             'tracks': [{'id': t.id, 'name': t.name, 'offsetSeconds': document.frame_to_seconds(t.offset), 'durationSeconds': document.frame_to_seconds(t.frames),
                         'channels': t.channels, 'gain_db': t.gain_db, 'pan': t.pan, 'mute': t.mute, 'solo': t.solo,
+                        'clips': [{'id': c.id, 'name': c.name, 'offsetSeconds': document.frame_to_seconds(c.offset),
+                                   'durationSeconds': document.frame_to_seconds(c.frames)} for c in t.clips],
                         'inserts': [n.get('effect') or n.get('pluginName') or n['kind'] for n in t.inserts], 'automation': sorted(t.automation)} for t in document.tracks],
             'master': {'gain_db': document.master.gain_db, 'mute': document.master.mute,
                        'inserts': [n.get('effect') or n.get('pluginName') or n['kind'] for n in document.master.inserts], 'automation': sorted(document.master.automation)},

@@ -131,14 +131,25 @@ with nodes of kind `effect`, `vst3` (plugin path + parameters + opaque state) or
 below `threshold_db` after the original length (never shorter than the input). A selection processed
 in the editor overlaps its tail onto the following audio.
 
-### Clips: trim, fades, navigation
+### Tracks and clips: trim, fades, moves, navigation
 
-A clip keeps all its decoded audio and shows the window `audio[:, start:start + length]` at `offset`.
-Dragging an edge only moves that window, so trimming is reversible; `Track.flatten()` bakes it in and
+A `Track` (`editor/document.py`) is a lane: mixer settings, insert chain, automation and a list of
+`Clip`s, all rendered through that chain (`Renderer.clip_block` sums them, overlaps included). A clip
+keeps all its decoded audio and shows the window `audio[:, start:start + length]` at `offset`.
+Dragging an edge only moves that window, so trimming is reversible; `Clip.flatten()` bakes it in and
 runs before any edit that rewrites samples (delete, paste, effects). `fade_in` / `fade_out` are seconds
-applied by `Document._fade_gain` at mix time, so they cost nothing and stay editable. Sessions store the
-complete material plus `start`, `length`, `fadeIn`, `fadeOut`. Horizontal navigation: wheel zoom,
-Shift+wheel, middle-drag, Space+drag, or the scrollbar under the lanes.
+applied by `Document._fade_gain` at mix time, so they cost nothing and stay editable. Region edits work
+clip by clip (delete and insert ripple the following clips of the track); `split()` cuts the clip under
+the cursor in two clips of the same track without rewriting audio. `add_clip` puts a sound on an
+existing track (after its last clip when the place is taken: that is what a file dropped on a track
+does), `move_clip` moves one in time and/or to another track (one undo entry covering both tracks),
+`remove_clip` / `duplicate_clip` / `reverse_clip` (whole material reversed, window mirrored: trimmed audio kept) back the right-click menu. `Track.offset` / `end` / `frames` span all
+the clips; `Track.audio`, `start`, `length`, `fade_in`, `fade_out`, `source` read and write its first
+clip, for code written when a track was one clip. Sessions schema 3 store each clip (complete material
+plus `start`, `length`, `fadeIn`, `fadeOut`, `offset`); schema 2 sessions (one clip per track) load as
+tracks with one clip. Horizontal navigation: wheel zoom, Shift+wheel, middle-drag, Space+drag, or the
+scrollbar under the lanes. The toolbar groups (`gui/widgets.Toolbar`) are framed and titled and wrap
+to the next line when the window is narrow.
 
 ### Track inserts, master bus, automation
 
@@ -156,8 +167,8 @@ is bypassed and its message shown in the inserts panel; the audio thread never d
 Automation lanes (`editor/automation.py`) are breakpoints in the parameter's own unit, keyed
 `gain_db`, `pan`, `mute` or `<node id>.<param>`; insert parameters are evaluated once per block,
 volume/pan/mute per frame. "Write automation" records knob and slider moves while playing.
-Sessions (schema 2) store inserts, lanes, the master bus and the tail settings; schema 1 sessions
-still load. `Document.bake` (inserts panel "Bake") renders a chain into the clip with its tail.
+Sessions (schema 3) store clips, inserts, lanes, the master bus and the tail settings; schema 1 and 2
+sessions still load. `Document.bake` (inserts panel "Bake") renders a chain into the clip with its tail.
 
 Effect interfaces (`gui/effect_ui.py`) share a header with input/output meters and a live scope of
 the audio around the node, then a family view: dynamics (transfer curve, gain-reduction meter and

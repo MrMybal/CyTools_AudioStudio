@@ -199,17 +199,18 @@ class AutomationDocumentTests(unittest.TestCase):
         self.assertTrue(doc.automation_remove(track, 'gain_db', 0))
         self.assertNotIn('gain_db', track.automation)
 
-    def test_split_copies_chain_and_lanes(self):
+    def test_split_keeps_both_clips_on_the_track_and_its_chain(self):
         doc = Document(RATE)
         track = doc.add_track(tone(1.0, RATE, 2, 440.0), 'a')
         gain = doc.add_insert(track, node('gain', gain_db=-3.0))
         doc.automation_add(track, gain['id'] + '.gain_db', 0.2, -6.0)
+        before = doc.mixdown(tail={'enabled': False})
         doc.cursor = 0.5
         self.assertTrue(doc.split())
-        right = doc.tracks[1]
-        self.assertEqual(right.inserts[0]['effect'], 'gain')
-        self.assertNotEqual(right.inserts[0]['id'], gain['id'])
-        self.assertIn(right.inserts[0]['id'] + '.gain_db', right.automation)
+        self.assertEqual((len(doc.tracks), len(track.clips)), (1, 2))
+        self.assertEqual([n['id'] for n in track.inserts], [gain['id']])
+        self.assertIn(gain['id'] + '.gain_db', track.automation)
+        self.assertTrue(np.allclose(doc.mixdown(tail={'enabled': False}), before, atol=1e-6))
 
 
 class TailAndSessionTests(unittest.TestCase):
@@ -242,7 +243,7 @@ class TailAndSessionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             doc.save_session(folder)
             index = (Path(folder) / 'session.json').read_text('utf-8')
-            self.assertIn('"schemaVersion": 2', index)
+            self.assertIn('"schemaVersion": 3', index)
             loaded = Document.load_session(folder)
         self.assertEqual([n['effect'] for n in loaded.tracks[0].inserts], ['compressor'])
         self.assertEqual(loaded.tracks[0].inserts[0]['params']['threshold_db'], -24.0)

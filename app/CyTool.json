@@ -1315,7 +1315,7 @@
     {
       "id": "edit_session",
       "name": "Edit session (scripted)",
-      "description": "Create or open a session, apply actions (add / replace / remove tracks, insert chains, master, tail, automation), save it and optionally render the mix. The headless counterpart of the editor.",
+      "description": "Create or open a session, apply actions (add / replace / remove tracks, add / move / reverse / remove clips, insert chains, master, tail, automation), save it and optionally render the mix. The headless counterpart of the editor.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1349,6 +1349,10 @@
                     "add_track",
                     "replace_audio",
                     "remove_track",
+                    "add_clip",
+                    "move_clip",
+                    "remove_clip",
+                    "reverse_clip",
                     "set_track",
                     "set_inserts",
                     "set_master",
@@ -1361,7 +1365,7 @@
                 },
                 "file": {
                   "type": "string",
-                  "description": "Audio file (add_track, replace_audio)",
+                  "description": "Audio file (add_track, replace_audio, add_clip)",
                   "x-cy-kind": "Audio",
                   "maxLength": 1024
                 },
@@ -1373,9 +1377,27 @@
                 },
                 "name": {
                   "type": "string",
-                  "description": "Track name",
+                  "description": "Track or clip name",
                   "maxLength": 200,
                   "x-cy-kind": "String"
+                },
+                "clip": {
+                  "type": "string",
+                  "description": "Clip id, exact name or index such as \"0\" (move_clip, remove_clip, reverse_clip)",
+                  "maxLength": 200,
+                  "x-cy-kind": "String"
+                },
+                "to_track": {
+                  "type": "string",
+                  "description": "Track that receives the clip (move_clip); its inserts then apply to it",
+                  "maxLength": 200,
+                  "x-cy-kind": "String"
+                },
+                "after_clips": {
+                  "type": "boolean",
+                  "description": "add_clip: a position already taken by a clip puts the new clip after the last one",
+                  "default": true,
+                  "x-cy-kind": "Boolean"
                 },
                 "target": {
                   "type": "string",

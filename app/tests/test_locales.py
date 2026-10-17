@@ -26,6 +26,8 @@ LABEL_CALLS = {'button', 'small_button', 'checkbox', 'radio_button', 'input_text
                'begin_tab_item', 'menu_item', 'begin_menu',
                'text', 'text_wrapped', 'text_disabled', 'text_unformatted', 'bullet_text', 'separator_text', 'set_tooltip'}
 PROGRESS_OVERLAY_INDEX = 2   # progress_bar(fraction, size, overlay)
+# EditorPanel helpers: name -> (index of the label argument, index of the tooltip argument)
+TOOLBAR_CALLS = {'_button': (0, 1), '_check': (0, 2), '_combo': (None, 4)}
 
 # Protocol state codes shown through tr() in gui/models_panel.py (STATE_COLOUR keys).
 MODEL_STATES = ('Installed', 'Downloading', 'Verifying', 'Partial', 'Interrupted', 'Failed',
@@ -95,6 +97,12 @@ def gui_strings():
                 add(_string_literal(node.args[0]), path.name + ':tr')
             elif name in LABEL_CALLS:
                 add(_string_literal(node.args[0]), path.name + ':' + name)
+            if name in TOOLBAR_CALLS:
+                # editor toolbar helpers: label (button / checkbox) and tooltip, both shown through tr()
+                label_index, tip_index = TOOLBAR_CALLS[name]
+                for index in (label_index, tip_index):
+                    if index is not None and len(node.args) > index:
+                        add(_string_literal(node.args[index]), path.name + ':' + name)
             elif name == 'progress_bar' and len(node.args) > PROGRESS_OVERLAY_INDEX:
                 add(_string_literal(node.args[PROGRESS_OVERLAY_INDEX]), path.name + ':progress_bar')
     return found

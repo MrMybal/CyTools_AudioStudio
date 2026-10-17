@@ -10,10 +10,13 @@ guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md](app/README
 
 ## What it does
 
-- **Multitrack editor** in the spirit of GoldWave / Audacity: waveforms per channel, clips you can
-  move, trim (non-destructively) and fade, selection editing (cut, copy, paste, delete, trim,
-  silence, split), undo / redo, recording from the microphone, playback through the default
-  output, sessions saved as folders.
+- **Multitrack editor** in the spirit of GoldWave / Audacity: waveforms per channel, several clips
+  per track that you can move (also onto another track, which then plays them through its own
+  effects), trim (non-destructively), fade from their corners, reverse from their right-click menu, selection editing (cut, copy,
+  paste, delete, trim, silence, split into two clips), undo / redo, recording from the microphone,
+  playback through the default output, sessions saved as folders. The bar above the timeline is
+  split into titled groups (Session, Transport, Output, View, Options, Export), each control with a
+  tooltip.
 - **Insert chains per track and on the master bus** with 106 native effects (92 of them real-time)
   and VST3 plugins, each with its own interface: input / output meters, a live scope and a live
   spectrometer of the audio entering and leaving the effect, transfer
@@ -26,10 +29,12 @@ guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md](app/README
 - **Effects belong to a track or to the master bus**, never to the whole editor: clicking a track
   (or the master lane) shows its chain in the FX panel; add, remove, bypass, drag to reorder, bake it
   into the clip, or send it to the Workflows tab.
-- **Drag and drop**: audio files dropped from the desktop become tracks at the time under the mouse
-  (below the hovered track), or fill an empty track created with the **+** button (its inserts are kept); a session folder opens it, a workflow file loads it, an impulse
-  response dropped on a convolution effect is used by it. Inserts and chain items are reordered by
-  dragging them.
+- **Drag and drop**: an audio file dropped on a track becomes a clip of that track, at the time under
+  the mouse when that place is free and after its last clip otherwise; dropped below the tracks it
+  becomes a new track; an empty track (**+ Track** button) simply takes it and keeps its inserts. A
+  session folder opens it, a workflow file loads it, an impulse response dropped on a convolution
+  effect is used by it. Clips move between tracks by dragging their title bar up or down (or with
+  *Move to track* in their right-click menu); inserts and chain items are reordered by dragging them.
 - **Search by text** in every effect and plugin picker (accent and case insensitive, name, category
   and description; Enter picks the first match).
 - **Effects**: compressors (feed-forward, vintage opto / VCA / FET / vari-mu, multiband, dynamic EQ,

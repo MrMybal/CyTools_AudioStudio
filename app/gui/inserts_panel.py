@@ -131,22 +131,21 @@ class InsertsPanel:
         if track is document.master or not track.inserts:
             return
         renderer = Renderer(document)
-        block, _ = renderer.clip_block(track, track.offset, track.frames)
+        offset = track.offset                       # every clip of the track becomes one clip
+        block, _ = renderer.clip_block(track, offset, track.frames)
         tail = document.tail
         extra = int(float(tail.get('max_seconds', 10.0)) * document.samplerate) if (tail.get('enabled', True) and any(
             n.get('enabled', True) and (n['kind'] == 'vst3' or effects.REGISTRY[n['effect']].stateful) for n in track.inserts)) else 0
         audio = np.concatenate([block, np.zeros((2, extra), np.float32)], axis=1) if extra else block
         parts = []
         for start in range(0, audio.shape[1], 4096):
-            parts.append(renderer.run_chain(track, track.inserts, audio[:, start:start + 4096], track.offset + start, min(4096, audio.shape[1] - start)))
+            parts.append(renderer.run_chain(track, track.inserts, audio[:, start:start + 4096], offset + start, min(4096, audio.shape[1] - start)))
         rendered = np.concatenate(parts, axis=1)
         if extra:
             from audiostudio.dsp.tail import trim, TailSettings
             rendered = trim(rendered, document.samplerate, TailSettings.from_dict(tail), block.shape[1])
         document.edit('Bake inserts', [track.id])
-        track.flatten()
-        track.audio = np.ascontiguousarray(rendered)
-        track.fade_in = track.fade_out = 0.0
+        track.set_audio(rendered, offset, name=track.name + ' (baked)')
         track.inserts = []
         track.automation = {k: v for k, v in track.automation.items() if '.' not in k}
         track.invalidate()

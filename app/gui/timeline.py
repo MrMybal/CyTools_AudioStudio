@@ -1,14 +1,16 @@
 """Multitrack timeline: track headers, clips with waveforms, ruler, selection, cursor, playhead,
 automation lanes, master bus lane, overview strip.
 
+A track holds any number of clips; all of them go through the track's inserts.
 Mouse on a clip lane:
-  drag on the clip title bar         = move the clip in time (snaps to 0, cursor and other clip edges)
+  drag on the clip title bar         = move the clip in time (snaps to 0, cursor and other clip edges),
+                                       or up / down onto another track, which then plays it through its effects
   drag a left/right clip edge        = trim the clip (audio is kept: drag back to restore it)
   drag a fade handle (top corners)   = fade in / fade out of the clip
   drag on the waveform / empty lane  = select a time range on that track
   click                              = place the cursor
   double-click                       = select the whole clip
-  right-click                        = clip menu (delete, duplicate, split, move to cursor)
+  right-click                        = clip menu (delete, duplicate, reverse, split, move to cursor, move to another track)
   right-drag, middle-drag, Space+drag, the hand tool, the scrollbar or the overview strip = move along the timeline
   wheel = zoom around the mouse, Shift+wheel = scroll, Ctrl+wheel = vertical zoom
   drag the lower edge of a track     = change its height
@@ -50,10 +52,12 @@ class Timeline:
         self.view = (0.0, 10.0)        # visible seconds
         self.drag_start = None
         self.dragged = False
-        self.moving = None             # {'track', 'offset', 'mouse_x', 'edited'}
+        self.moving = None             # {'track', 'clip', 'offset', 'mouse_x', 'edited', 'target'}
         self.resizing = None           # (track, start_height, mouse_y)
-        self.trimming = None           # {'track', 'edge', 'edited'}
-        self.fading = None             # {'track', 'side', 'edited'}
+        self.trimming = None           # {'track', 'clip', 'edge', 'edited'}
+        self.fading = None             # {'track', 'clip', 'side', 'edited'}
+        self.menu_clip = None
+        self._last_rows = []           # (track id, top, bottom) of the previous frame: target of a clip dragged vertically
         self.panning = None            # view start when a grab began
         self.follow = True
         self.vertical_zoom = 1.0
@@ -97,42 +101,42 @@ class Timeline:
             self.view = (begin, begin + span)
 
     # ------------------------------------------------------------------ drawing helpers
-    def _peaks(self, track, channel, fa, fb, columns, version):
-        key = (track.id, channel, track.frames, track.start, fa, fb, columns, version)
-        cached = self._peak_cache.get((track.id, channel))
+    def _peaks(self, clip, channel, fa, fb, columns, version):
+        key = (clip.id, channel, clip.frames, clip.start, fa, fb, columns, version)
+        cached = self._peak_cache.get((clip.id, channel))
         if cached is not None and cached[0] == key:
             return cached[1], cached[2]
         if channel is None:
-            low, high = track.peaks().read(track.start + fa, track.start + fb, columns, audio=track.audio)
+            low, high = clip.peaks().read(clip.start + fa, clip.start + fb, columns, audio=clip.audio)
         else:
-            block = track.audio[channel:channel + 1, track.start + fa:track.start + fb]
+            block = clip.audio[channel:channel + 1, clip.start + fa:clip.start + fb]
             if block.shape[1] == 0:
                 low = high = np.zeros(0, np.float32)
             else:
                 edges = np.linspace(0, block.shape[1], columns + 1).astype(int)[:-1] if block.shape[1] > columns else np.arange(block.shape[1])
                 low = np.minimum.reduceat(block[0], edges)
                 high = np.maximum.reduceat(block[0], edges)
-        self._peak_cache[(track.id, channel)] = (key, low, high)
+        self._peak_cache[(clip.id, channel)] = (key, low, high)
         return low, high
 
-    def _draw_wave(self, draw, track, channel, x0, x1, top, bottom, fa, fb, version, head_x, muted):
+    def _draw_wave(self, draw, track, clip, channel, x0, x1, top, bottom, fa, fb, version, head_x, muted):
         columns = max(1, int(x1 - x0))
-        if channel is not None and track.frames and (fb - fa) / columns < 64:
-            low, high = self._peaks(track, channel, fa, fb, columns, version)
+        if channel is not None and clip.frames and (fb - fa) / columns < 64:
+            low, high = self._peaks(clip, channel, fa, fb, columns, version)
         elif channel is not None:
-            block = track.audio[channel, track.start + fa:track.start + fb]
+            block = clip.audio[channel, clip.start + fa:clip.start + fb]
             if block.size == 0:
                 return
             edges = np.linspace(0, block.size, columns + 1).astype(int)[:-1]
-            key = (track.id, channel, track.frames, track.start, fa, fb, columns, version)
-            cached = self._peak_cache.get((track.id, channel))
+            key = (clip.id, channel, clip.frames, clip.start, fa, fb, columns, version)
+            cached = self._peak_cache.get((clip.id, channel))
             if cached is not None and cached[0] == key:
                 low, high = cached[1], cached[2]
             else:
                 low, high = np.minimum.reduceat(block, edges), np.maximum.reduceat(block, edges)
-                self._peak_cache[(track.id, channel)] = (key, low, high)
+                self._peak_cache[(clip.id, channel)] = (key, low, high)
         else:
-            low, high = self._peaks(track, None, fa, fb, columns, version)
+            low, high = self._peaks(clip, None, fa, fb, columns, version)
         middle = (top + bottom) / 2
         half = max(1.0, (bottom - top) / 2 - 1)
         gain = 10 ** (track.gain_db / 20) * self.vertical_zoom
@@ -151,14 +155,19 @@ class Timeline:
                 y_bottom = y_top + 1.0
             draw.add_line((x, y_top), (x, y_bottom), played if x <= head_x else base, max(1.0, step))
 
-    def _snap(self, document, track, seconds, to_x):
+    def _snap(self, document, clip, seconds, to_x):
+        """Snap to 0, the cursor and the edges of every other clip when within SNAP_PIXELS."""
         candidates = [0.0, document.cursor]
-        for other in document.tracks:
-            if other is not track:
-                candidates += [document.frame_to_seconds(other.offset), document.frame_to_seconds(other.end)]
+        for track in document.tracks:
+            for other in track.clips:
+                if other is not clip:
+                    candidates += [document.frame_to_seconds(other.offset), document.frame_to_seconds(other.end)]
         x = to_x(seconds)
         best = min(candidates, key=lambda c: abs(to_x(c) - x))
         return best if abs(to_x(best) - x) <= SNAP_PIXELS else seconds
+
+    def _row_at(self, y):
+        return next((track_id for track_id, top, bottom in self._last_rows if top <= y < bottom), None)
 
     # ------------------------------------------------------------------ automation overlay
     def _automation(self, document, owner, draw, x0, y_top, x1, y1, to_x, to_t, hovered, lane_id, tr):
@@ -311,6 +320,16 @@ class Timeline:
             self.zoom(0.8 if io.mouse_wheel > 0 else 1.25, anchor=to_t(mouse.x))
         if ruler_hovered:
             imgui.set_tooltip(tr('Click or drag to move the cursor, wheel to zoom'))
+        # add-track button in the corner above the track headers: always in view, however many tracks
+        imgui.set_cursor_screen_pos((origin.x + 4, origin.y + 1))
+        imgui.push_style_var(imgui.StyleVar_.frame_padding, (8.0, 1.0))
+        if imgui.button(tr('+ Track') + '###Add track', (HEADER_WIDTH - 14, RULER_HEIGHT - 2)):
+            document.add_empty_track()
+            if app is not None:
+                app.editor.message = tr('Empty track added: record, drop or generate a sound into it, or add inserts.')
+        imgui.pop_style_var()
+        if imgui.is_item_hovered():
+            imgui.set_tooltip(tr('Add an empty track'))
 
         # ---------------------------------------------------------------- lanes (own child: own draw list and clipping)
         imgui.set_cursor_screen_pos((origin.x, origin.y + RULER_HEIGHT))
@@ -326,7 +345,9 @@ class Timeline:
         head_x = to_x(player.position) if (player.playing or player.is_recording) else -1e9
         rows = []
         self.drop_geometry = {'x0': origin.x, 'x1': origin.x + width, 'y0': origin.y, 'y1': origin.y + total_height, 'lane_x0': lane_x0,
-                              'lane_width': lane_width, 'start': start, 'span': span, 'rows': rows}
+                              'lane_width': lane_width, 'start': start, 'span': span, 'rows': rows,
+                              # the part of the scrolling lanes that is on screen: rows outside it are hidden
+                              'lanes_y0': imgui.get_window_pos().y, 'lanes_y1': imgui.get_window_pos().y + imgui.get_window_size().y}
         for index, track in enumerate(list(document.tracks)):
             lane_height = float(track.height)
             rows.append((track.id, y, y + lane_height))
@@ -420,32 +441,39 @@ class Timeline:
                 a, b = sorted(document.selection)
                 draw.add_rect_filled((max(x0, to_x(a)), y0), (min(x1, to_x(b)), y1), colour(0.35, 0.6, 1.0, 0.22))
 
-            # -- clip (title bar + waveform)
-            clip_a = document.frame_to_seconds(track.offset)
-            clip_b = document.frame_to_seconds(track.end)
-            vis_a, vis_b = max(start, clip_a), min(stop, clip_b)
-            if vis_b > vis_a and track.frames:
+            # -- clips (title bar + waveform)
+            visible = []
+            for clip in track.clips:
+                clip_a, clip_b = document.frame_to_seconds(clip.offset), document.frame_to_seconds(clip.end)
+                vis_a, vis_b = max(start, clip_a), min(stop, clip_b)
+                if vis_b <= vis_a or not clip.frames:
+                    continue
+                visible.append((clip, clip_a, clip_b, vis_a, vis_b))
+                leaving = self.moving is not None and self.moving['clip'] is clip and self.moving['target'] != track.id
+                alpha = 0.35 if leaving else 1.0
                 px_a, px_b = to_x(vis_a), to_x(vis_b)
                 draw.add_rect_filled((px_a, y0), (px_b, y1), colour(*track.colour, 0.07))
-                draw.add_rect_filled((px_a, y0), (px_b, y0 + TITLE_HEIGHT), colour(*track.colour, 0.55 if selected else 0.35))
-                draw.add_rect((px_a, y0), (px_b, y1), colour(*track.colour, 0.6))
+                draw.add_rect_filled((px_a, y0), (px_b, y0 + TITLE_HEIGHT), colour(*track.colour, (0.55 if selected else 0.35) * alpha))
+                draw.add_rect((px_a, y0), (px_b, y1), colour(*track.colour, 0.6 * alpha))
                 draw.push_clip_rect((px_a, y0), (px_b, y0 + TITLE_HEIGHT), True)
-                draw.add_text((px_a + 4, y0 + 1), colour(1, 1, 1, 0.9), f'{track.name}  {clock(clip_a)}')
+                draw.add_text((px_a + 4, y0 + 1), colour(1, 1, 1, 0.9 * alpha), f'{clip.name}  {clock(clip_a)}')
                 draw.pop_clip_rect()
-                fa = document.seconds_to_frame(vis_a) - track.offset
-                fb = document.seconds_to_frame(vis_b) - track.offset
+                fa = document.seconds_to_frame(vis_a) - clip.offset
+                fb = document.seconds_to_frame(vis_b) - clip.offset
                 wave_top = y0 + TITLE_HEIGHT + 1
-                if track.channels >= 2 and (y1 - wave_top) >= 50:
+                if clip.channels >= 2 and (y1 - wave_top) >= 50:
                     middle = (wave_top + y1) / 2
-                    self._draw_wave(draw, track, 0, px_a, px_b, wave_top, middle - 1, fa, fb, version, head_x, track.mute)
-                    self._draw_wave(draw, track, 1, px_a, px_b, middle + 1, y1, fa, fb, version, head_x, track.mute)
+                    self._draw_wave(draw, track, clip, 0, px_a, px_b, wave_top, middle - 1, fa, fb, version, head_x, track.mute or leaving)
+                    self._draw_wave(draw, track, clip, 1, px_a, px_b, middle + 1, y1, fa, fb, version, head_x, track.mute or leaving)
                     draw.add_line((px_a, middle), (px_b, middle), colour(0.2, 0.2, 0.24))
-                    draw.add_text((px_b - 14 if px_b - px_a > 30 else px_a + 2, wave_top + 1), colour(0.7, 0.7, 0.75, 0.7), 'L')
-                    draw.add_text((px_b - 14 if px_b - px_a > 30 else px_a + 2, middle + 2), colour(0.7, 0.7, 0.75, 0.7), 'R')
+                    draw.add_text((px_b - 26 if px_b - px_a > 50 else px_a + 2, wave_top + 1), colour(0.7, 0.7, 0.75, 0.7), 'L')
+                    draw.add_text((px_b - 26 if px_b - px_a > 50 else px_a + 2, middle + 2), colour(0.7, 0.7, 0.75, 0.7), 'R')
                 else:
-                    self._draw_wave(draw, track, None, px_a, px_b, wave_top, y1, fa, fb, version, head_x, track.mute)
+                    self._draw_wave(draw, track, clip, None, px_a, px_b, wave_top, y1, fa, fb, version, head_x, track.mute or leaving)
             # -- lane body: selection, cursor, menu, panning, automation
-            body_top = y0 + (TITLE_HEIGHT if vis_b > vis_a and track.frames else 0)
+            under = track.clip_at(document.seconds_to_frame(max(0.0, to_t(mouse.x)))) if x0 <= mouse.x <= x1 else None
+            under = under if any(item[0] is under for item in visible) else None
+            body_top = y0 + (TITLE_HEIGHT if under is not None else 0)
             imgui.set_cursor_screen_pos((x0, y0))
             imgui.set_next_item_allow_overlap()
             imgui.invisible_button('lane', (lane_width, lane_height - 2))
@@ -453,7 +481,7 @@ class Timeline:
             active = imgui.is_item_active()
             automation_consumed = False
             if track.automation_view:
-                automation_consumed = self._automation(document, track, draw, x0, body_top, x1, y1, to_x, to_t, hovered, 'lane', tr)
+                automation_consumed = self._automation(document, track, draw, x0, y0 + (TITLE_HEIGHT if visible else 0), x1, y1, to_x, to_t, hovered, 'lane', tr)
             if hovered:
                 hover_time = to_t(mouse.x)
                 self._wheel(io, span, start, to_t, mouse)
@@ -474,9 +502,9 @@ class Timeline:
                 self.drag_start = float(max(0.0, to_t(mouse.x)))
                 self.dragged = False
                 self.drag_track = track.id
-            if hovered and imgui.is_mouse_double_clicked(imgui.MouseButton_.left) and track.frames and not editing_points:
+            if hovered and imgui.is_mouse_double_clicked(imgui.MouseButton_.left) and under is not None and not editing_points:
                 document.selected_track = index
-                document.selection = (clip_a, clip_b)
+                document.selection = (document.frame_to_seconds(under.offset), document.frame_to_seconds(under.end))
                 self.drag_start = None
             if active and self.drag_start is not None and getattr(self, 'drag_track', None) == track.id and imgui.is_mouse_dragging(imgui.MouseButton_.left, 3.0):
                 self.dragged = True
@@ -493,107 +521,21 @@ class Timeline:
                 else:
                     document.selected_track = index
                     self.menu_track = track.id
+                    self.menu_clip = under.id if under is not None else None
                     self.menu_time = to_t(mouse.x)
                     imgui.open_popup('clip-menu')
             if imgui.begin_popup('clip-menu'):
-                imgui.text_disabled(track.name)
-                if imgui.menu_item(tr('Delete clip') + '###Delete clip', '', False)[0]:
-                    remove_id = track.id
-                if imgui.menu_item(tr('Duplicate clip') + '###Duplicate clip', '', False)[0]:
-                    copy = document.add_track(track.audio.copy(), track.name + ' (copy)', offset_seconds=clip_b)
-                    copy.gain_db, copy.pan = track.gain_db, track.pan
-                    copy.inserts, copy.automation = document.copy_chain(track)
-                if imgui.menu_item(tr('Split at cursor') + '###Split at cursor', '', False)[0]:
-                    document.split()
-                if imgui.menu_item(tr('Move clip to cursor') + '###Move clip to cursor', '', False)[0]:
-                    document.set_offset(track, document.cursor)
-                if imgui.menu_item(tr('Select whole clip') + '###Select whole clip', '', False)[0]:
-                    document.selection = (clip_a, clip_b)
-                imgui.separator()
-                if imgui.menu_item(tr('Inserts (effects, VST3)...') + '###Open inserts', '', False)[0] and app is not None:
-                    app.inserts.show(track)
+                self._clip_menu(document, track, app, tr)
                 imgui.end_popup()
 
-            # -- title bar = move handle, edges = trim, top corners = fades
-            if vis_b > vis_a and track.frames and not editing_points:
-                px_a, px_b = to_x(vis_a), to_x(vis_b)
-                clip_px_a, clip_px_b = to_x(clip_a), to_x(clip_b)
-                imgui.set_cursor_screen_pos((px_a, y0))
-                imgui.invisible_button('clip-move', (max(4.0, px_b - px_a), TITLE_HEIGHT))
-                title_hovered = imgui.is_item_hovered()
-                if title_hovered:
-                    imgui.set_mouse_cursor(imgui.MouseCursor_.resize_ew)
-                    imgui.set_tooltip(tr('Drag to move the clip'))
-                if imgui.is_item_activated():
-                    document.selected_track = index
-                    self.moving = {'track': track, 'offset': clip_a, 'mouse_x': mouse.x, 'edited': False}
-                if imgui.is_item_active() and self.moving and self.moving['track'] is track:
-                    delta = (mouse.x - self.moving['mouse_x']) / lane_width * span
-                    if abs(mouse.x - self.moving['mouse_x']) >= 1.0:
-                        if not self.moving['edited']:
-                            document.edit('Move clip', [track.id])
-                            self.moving['edited'] = True
-                        target = max(0.0, self._snap(document, track, self.moving['offset'] + delta, to_x))
-                        track.offset = document.seconds_to_frame(target)
-                        document.touch()
-                if imgui.is_item_deactivated() and self.moving and self.moving['track'] is track:
-                    self.moving = None
-
-                for side, handle_x in (('left', clip_px_a), ('right', clip_px_b - EDGE_WIDTH)):
-                    if handle_x + EDGE_WIDTH < x0 or handle_x > x1:
-                        continue
-                    imgui.set_cursor_screen_pos((handle_x, y0 + TITLE_HEIGHT))
-                    imgui.invisible_button('clip-' + side, (EDGE_WIDTH, max(6.0, y1 - y0 - TITLE_HEIGHT)))
-                    if imgui.is_item_hovered() or (self.trimming and self.trimming['track'] is track and self.trimming['edge'] == side):
-                        imgui.set_mouse_cursor(imgui.MouseCursor_.resize_ew)
-                        draw.add_rect_filled((handle_x, y0 + TITLE_HEIGHT), (handle_x + EDGE_WIDTH, y1), colour(1, 1, 1, 0.25))
-                        if imgui.is_item_hovered():
-                            imgui.set_tooltip(tr('Drag to trim the clip (the audio is kept)'))
-                    if imgui.is_item_activated():
-                        document.selected_track = index
-                        self.trimming = {'track': track, 'edge': side, 'edited': False}
-                    if imgui.is_item_active() and self.trimming and self.trimming['track'] is track and self.trimming['edge'] == side:
-                        if not self.trimming['edited']:
-                            document.edit('Resize clip', [track.id])
-                            self.trimming['edited'] = True
-                        document.resize_clip(track, side, self._snap(document, track, to_t(mouse.x), to_x), record=False)
-                    if imgui.is_item_deactivated() and self.trimming and self.trimming['track'] is track:
-                        self.trimming = None
-
-                wave_top = y0 + TITLE_HEIGHT + 1
-                fade_in_x = to_x(clip_a + track.fade_in)
-                fade_out_x = to_x(clip_b - track.fade_out)
-                if track.fade_in > 0:
-                    draw.add_triangle_filled((clip_px_a, y1), (fade_in_x, wave_top), (clip_px_a, wave_top), colour(0, 0, 0, 0.45))
-                    draw.add_line((clip_px_a, y1), (fade_in_x, wave_top), colour(1, 1, 1, 0.75), 1.5)
-                if track.fade_out > 0:
-                    draw.add_triangle_filled((fade_out_x, wave_top), (clip_px_b, y1), (clip_px_b, wave_top), colour(0, 0, 0, 0.45))
-                    draw.add_line((fade_out_x, wave_top), (clip_px_b, y1), colour(1, 1, 1, 0.75), 1.5)
-                for side, handle_x in (('in', fade_in_x), ('out', fade_out_x)):
-                    if side == 'in':
-                        centre = max(handle_x, clip_px_a + EDGE_WIDTH) if track.fade_in <= 0 else handle_x - FADE_HANDLE / 2
-                    else:
-                        centre = min(handle_x - FADE_HANDLE, clip_px_b - EDGE_WIDTH - FADE_HANDLE) if track.fade_out <= 0 else handle_x - FADE_HANDLE / 2
-                    if centre + FADE_HANDLE < x0 or centre > x1:
-                        continue
-                    imgui.set_cursor_screen_pos((max(x0, centre), wave_top))
-                    imgui.invisible_button('fade-' + side, (FADE_HANDLE, FADE_HANDLE))
-                    hovered_fade = imgui.is_item_hovered()
-                    draw.add_rect_filled((max(x0, centre), wave_top), (max(x0, centre) + FADE_HANDLE, wave_top + FADE_HANDLE),
-                                         colour(1, 1, 1, 0.85 if hovered_fade else 0.5))
-                    if hovered_fade:
-                        imgui.set_tooltip(tr('Drag for a fade in') if side == 'in' else tr('Drag for a fade out'))
-                    if imgui.is_item_activated():
-                        document.selected_track = index
-                        self.fading = {'track': track, 'side': side, 'edited': False}
-                    if imgui.is_item_active() and self.fading and self.fading['track'] is track and self.fading['side'] == side:
-                        if not self.fading['edited']:
-                            document.edit('Fade ' + side, [track.id])
-                            self.fading['edited'] = True
-                        seconds = (to_t(mouse.x) - clip_a) if side == 'in' else (clip_b - to_t(mouse.x))
-                        document.set_fade(track, side, max(0.0, seconds), record=False)
-                    if imgui.is_item_deactivated() and self.fading and self.fading['track'] is track:
-                        self.fading = None
+            # -- per clip: title bar = move handle (also to another track), edges = trim, top corners = fades
+            if not editing_points:
+                draw.push_clip_rect((x0, y0), (x1, y1), True)
+                for clip, clip_a, clip_b, vis_a, vis_b in visible:
+                    imgui.push_id(clip.id)
+                    self._clip_handles(document, track, index, clip, clip_a, clip_b, vis_a, vis_b, draw, x0, x1, y0, y1, to_x, to_t, mouse, lane_width, span, tr)
+                    imgui.pop_id()
+                draw.pop_clip_rect()
 
             # -- cursor and playhead
             cursor_x = to_x(document.cursor)
@@ -615,16 +557,11 @@ class Timeline:
                 self.resizing = None
             imgui.pop_id()
             y += lane_height
+        self._moving_ghost(document, draw, rows, to_x, tr)
+        self._last_rows = list(rows)
         if remove_id is not None:
             document.remove_track(remove_id)
-        imgui.set_cursor_screen_pos((child_origin.x + 8, y + 4))
-        if imgui.button('+###Add track', (HEADER_WIDTH - 20, 0)):
-            track = document.add_empty_track()
-            if app is not None:
-                app.editor.message = tr('Empty track added: record, drop or generate a sound into it, or add inserts.')
-        if imgui.is_item_hovered():
-            imgui.set_tooltip(tr('Add an empty track'))
-        y += imgui.get_frame_height() + 8
+        y += 8
         if not document.tracks:
             draw.add_text((lane_x0 + 12, child_origin.y + 12), colour(0.6, 0.6, 0.65), tr('No track. Open a file, record, or generate a sound.'))
 
@@ -639,8 +576,149 @@ class Timeline:
         imgui.end_child()
         self._scrollbar(document, lane_x0, lane_width, tr)
         self._overview(document, lane_x0, lane_width, tr)
-        if hover_time is not None and not (self.moving or self.resizing or self.auto_drag):
+        if hover_time is not None and not (self.moving or self.resizing or self.auto_drag or self.fading or self.trimming):
             imgui.set_tooltip(clock(hover_time))
+
+    def _clip_menu(self, document, track, app, tr):
+        """Right-click menu of a lane: the clip under the mouse, or the track when there is none."""
+        clip = track.clip(self.menu_clip) if self.menu_clip else None
+        imgui.text_disabled(clip.name if clip is not None else track.name)
+        imgui.begin_disabled(clip is None)
+        if imgui.menu_item(tr('Delete clip') + '###Delete clip', '', False)[0]:
+            document.remove_clip(track, clip)
+        if imgui.menu_item(tr('Duplicate clip') + '###Duplicate clip', '', False)[0]:
+            document.duplicate_clip(track, clip)
+        if imgui.menu_item(tr('Reverse clip') + '###Reverse clip', '', False)[0]:
+            document.reverse_clip(track, clip)
+        imgui.end_disabled()
+        if imgui.menu_item(tr('Split at cursor') + '###Split at cursor', '', False)[0]:
+            document.split()
+        imgui.begin_disabled(clip is None)
+        if imgui.menu_item(tr('Move clip to cursor') + '###Move clip to cursor', '', False)[0]:
+            document.set_offset(track, document.cursor, clip=clip)
+        if imgui.menu_item(tr('Select whole clip') + '###Select whole clip', '', False)[0]:
+            document.selection = (document.frame_to_seconds(clip.offset), document.frame_to_seconds(clip.end))
+        others = [other for other in document.tracks if other is not track]
+        if others and imgui.begin_menu(tr('Move to track') + '###Move to track'):
+            for other in others:
+                if imgui.menu_item(other.name + '###to-' + other.id, '', False)[0]:
+                    document.move_clip(track, clip, other)
+                    if app is not None:
+                        app.inserts.follow(other)
+            imgui.end_menu()
+        imgui.end_disabled()
+        imgui.separator()
+        if imgui.menu_item(tr('Inserts (effects, VST3)...') + '###Open inserts', '', False)[0] and app is not None:
+            app.inserts.show(track)
+
+    def _clip_handles(self, document, track, index, clip, clip_a, clip_b, vis_a, vis_b, draw, x0, x1, y0, y1, to_x, to_t, mouse, lane_width, span, tr):
+        px_a, px_b = to_x(vis_a), to_x(vis_b)
+        clip_px_a, clip_px_b = to_x(clip_a), to_x(clip_b)
+        wave_top = y0 + TITLE_HEIGHT + 1
+        # -- move: in time, and onto another track when the mouse leaves this one
+        imgui.set_cursor_screen_pos((px_a, y0))
+        imgui.invisible_button('clip-move', (max(4.0, px_b - px_a), TITLE_HEIGHT))
+        if imgui.is_item_hovered():
+            imgui.set_mouse_cursor(imgui.MouseCursor_.resize_all)
+            imgui.set_tooltip(tr('Drag to move the clip, up or down to put it on another track'))
+        if imgui.is_item_activated():
+            document.selected_track = index
+            self.moving = {'track': track, 'clip': clip, 'offset': clip_a, 'mouse_x': mouse.x, 'edited': False, 'target': track.id}
+        moving = self.moving if (self.moving is not None and self.moving['clip'] is clip) else None
+        if imgui.is_item_active() and moving is not None:
+            delta = (mouse.x - moving['mouse_x']) / lane_width * span
+            if abs(mouse.x - moving['mouse_x']) >= 1.0:
+                if not moving['edited']:
+                    document.edit('Move clip', [track.id])
+                    moving['edited'] = True
+                clip.offset = document.seconds_to_frame(max(0.0, self._snap(document, clip, moving['offset'] + delta, to_x)))
+                document.touch()
+            moving['target'] = self._row_at(mouse.y) or track.id
+        if imgui.is_item_deactivated() and moving is not None:
+            target = document.track(moving['target'])
+            if target is not None and target is not track:
+                document.move_clip(track, clip, target, record=not moving['edited'])
+            else:
+                track.sort()
+            self.moving = None
+        # -- trim: the edges below the fade handles
+        edge_top = wave_top + FADE_HANDLE + 1
+        for side, handle_x in (('left', clip_px_a), ('right', clip_px_b - EDGE_WIDTH)):
+            if handle_x + EDGE_WIDTH < x0 or handle_x > x1 or y1 - edge_top < 4:
+                continue
+            imgui.set_cursor_screen_pos((handle_x, edge_top))
+            imgui.invisible_button('clip-' + side, (EDGE_WIDTH, y1 - edge_top))
+            trimming = self.trimming is not None and self.trimming['clip'] is clip and self.trimming['edge'] == side
+            if imgui.is_item_hovered() or trimming:
+                imgui.set_mouse_cursor(imgui.MouseCursor_.resize_ew)
+                draw.add_rect_filled((handle_x, edge_top), (handle_x + EDGE_WIDTH, y1), colour(1, 1, 1, 0.25))
+                if imgui.is_item_hovered():
+                    imgui.set_tooltip(tr('Drag to trim the clip (the audio is kept)'))
+            if imgui.is_item_activated():
+                document.selected_track = index
+                self.trimming = {'track': track, 'clip': clip, 'edge': side, 'edited': False}
+                trimming = True
+            if imgui.is_item_active() and trimming:
+                if not self.trimming['edited']:
+                    document.edit('Resize clip', [track.id])
+                    self.trimming['edited'] = True
+                document.resize_clip(track, side, self._snap(document, clip, to_t(mouse.x), to_x), record=False, clip=clip)
+            if imgui.is_item_deactivated() and self.trimming is not None and self.trimming['clip'] is clip:
+                self.trimming = None
+        # -- fades: the curve, and a handle flush with the clip edge (it follows the end of the fade)
+        fade_in_x = to_x(clip_a + clip.fade_in)
+        fade_out_x = to_x(clip_b - clip.fade_out)
+        if clip.fade_in > 0:
+            draw.add_triangle_filled((clip_px_a, y1), (fade_in_x, wave_top), (clip_px_a, wave_top), colour(0, 0, 0, 0.45))
+            draw.add_line((clip_px_a, y1), (fade_in_x, wave_top), colour(1, 1, 1, 0.75), 1.5)
+        if clip.fade_out > 0:
+            draw.add_triangle_filled((fade_out_x, wave_top), (clip_px_b, y1), (clip_px_b, wave_top), colour(0, 0, 0, 0.45))
+            draw.add_line((fade_out_x, wave_top), (clip_px_b, y1), colour(1, 1, 1, 0.75), 1.5)
+        for side in ('in', 'out'):
+            if side == 'in':
+                left = min(max(clip_px_a, fade_in_x), clip_px_b - FADE_HANDLE)
+            else:
+                left = max(min(clip_px_b, fade_out_x) - FADE_HANDLE, clip_px_a)
+            if left < x0 or left + FADE_HANDLE > x1:
+                continue                                  # that corner is scrolled out of view
+            imgui.set_cursor_screen_pos((left, wave_top))
+            imgui.invisible_button('fade-' + side, (FADE_HANDLE, FADE_HANDLE))
+            hovered_fade = imgui.is_item_hovered()
+            fading = self.fading is not None and self.fading['clip'] is clip and self.fading['side'] == side
+            draw.add_rect_filled((left, wave_top), (left + FADE_HANDLE, wave_top + FADE_HANDLE), colour(1, 1, 1, 0.9 if (hovered_fade or fading) else 0.55))
+            draw.add_rect((left, wave_top), (left + FADE_HANDLE, wave_top + FADE_HANDLE), colour(0, 0, 0, 0.6))
+            if hovered_fade:
+                imgui.set_mouse_cursor(imgui.MouseCursor_.resize_ew)
+                imgui.set_tooltip(tr('Drag for a fade in') if side == 'in' else tr('Drag for a fade out'))
+            if imgui.is_item_activated():
+                document.selected_track = index
+                self.fading = {'track': track, 'clip': clip, 'side': side, 'edited': False}
+                fading = True
+            if imgui.is_item_active() and fading:
+                if not self.fading['edited']:
+                    document.edit('Fade ' + side, [track.id])
+                    self.fading['edited'] = True
+                seconds = (to_t(mouse.x) - clip_a) if side == 'in' else (clip_b - to_t(mouse.x))
+                document.set_fade(track, side, max(0.0, seconds), record=False, clip=clip)
+            if imgui.is_item_deactivated() and self.fading is not None and self.fading['clip'] is clip:
+                self.fading = None
+
+    def _moving_ghost(self, document, draw, rows, to_x, tr):
+        """Outline of a clip dragged onto another track, in that track's lane."""
+        moving = self.moving
+        if moving is None or moving['target'] == moving['track'].id:
+            return
+        row = next((r for r in rows if r[0] == moving['target']), None)
+        target = document.track(moving['target'])
+        if row is None or target is None:
+            return
+        clip = moving['clip']
+        a, b = to_x(document.frame_to_seconds(clip.offset)), to_x(document.frame_to_seconds(clip.end))
+        top, bottom = row[1], row[2] - 2
+        draw.add_rect_filled((a, top), (b, bottom), colour(*target.colour, 0.25))
+        draw.add_rect((a, top), (b, bottom), colour(*target.colour, 0.95), rounding=0.0, thickness=2.0)
+        draw.add_text((a + 4, top + 1), colour(1, 1, 1, 0.95), clip.name + '  -> ' + target.name)
+        imgui.set_tooltip(tr('Release to move the clip to ') + target.name)
 
     def _wheel(self, io, span, start, to_t, mouse):
         if io.mouse_wheel != 0:
@@ -788,10 +866,11 @@ class Timeline:
         rows = max(1, len(document.tracks))
         row_h = (OVERVIEW_HEIGHT - 4) / rows
         for index, track in enumerate(document.tracks):
-            a = lane_x0 + document.frame_to_seconds(track.offset) / total * lane_width
-            b = lane_x0 + document.frame_to_seconds(track.end) / total * lane_width
             top = y0 + 2 + index * row_h
-            draw.add_rect_filled((a, top), (max(a + 1, b), top + max(1.0, row_h - 1)), colour(*track.colour, 0.8))
+            for clip in track.clips:
+                a = lane_x0 + document.frame_to_seconds(clip.offset) / total * lane_width
+                b = lane_x0 + document.frame_to_seconds(clip.end) / total * lane_width
+                draw.add_rect_filled((a, top), (max(a + 1, b), top + max(1.0, row_h - 1)), colour(*track.colour, 0.8))
         win_a = lane_x0 + start / total * lane_width
         win_b = lane_x0 + min(1.0, stop / total) * lane_width
         draw.add_rect_filled((win_a, y0), (win_b, y1), colour(1, 1, 1, 0.12))

@@ -140,3 +140,30 @@ class SlotBatchTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ClipActionTests(unittest.TestCase):
+    def test_add_move_remove_clips(self):
+        with tempfile.TemporaryDirectory() as folder:
+            first, second = Path(folder) / 'one.wav', Path(folder) / 'two.wav'
+            write_wav(first, np.full((1, 4800), 0.1, np.float32), 48000)
+            write_wav(second, np.full((1, 2400), 0.2, np.float32), 48000)
+            document = batch.Document(48000)
+            reports = batch.apply_actions(document, [
+                {'action': 'add_track', 'file': str(first), 'name': 'A'},
+                {'action': 'add_track', 'file': str(first), 'name': 'B'},
+                {'action': 'add_clip', 'track': 'A', 'file': str(second)},                          # 0 s is taken: after the clip
+                {'action': 'add_clip', 'track': 'A', 'file': str(second), 'offset_seconds': 1.0, 'name': 'late'},
+                {'action': 'move_clip', 'track': 'A', 'clip': 'late', 'to_track': 'B', 'offset_seconds': 0.5},
+                {'action': 'reverse_clip', 'track': 'B', 'clip': '-1'},
+                {'action': 'remove_clip', 'track': 'A', 'clip': '0'},
+            ])
+            self.assertEqual(reports[5]['name'], 'late')
+            self.assertEqual(reports[2]['offsetSeconds'], 0.1)
+            self.assertEqual((reports[4]['track'], reports[4]['offsetSeconds']), (document.tracks[1].id, 0.5))
+            a, b = document.tracks
+            self.assertEqual(([c.name for c in a.clips], [c.name for c in b.clips]), (['two'], ['B', 'late']))   # the first clip of a track is named after it
+            described = batch.describe(document)
+            self.assertEqual([c['name'] for c in described['tracks'][1]['clips']], ['B', 'late'])
+            with self.assertRaises(batch.BatchError):
+                batch.apply_actions(document, [{'action': 'remove_clip', 'track': 'A', 'clip': 'missing'}])

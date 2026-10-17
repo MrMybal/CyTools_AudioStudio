@@ -1,12 +1,13 @@
 """Scripted mouse/keyboard tests of the interface through the Dear ImGui test engine.
 
-    runtime/python/Scripts/python.exe app/desktop.py --ui-test-interactions
+    runtime/python/Scripts/python.exe app/desktop.py --ui-test-interactions [--ui-window=WxH] [--ui-test-no-gpu]
 
 Real clicks and drags are simulated on the real widgets; every check is recorded in
 data/reports/ui-interactions.json. Fixture audio is synthesised, nothing is downloaded.
 """
 import json
 from pathlib import Path
+import sys
 import time
 import traceback
 
@@ -67,6 +68,11 @@ def register(app, runner, recorder):
     te.queue_test(engine, test)
 
 
+def clip_ref(track, name, index=0):
+    """Test-engine path of a handle of a clip: widgets of a clip live under track id / clip id."""
+    return f'**/{track.id}/{track.clips[index].id}/{name}'
+
+
 def _item_exists(ctx, ref):
     try:
         return bool(ctx.item_exists(ref))
@@ -104,7 +110,7 @@ def _scenario_steps(app, ctx, recorder):
 
     # --- move a clip by dragging its title bar
     before = a.offset
-    ref = f'**/{a.id}/clip-move'
+    ref = clip_ref(a, 'clip-move')
     recorder.check('clip title bar exists', _item_exists(ctx, ref), ref)
     ctx.item_drag_with_delta(ref, imgui.ImVec2(120, 0))
     wait(ctx, 4)
@@ -132,33 +138,88 @@ def _scenario_steps(app, ctx, recorder):
     wait(ctx, 3)
     recorder.check('Delete button shortens the selected track', track is not None and track.frames < frames, f'{frames} -> {track.frames if track else None}')
 
-    # --- clip context menu: delete clip
+    # --- clip context menu: delete clip (the clip under the mouse; the track and its effects stay)
     count = len(document.tracks)
     target = document.tracks[-1]
+    if target.clips:
+        clip = target.clips[0]
+        app.timeline.view = (document.frame_to_seconds(clip.offset) - 0.05, document.frame_to_seconds(clip.end) + 0.05)   # lane centre on the clip
+        wait(ctx, 3)
     ctx.item_click(f'**/{target.id}/lane', imgui.MouseButton_.right)
     wait(ctx, 3)
     try:
         ctx.item_click('**/Delete clip')
         wait(ctx, 3)
-        recorder.check('context menu Delete clip removes the clip', len(document.tracks) == count - 1, [t.name for t in document.tracks])
+        recorder.check('context menu Delete clip removes the clip and keeps the track', not target.clips and len(document.tracks) == count,
+                       ([len(t.clips) for t in document.tracks], len(document.tracks)))
+        recorder.check('undo restores the deleted clip', document.undo() is not None and len(target.clips) == 1, len(target.clips))
     except Exception as exc:
-        recorder.check('context menu Delete clip removes the clip', False, exc)
+        recorder.check('context menu Delete clip removes the clip and keeps the track', False, exc)
+    # --- clip context menu: reverse clip (and undo)
+    if target.clips:
+        clip = target.clips[0]
+        shown = clip.view().copy()
+        ctx.item_click(f'**/{target.id}/lane', imgui.MouseButton_.right)
+        wait(ctx, 3)
+        try:
+            ctx.item_click('**/Reverse clip')
+            wait(ctx, 3)
+            recorder.check('context menu Reverse clip plays the clip backwards', np.array_equal(clip.view(), shown[:, ::-1]), clip.name)
+            recorder.check('undo restores the clip direction', document.undo() is not None and np.array_equal(target.clips[0].view(), shown), len(target.clips))
+        except Exception as exc:
+            recorder.check('context menu Reverse clip plays the clip backwards', False, exc)
+    app.timeline.fit(document)
+    wait(ctx, 3)
+
+    # --- drag a clip by its title bar onto another track: it then goes through that track's effects
+    heights = {t.id: t.height for t in document.tracks}
+    for t in document.tracks:
+        t.height = 70.0                      # every lane in view: no scrolling between the source and the target
+    wait(ctx, 4)
+    rows = {row[0]: row for row in app.timeline._last_rows}
+    source, destination = document.tracks[0], document.tracks[-1]
+    if source.clips and source.id in rows and destination.id in rows and source is not destination:
+        moving = source.clips[0]
+        before_source, before_destination = len(source.clips), len(destination.clips)
+        dy = (rows[destination.id][1] + rows[destination.id][2]) / 2 - (rows[source.id][1] + rows[source.id][2]) / 2
+        # by hand: item_drag_with_delta fails the test when the dragged item no longer exists after the
+        # release, and here it does not (the clip has moved to the other track, under another ID path)
+        recorder.check('the title bar of the clip to move is in view', _item_exists(ctx, clip_ref(source, 'clip-move')), clip_ref(source, 'clip-move'))
+        ctx.mouse_move(clip_ref(source, 'clip-move'))
+        start = imgui.get_mouse_pos()
+        ctx.mouse_down(0)
+        ctx.mouse_move_to_pos(imgui.ImVec2(start.x, start.y + dy * 0.5))
+        ctx.mouse_move_to_pos(imgui.ImVec2(start.x, start.y + dy))
+        wait(ctx, 2)
+        ctx.mouse_up(0)
+        wait(ctx, 4)
+        recorder.check('dragging a clip down puts it on the other track', moving in destination.clips and moving not in source.clips,
+                       (len(source.clips), len(destination.clips)))
+        recorder.check('undo puts the clip back on its track', document.undo() is not None and len(source.clips) == before_source and len(destination.clips) == before_destination,
+                       (len(source.clips), len(destination.clips)))
+        wait(ctx, 3)
+        recorder.check('the restored clip is drawn on its track again', _item_exists(ctx, clip_ref(source, 'clip-move')), clip_ref(source, 'clip-move'))
+    else:
+        recorder.check('dragging a clip down puts it on the other track', False, ('rows', list(rows), [t.id for t in document.tracks]))
+    for t in document.tracks:
+        t.height = heights.get(t.id, t.height)
+    wait(ctx, 3)
 
     # --- trim a clip by its right edge, then its left edge; the audio is kept
     document.selection = None
     app.timeline.fit(document)
     wait(ctx, 4)
     before_frames, before_total = a.frames, a.total_frames
-    ctx.item_drag_with_delta(f'**/{a.id}/clip-right', imgui.ImVec2(-90, 0))
+    ctx.item_drag_with_delta(clip_ref(a, 'clip-right'), imgui.ImVec2(-90, 0))
     wait(ctx, 4)
     recorder.check('dragging the right edge shortens the clip', a.frames < before_frames and a.total_frames == before_total,
                    f'{before_frames} -> {a.frames} (material {a.total_frames})')
     trimmed = a.frames
-    ctx.item_drag_with_delta(f'**/{a.id}/clip-right', imgui.ImVec2(45, 0))
+    ctx.item_drag_with_delta(clip_ref(a, 'clip-right'), imgui.ImVec2(45, 0))
     wait(ctx, 4)
     recorder.check('dragging the right edge back restores audio', a.frames > trimmed, f'{trimmed} -> {a.frames}')
     before_offset, before_start = a.offset, a.start
-    ctx.item_drag_with_delta(f'**/{a.id}/clip-left', imgui.ImVec2(60, 0))
+    ctx.item_drag_with_delta(clip_ref(a, 'clip-left'), imgui.ImVec2(60, 0))
     wait(ctx, 4)
     recorder.check('dragging the left edge trims the beginning', a.start > before_start and a.offset > before_offset,
                    f'start {before_start} -> {a.start}, offset {before_offset} -> {a.offset}')
@@ -167,10 +228,10 @@ def _scenario_steps(app, ctx, recorder):
     # --- fades by dragging the handles in the clip corners
     a.fade_in = a.fade_out = 0.0
     wait(ctx, 3)
-    ctx.item_drag_with_delta(f'**/{a.id}/fade-in', imgui.ImVec2(70, 0))
+    ctx.item_drag_with_delta(clip_ref(a, 'fade-in'), imgui.ImVec2(70, 0))
     wait(ctx, 4)
     recorder.check('dragging the fade-in handle creates a fade in', a.fade_in > 0.0, a.fade_in)
-    ctx.item_drag_with_delta(f'**/{a.id}/fade-out', imgui.ImVec2(-70, 0))
+    ctx.item_drag_with_delta(clip_ref(a, 'fade-out'), imgui.ImVec2(-70, 0))
     wait(ctx, 4)
     recorder.check('dragging the fade-out handle creates a fade out', a.fade_out > 0.0, f'{a.fade_out}')
     quiet = document.mixdown(document.frame_to_seconds(a.offset), document.frame_to_seconds(a.offset) + 0.02)
@@ -274,18 +335,28 @@ def _scenario_steps(app, ctx, recorder):
         x = geometry['lane_x0'] + geometry['lane_width'] * 0.5
         y = (target_row[1] + target_row[2]) / 2
         expected = geometry['start'] + geometry['span'] * 0.5
-        count = len(document.tracks)
+        count, clips = len(document.tracks), len(a.clips)
+        wanted = document.frame_to_seconds(document.free_position(a, document.seconds_to_frame(expected), 4800))
         app.on_files_dropped([str(dropped)])
         handled = app.handle_drops(mouse=imgui.ImVec2(x, y))
         wait(ctx, 3)
-        new = document.tracks[document.tracks.index(a) + 1] if len(document.tracks) > count else None
-        recorder.check('a dropped sound becomes a track below the hovered one, at the time under the mouse',
-                       new is not None and new.name == 'dropped-sound' and abs(document.frame_to_seconds(new.offset) - expected) < 0.05,
-                       (handled, new.name if new else None, document.frame_to_seconds(new.offset) if new else None, expected))
+        new = next((c for c in a.clips if c.name == 'dropped-sound'), None)
+        recorder.check('a sound dropped on a track becomes a clip of that track (after its clips when the place is taken)',
+                       new is not None and len(document.tracks) == count and len(a.clips) == clips + 1 and abs(document.frame_to_seconds(new.offset) - wanted) < 0.05,
+                       (handled, len(a.clips), document.frame_to_seconds(new.offset) if new else None, wanted))
         if new is not None:
-            document.remove_track(new.id)
+            document.remove_clip(a, new)
+        below = max(r[2] for r in rows) + 10
+        if below < geometry['y1']:
+            app.on_files_dropped([str(dropped)])
+            app.handle_drops(mouse=imgui.ImVec2(x, below))
+            wait(ctx, 3)
+            recorder.check('a sound dropped below the tracks becomes a new track', len(document.tracks) == count + 1 and document.tracks[-1].name == 'dropped-sound',
+                           [t.name for t in document.tracks])
+            if len(document.tracks) == count + 1:
+                document.remove_track(document.tracks[-1].id)
     else:
-        recorder.check('a dropped sound becomes a track below the hovered one, at the time under the mouse', False, 'no geometry')
+        recorder.check('a sound dropped on a track becomes a clip of that track (after its clips when the place is taken)', False, 'no geometry')
 
     # --- search by text in the effect pickers
     app.inserts.show(a)
@@ -322,7 +393,9 @@ def _scenario_steps(app, ctx, recorder):
     if empty is not None:
         from audiostudio.workflow import model as workflow_model
         document.add_insert(empty, workflow_model.new_node('effect', effect='gain', params={'gain_db': -3.0}))
-        wait(ctx, 3)
+        panel = app.editor.show_inserts
+        app.editor.show_inserts = False          # room for every lane: the new track is in view at any window size
+        wait(ctx, 4)
         geometry = app.timeline.drop_geometry
         row = next((r for r in geometry['rows'] if r[0] == empty.id), None) if geometry else None
         import tempfile
@@ -333,6 +406,7 @@ def _scenario_steps(app, ctx, recorder):
             app.on_files_dropped([str(sound)])
             app.handle_drops(mouse=imgui.ImVec2(geometry['lane_x0'] + 10, (row[1] + row[2]) / 2))
             wait(ctx, 3)
+        app.editor.show_inserts = panel
         recorder.check('a sound dropped on the empty track fills it and keeps its inserts', empty.frames == 9600 and [n['effect'] for n in empty.inserts] == ['gain'] and len(document.tracks) == count + 1,
                        (empty.frames, [n['effect'] for n in empty.inserts], len(document.tracks)))
         document.remove_track(empty.id)
@@ -457,9 +531,12 @@ def _scenario_steps(app, ctx, recorder):
 
     # reference from a speech file, automatic transcription, cloning, preset
     free_ram = app.runtime.ledger.capacity.get('ramBytes', 0)
-    if free_ram < 6 * 1024 ** 3:
+    no_gpu = '--ui-test-no-gpu' in sys.argv
+    if no_gpu or free_ram < 6 * 1024 ** 3:
+        reason = ('--ui-test-no-gpu: Whisper and Qwen3-TTS are not run' if no_gpu
+                  else f'only {free_ram / 1e9:.1f} GB of RAM available to the runtime; close the other applications')
         for name in ('Whisper transcription fills the transcription field', 'cloned voice generated', 'clone preset keeps its own copy of the reference'):
-            recorder.skip(name, f'only {free_ram / 1e9:.1f} GB of RAM available to the runtime; close the other applications')
+            recorder.skip(name, reason)
         app.requested_tab = 'Editor'
         wait(ctx, 3)
         return

@@ -19,7 +19,7 @@ from .peaks import Peaks
 from .automation import AutomationLane
 from .. import audio_io
 
-SESSION_SCHEMA = 2
+SESSION_SCHEMA = 3          # 3: tracks hold a list of clips; 2 (one clip per track) still loads
 DEFAULT_TAIL = {'enabled': True, 'threshold_db': -60.0, 'max_seconds': 10.0, 'hold_seconds': 0.1}
 
 MAX_UNDO = 64
@@ -30,9 +30,21 @@ def db_to_gain(db):
     return float(10.0 ** (float(db) / 20.0))
 
 
-@dataclass
-class Track:
-    """One clip on its own lane.
+def _new_id():
+    return uuid.uuid4().hex[:8]
+
+
+def _as_audio(audio):
+    """(channels, frames) float32, at most two channels."""
+    audio = np.ascontiguousarray(np.asarray(audio, dtype=np.float32))
+    if audio.ndim == 1:
+        audio = audio[np.newaxis, :]
+    return audio[:2] if audio.shape[0] > 2 else audio
+
+
+@dataclass(eq=False)
+class Clip:
+    """A piece of audio placed on a track.
 
     ``audio`` holds every decoded sample. The clip shows the window
     ``audio[:, start:start + length]`` placed at ``offset`` in the document, so trimming a
@@ -44,20 +56,11 @@ class Track:
     name: str
     audio: np.ndarray                       # (channels, frames) float32, complete material
     offset: int = 0                         # start frame in the document
-    gain_db: float = 0.0
-    pan: float = 0.0
-    mute: bool = False
-    solo: bool = False
-    colour: tuple = (0.36, 0.72, 0.95)
-    source: str = ''
-    height: float = 110.0
     start: int = 0                          # in-point inside audio
     length: int = -1                        # visible frames; -1 = to the end of audio
     fade_in: float = 0.0                    # seconds
     fade_out: float = 0.0                   # seconds
-    inserts: list = field(default_factory=list)        # insert chain: workflow-style nodes (effect / vst3)
-    automation: dict = field(default_factory=dict)     # key -> AutomationLane
-    automation_view: str = ''                          # lane shown in the timeline ('' = none)
+    source: str = ''
     _peaks: object = field(default=None, repr=False)
 
     @property
@@ -98,19 +101,175 @@ class Track:
     def invalidate(self):
         self._peaks = None
 
+    def copy(self, new_id=False):
+        return Clip(_new_id() if new_id else self.id, self.name, self.audio.copy(), self.offset, self.start, self.length,
+                    self.fade_in, self.fade_out, self.source)
+
+    def to_dict(self, file):
+        return {'id': self.id, 'name': self.name, 'file': file, 'offset': self.offset, 'start': self.start, 'length': self.length,
+                'fadeIn': self.fade_in, 'fadeOut': self.fade_out, 'source': self.source}
+
+
+def _first_clip(attribute, default):
+    """Attribute of the first clip: what a track was when it held a single clip."""
+    def get(self):
+        return getattr(self.clips[0], attribute) if self.clips else default
+
+    def put(self, value):
+        if self.clips:
+            setattr(self.clips[0], attribute, value)
+    return property(get, put)
+
+
+class Track:
+    """A lane of the timeline: mixer settings, insert chain, automation and any number of clips.
+
+    Every clip of a track goes through the track's inserts, so moving a clip to another track
+    gives it that track's effects. Clips may overlap; they are summed. ``offset`` / ``end`` /
+    ``frames`` describe the span of all the clips; ``audio``, ``start``, ``length``, ``fade_in``,
+    ``fade_out`` and ``source`` read and write the first clip (a track used to be one clip).
+    """
+
+    def __init__(self, id, name, audio=None, offset=0, gain_db=0.0, pan=0.0, mute=False, solo=False, colour=COLOURS[0], source='',
+                 height=110.0, start=0, length=-1, fade_in=0.0, fade_out=0.0, inserts=None, automation=None, automation_view='', clips=None):
+        self.id, self.name = id, name
+        self.gain_db, self.pan, self.mute, self.solo = float(gain_db), float(pan), bool(mute), bool(solo)
+        self.colour, self.height = tuple(colour), float(height)
+        self.inserts = list(inserts or [])                   # insert chain: workflow-style nodes (effect / vst3)
+        self.automation = dict(automation or {})             # key -> AutomationLane
+        self.automation_view = automation_view               # lane shown in the timeline ('' = none)
+        self.empty_channels = 2                              # channels of a track without clip
+        self.clips = list(clips or [])
+        if clips is None and audio is not None:
+            audio = _as_audio(audio)
+            self.empty_channels = int(audio.shape[0])
+            if audio.shape[1]:
+                self.clips.append(Clip(_new_id(), name, audio, int(offset), int(start), int(length), float(fade_in), float(fade_out), str(source)))
+        self.sort()
+
+    def __repr__(self):
+        return f'Track({self.id!r}, {self.name!r}, clips={len(self.clips)})'
+
+    # ------------------------------------------------------------------ clips
+    def sort(self):
+        self.clips.sort(key=lambda clip: clip.offset)
+
+    @property
+    def primary(self):
+        return self.clips[0] if self.clips else None
+
+    def clip(self, clip_id):
+        return next((c for c in self.clips if c.id == clip_id), None)
+
+    def clips_in(self, start_frame, stop_frame):
+        """Clips that overlap document frames [start_frame, stop_frame)."""
+        return [c for c in self.clips if c.end > start_frame and c.offset < stop_frame]
+
+    def clip_at(self, frame, inside=False):
+        """The clip under a document frame (the one starting last when they overlap)."""
+        found = None
+        for clip in self.clips:
+            if (clip.offset < frame < clip.end) if inside else (clip.offset <= frame < clip.end):
+                found = clip
+        return found
+
+    def set_audio(self, audio, offset=0, source='', name=None):
+        """Replace every clip by one clip of ``audio`` at ``offset`` (frames)."""
+        audio = _as_audio(audio)
+        self.clips = [Clip(_new_id(), name or self.name, audio, max(0, int(offset)), source=str(source))] if audio.shape[1] else []
+        if not audio.shape[1]:
+            self.empty_channels = int(audio.shape[0])
+
+    @property
+    def offset(self):
+        return min((c.offset for c in self.clips), default=0)
+
+    @offset.setter
+    def offset(self, value):
+        """Moving a track moves all its clips together."""
+        delta = int(value) - self.offset
+        for clip in self.clips:
+            clip.offset += delta
+
+    @property
+    def end(self):
+        return max((c.end for c in self.clips), default=0)
+
+    @property
+    def frames(self):
+        """Span from the first clip start to the last clip end."""
+        return self.end - self.offset if self.clips else 0
+
+    @property
+    def channels(self):
+        return max((c.channels for c in self.clips), default=self.empty_channels)
+
+    @property
+    def total_frames(self):
+        return self.clips[0].total_frames if self.clips else 0
+
+    @property
+    def audio(self):
+        return self.clips[0].audio if self.clips else np.zeros((self.empty_channels, 0), np.float32)
+
+    @audio.setter
+    def audio(self, value):
+        if self.clips:
+            self.clips[0].audio = _as_audio(value)
+            self.clips[0].invalidate()
+        else:
+            self.set_audio(value)
+
+    start = _first_clip('start', 0)
+    length = _first_clip('length', -1)
+    fade_in = _first_clip('fade_in', 0.0)
+    fade_out = _first_clip('fade_out', 0.0)
+    source = _first_clip('source', '')
+
+    def mix_raw(self, start_frame, stop_frame, channels=None):
+        """Clips summed over document frames [start_frame, stop_frame), gaps silent, without fades."""
+        channels = channels or self.channels
+        out = np.zeros((channels, max(0, stop_frame - start_frame)), np.float32)
+        for clip in self.clips:
+            a, b = max(start_frame, clip.offset), min(stop_frame, clip.end)
+            if b <= a:
+                continue
+            block = clip.view()[:, a - clip.offset:b - clip.offset]
+            if block.shape[0] != channels:
+                block = np.repeat(np.mean(block, axis=0, keepdims=True), channels, axis=0)
+            out[:, a - start_frame:b - start_frame] += block
+        return out
+
+    def view(self):
+        """The visible samples of the track: its clip, or its clips summed over their span."""
+        if len(self.clips) == 1:
+            return self.clips[0].view()
+        return self.mix_raw(self.offset, self.end)
+
+    def flatten(self):
+        for clip in self.clips:
+            clip.flatten()
+        return self
+
+    def peaks(self):
+        return self.clips[0].peaks() if self.clips else Peaks(np.zeros((self.empty_channels, 0), np.float32))
+
+    def invalidate(self):
+        for clip in self.clips:
+            clip.invalidate()
+
+    # ------------------------------------------------------------------ undo
     def snapshot(self):
-        return {'audio': self.audio.copy(), 'offset': self.offset, 'gain_db': self.gain_db, 'pan': self.pan, 'mute': self.mute, 'solo': self.solo,
-                'name': self.name, 'start': self.start, 'length': self.length, 'fade_in': self.fade_in, 'fade_out': self.fade_out,
+        return {'clips': [c.copy() for c in self.clips], 'gain_db': self.gain_db, 'pan': self.pan, 'mute': self.mute, 'solo': self.solo,
+                'name': self.name, 'empty_channels': self.empty_channels,
                 'inserts': copy.deepcopy([n for n in self.inserts if not n.get('_preview')]), 'automation': {k: lane.copy() for k, lane in self.automation.items()}}
 
     def restore(self, state):
-        self.audio = state['audio']
-        self.offset, self.gain_db, self.pan, self.mute, self.solo, self.name = state['offset'], state['gain_db'], state['pan'], state['mute'], state['solo'], state['name']
-        self.start, self.length = state.get('start', 0), state.get('length', -1)
-        self.fade_in, self.fade_out = state.get('fade_in', 0.0), state.get('fade_out', 0.0)
+        self.clips = [Clip(c.id, c.name, c.audio, c.offset, c.start, c.length, c.fade_in, c.fade_out, c.source) for c in state['clips']]
+        self.gain_db, self.pan, self.mute, self.solo, self.name = state['gain_db'], state['pan'], state['mute'], state['solo'], state['name']
+        self.empty_channels = state.get('empty_channels', 2)
         self.inserts = copy.deepcopy(state.get('inserts', []))
         self.automation = {k: lane.copy() for k, lane in state.get('automation', {}).items()}
-        self.invalidate()
 
     def lane(self, key, create=False):
         lane = self.automation.get(key)
@@ -304,11 +463,7 @@ class Document:
 
     # ------------------------------------------------------------------ tracks
     def add_track(self, audio, name='Track', samplerate=None, offset_seconds=0.0, source='', record=True):
-        audio = np.ascontiguousarray(np.asarray(audio, dtype=np.float32))
-        if audio.ndim == 1:
-            audio = audio[np.newaxis, :]
-        if audio.shape[0] > 2:
-            audio = audio[:2]
+        audio = _as_audio(audio)
         if samplerate and int(samplerate) != self.samplerate:
             if not self.tracks:
                 self.samplerate = int(samplerate)
@@ -316,7 +471,7 @@ class Document:
                 audio = audio_io.resample(audio, int(samplerate), self.samplerate)
         if record:
             self.edit('Add track ' + name, structural=True)
-        track = Track(uuid.uuid4().hex[:8], name, audio, self.seconds_to_frame(offset_seconds), colour=COLOURS[len(self.tracks) % len(COLOURS)], source=source)
+        track = Track(_new_id(), name, audio, self.seconds_to_frame(offset_seconds), colour=COLOURS[len(self.tracks) % len(COLOURS)], source=source)
         self.tracks.append(track)
         self.selected_track = len(self.tracks) - 1
         self.touch()
@@ -327,21 +482,104 @@ class Document:
         name = name or 'Track %d' % (len(self.tracks) + 1)
         return self.add_track(np.zeros((channels, 0), np.float32), name)
 
+    def _conform(self, audio, samplerate):
+        audio = _as_audio(audio)
+        if samplerate and int(samplerate) != self.samplerate:
+            audio = audio_io.resample(audio, int(samplerate), self.samplerate)
+        return audio
+
     def fill_track(self, track, audio, samplerate, offset_seconds=0.0, source=''):
         """Put audio in a track (an empty one, typically) while keeping its inserts and automation."""
-        audio = np.ascontiguousarray(np.asarray(audio, dtype=np.float32))
-        if audio.ndim == 1:
-            audio = audio[np.newaxis, :]
-        if int(samplerate) != self.samplerate:
-            audio = audio_io.resample(audio, int(samplerate), self.samplerate)
+        audio = self._conform(audio, samplerate)
         self.edit('Fill track', [track.id])
-        track.audio = audio[:2]
-        track.start, track.length = 0, -1
-        track.offset = max(0, self.seconds_to_frame(offset_seconds))
-        track.source = str(source)
-        track.invalidate()
+        track.set_audio(audio, max(0, self.seconds_to_frame(offset_seconds)), source)
         self.touch()
         return track
+
+    def free_position(self, track, frame, frames):
+        """``frame`` when [frame, frame + frames) is free on the track, otherwise the end of its last clip."""
+        return frame if not track.clips_in(frame, frame + max(1, frames)) else track.end
+
+    def add_clip(self, track, audio, samplerate=None, offset_seconds=None, name='', source='', after_clips=True, record=True):
+        """A new clip on an existing track. With ``after_clips`` a position already taken by a clip
+        moves the new one after the last clip of the track; the clip goes through the track inserts."""
+        audio = self._conform(audio, samplerate)
+        frame = max(0, self.seconds_to_frame(self.cursor if offset_seconds is None else offset_seconds))
+        if after_clips:
+            frame = self.free_position(track, frame, audio.shape[1])
+        if record:
+            self.edit('Add clip ' + (name or track.name), [track.id])
+        clip = Clip(_new_id(), name or track.name, audio, frame, source=str(source))
+        track.clips.append(clip)
+        track.sort()
+        self.selected_track = self.tracks.index(track) if track in self.tracks else self.selected_track
+        self.touch()
+        return clip
+
+    def import_clip(self, track, path, offset_seconds=None, after_clips=True):
+        audio, rate = audio_io.load(path)
+        return self.add_clip(track, audio, rate, offset_seconds, name=Path(path).stem, source=str(path), after_clips=after_clips)
+
+    def remove_clip(self, track, clip, record=True):
+        if clip not in track.clips:
+            return False
+        if record:
+            self.edit('Delete clip ' + clip.name, [track.id])
+        track.clips.remove(clip)
+        self.touch()
+        return True
+
+    def duplicate_clip(self, track, clip):
+        """A copy of the clip right after it on the same track."""
+        self.edit('Duplicate clip ' + clip.name, [track.id])
+        twin = clip.copy(new_id=True)
+        twin.offset = clip.end
+        track.clips.append(twin)
+        track.sort()
+        self.touch()
+        return twin
+
+    def reverse_clip(self, track, clip, record=True):
+        """Play the clip backwards. The whole material is reversed and the window mirrored, so trimmed
+        audio is kept and reversing again gives the original back; fades stay where they are."""
+        if clip not in track.clips:
+            return None
+        if record:
+            self.edit('Reverse clip ' + clip.name, [track.id])
+        frames = clip.frames
+        clip.audio = np.ascontiguousarray(clip.audio[:, ::-1])
+        clip.start = clip.total_frames - clip.start - frames
+        if clip.length >= 0 or clip.start:
+            clip.length = frames
+        clip.invalidate()
+        self.touch()
+        return clip
+
+    def move_clip(self, source, clip, target, offset_seconds=None, record=True):
+        """Move a clip in time and/or to another track (it then goes through that track's inserts).
+
+        With ``record=False`` the move belongs to the last undo entry, which the caller opened on the
+        source track: the target track is added to it before it changes."""
+        if clip not in source.clips:
+            return None
+        ids = [source.id] + ([target.id] if target is not source else [])
+        if record:
+            self.edit('Move clip', ids)
+        elif self.undo_stack:
+            entry = self.undo_stack[-1]
+            for tid in ids:
+                if tid not in entry['tracks'] and self.track(tid) is not None:
+                    entry['tracks'][tid] = self.track(tid).snapshot()
+        if offset_seconds is not None:
+            clip.offset = max(0, self.seconds_to_frame(offset_seconds))
+        if target is not source:
+            source.clips.remove(clip)
+            target.clips.append(clip)
+            self.selected_track = self.tracks.index(target)
+        source.sort()
+        target.sort()
+        self.touch()
+        return clip
 
     def remove_track(self, track_id):
         track = self.track(track_id)
@@ -372,18 +610,23 @@ class Document:
         for track in tracks:
             track.flatten()
 
-    def _region(self, track, start_frame, stop_frame):
-        """Clamp a document frame range to the track and return local (a, b)."""
-        a = max(0, start_frame - track.offset)
-        b = min(track.frames, stop_frame - track.offset)
+    def _region(self, clip, start_frame, stop_frame):
+        """Clamp a document frame range to a clip (or a single-clip track) and return local (a, b)."""
+        a = max(0, start_frame - clip.offset)
+        b = min(clip.frames, stop_frame - clip.offset)
         return a, max(a, b)
 
-    def _replace(self, track, a, b, block):
-        """Replace local frames [a, b) of a track with ``block`` (may change the length)."""
-        if block.shape[0] != track.channels:
-            block = np.repeat(np.mean(block, axis=0, keepdims=True), track.channels, axis=0) if block.shape[0] != 1 else np.repeat(block, track.channels, axis=0)
-        track.audio = np.ascontiguousarray(np.concatenate([track.audio[:, :a], block.astype(np.float32), track.audio[:, b:]], axis=1))
-        track.invalidate()
+    def _replace(self, clip, a, b, block):
+        """Replace local frames [a, b) of a clip with ``block`` (may change the length)."""
+        if block.shape[0] != clip.channels:
+            block = np.repeat(np.mean(block, axis=0, keepdims=True), clip.channels, axis=0) if block.shape[0] != 1 else np.repeat(block, clip.channels, axis=0)
+        clip.audio = np.ascontiguousarray(np.concatenate([clip.audio[:, :a], block.astype(np.float32), clip.audio[:, b:]], axis=1))
+        clip.invalidate()
+
+    def _clamp_fades(self, clip):
+        length = self.frame_to_seconds(clip.frames)
+        clip.fade_in = min(clip.fade_in, length)
+        clip.fade_out = min(clip.fade_out, max(0.0, length - clip.fade_in))
 
     def targets(self, all_tracks=False):
         if all_tracks:
@@ -393,18 +636,28 @@ class Document:
 
     # ------------------------------------------------------------------ editing
     def delete(self, all_tracks=False):
+        """Remove the selection; what follows on the track moves back (ripple)."""
         if not self.selection:
             return False
         start, stop = self.selection_frames()
         tracks = self.targets(all_tracks)
         self.edit('Delete', [t.id for t in tracks])
-        self.flatten(tracks)
+        removed = stop - start
         for track in tracks:
-            a, b = self._region(track, start, stop)
-            if b > a:
-                self._replace(track, a, b, track.audio[:, :0])
-            elif start < track.offset:
-                track.offset = max(0, track.offset - (stop - start))
+            for clip in list(track.clips):
+                if clip.offset >= stop:
+                    clip.offset -= removed
+                    continue
+                if clip.end <= start:
+                    continue
+                clip.flatten()
+                a, b = self._region(clip, start, stop)
+                self._replace(clip, a, b, clip.audio[:, :0])
+                clip.offset = min(clip.offset, start)
+                self._clamp_fades(clip)
+                if clip.frames == 0:
+                    track.clips.remove(clip)
+            track.sort()
         self.cursor = self.frame_to_seconds(start)
         self.selection = None
         return True
@@ -415,12 +668,12 @@ class Document:
         start, stop = self.selection_frames()
         tracks = self.targets(all_tracks)
         self.edit('Silence', [t.id for t in tracks])
-        self.flatten(tracks)
         for track in tracks:
-            a, b = self._region(track, start, stop)
-            if b > a:
-                track.audio[:, a:b] = 0.0
-                track.invalidate()
+            for clip in track.clips_in(start, stop):
+                clip.flatten()
+                a, b = self._region(clip, start, stop)
+                clip.audio[:, a:b] = 0.0
+                clip.invalidate()
         return True
 
     def trim(self, all_tracks=False):
@@ -430,12 +683,17 @@ class Document:
         start, stop = self.selection_frames()
         tracks = self.targets(all_tracks)
         self.edit('Trim', [t.id for t in tracks])
-        self.flatten(tracks)
         for track in tracks:
-            a, b = self._region(track, start, stop)
-            track.audio = np.ascontiguousarray(track.audio[:, a:b])
-            track.offset = max(track.offset, start)
-            track.invalidate()
+            for clip in list(track.clips):
+                clip.flatten()
+                a, b = self._region(clip, start, stop)
+                if b <= a:
+                    track.clips.remove(clip)
+                    continue
+                clip.audio = np.ascontiguousarray(clip.audio[:, a:b])
+                clip.offset = max(clip.offset, start)
+                clip.invalidate()
+                self._clamp_fades(clip)
         return True
 
     def copy(self):
@@ -443,10 +701,10 @@ class Document:
         if track is None or not self.selection:
             return False
         start, stop = self.selection_frames()
-        a, b = self._region(track, start, stop)
-        if b <= a:
+        a, b = max(start, track.offset), min(stop, track.end)
+        if b <= a or not track.clips_in(start, stop):
             return False
-        self.clipboard = (track.view()[:, a:b].copy(), self.samplerate)
+        self.clipboard = (track.mix_raw(a, b), self.samplerate)
         return True
 
     def cut(self):
@@ -455,6 +713,9 @@ class Document:
         return False
 
     def paste(self, insert=True):
+        """Insert the clipboard at the selection start or the cursor (what follows moves later), or
+        replace (``insert=False``) the selection / the audio under the cursor. Outside every clip the
+        clipboard becomes a new clip."""
         track = self.current_track()
         if self.clipboard is None:
             return False
@@ -464,24 +725,33 @@ class Document:
         if track is None:
             self.add_track(block, 'Pasted', offset_seconds=self.cursor)
             return True
+        count = block.shape[1]
         position = self.seconds_to_frame(self.selection[0] if self.selection else self.cursor)
         self.edit('Paste', [track.id])
-        track.flatten()
-        if self.selection:
-            start, stop = self.selection_frames()
-            a, b = self._region(track, start, stop)
-            self._replace(track, a, b if insert is False else a, block) if insert else self._replace(track, a, b, block)
-        else:
-            a = max(0, min(track.frames, position - track.offset))
-            if position < track.offset:
-                track.offset = position
-                a = 0
+        clip = track.clip_at(position) or next((c for c in track.clips if c.end == position), None)
+        if clip is not None:
+            clip.flatten()
+            a = position - clip.offset
             if insert:
-                self._replace(track, a, a, block)
+                b = a
+            elif self.selection:
+                b = self._region(clip, *self.selection_frames())[1]
             else:
-                b = min(track.frames, a + block.shape[1])
-                self._replace(track, a, b, block)
-        self.selection = (self.frame_to_seconds(position), self.frame_to_seconds(position + block.shape[1]))
+                b = min(clip.frames, a + count)
+            change = count - (b - a)
+            self._replace(clip, a, b, block)
+            if change:
+                for other in track.clips:
+                    if other is not clip and other.offset >= position:
+                        other.offset += change
+        else:
+            if insert:
+                for other in track.clips:
+                    if other.offset >= position:
+                        other.offset += count
+            track.clips.append(Clip(_new_id(), track.name, _as_audio(block), position))
+        track.sort()
+        self.selection = (self.frame_to_seconds(position), self.frame_to_seconds(position + count))
         return True
 
     def insert_silence(self, seconds, all_tracks=False):
@@ -489,108 +759,137 @@ class Document:
         count = self.seconds_to_frame(seconds)
         tracks = self.targets(all_tracks)
         self.edit('Insert silence', [t.id for t in tracks])
-        self.flatten(tracks)
         for track in tracks:
-            if position <= track.offset:
-                track.offset += count
-            elif position < track.end:
-                a = position - track.offset
-                self._replace(track, a, a, np.zeros((track.channels, count), np.float32))
+            for clip in track.clips:
+                if position <= clip.offset:
+                    clip.offset += count
+                elif position < clip.end:
+                    clip.flatten()
+                    a = position - clip.offset
+                    self._replace(clip, a, a, np.zeros((clip.channels, count), np.float32))
         return True
 
     def split(self):
+        """Cut the clip under the cursor in two clips of the same track (audio is not rewritten)."""
         track = self.current_track()
         if track is None:
             return False
-        position = self.seconds_to_frame(self.cursor) - track.offset
-        if position <= 0 or position >= track.frames:
+        position = self.seconds_to_frame(self.cursor)
+        clip = track.clip_at(position, inside=True)
+        if clip is None:
             return False
-        self.edit('Split', structural=True)
-        track.flatten()
-        right = Track(uuid.uuid4().hex[:8], track.name + ' (2)', np.ascontiguousarray(track.audio[:, position:]), track.offset + position,
-                      track.gain_db, track.pan, track.mute, track.solo, track.colour, track.source, track.height,
-                      fade_out=track.fade_out)
-        right.inserts, right.automation = self.copy_chain(track)
-        track.audio = np.ascontiguousarray(track.audio[:, :position])
-        track.fade_out = 0.0
-        track.invalidate()
-        self.tracks.insert(self.selected_track + 1, right)
+        self.edit('Split', [track.id])
+        local = position - clip.offset
+        right = Clip(_new_id(), clip.name + ' (2)', clip.audio, position, clip.start + local, clip.frames - local,
+                     0.0, clip.fade_out, clip.source)
+        clip.length = local
+        clip.fade_out = 0.0
+        self._clamp_fades(clip)
+        self._clamp_fades(right)
+        track.clips.append(right)
+        track.sort()
+        self.touch()
         return True
 
-    def resize_clip(self, track, edge, seconds, record=True):
-        """Move one edge of a clip. Audio outside the clip is kept and can be dragged back."""
+    def resize_clip(self, track, edge, seconds, record=True, clip=None):
+        """Move one edge of a clip (the first one of the track by default). Audio outside the clip
+        is kept and can be dragged back."""
+        clip = clip or track.primary
+        if clip is None:
+            return track
         frame = self.seconds_to_frame(seconds)
         if record:
             self.edit('Resize clip', [track.id])
         if edge == 'left':
             frame = max(0, frame)
-            delta = frame - track.offset
-            delta = max(-track.start, min(delta, track.frames - 1))
-            track.start += delta
-            if track.length >= 0:
-                track.length = max(1, track.length - delta)
+            delta = frame - clip.offset
+            delta = max(-clip.start, min(delta, clip.frames - 1))
+            clip.start += delta
+            if clip.length >= 0:
+                clip.length = max(1, clip.length - delta)
             else:
-                track.length = max(1, track.total_frames - track.start)
-            track.offset = max(0, track.offset + delta)
+                clip.length = max(1, clip.total_frames - clip.start)
+            clip.offset = max(0, clip.offset + delta)
         else:
-            length = max(1, min(frame - track.offset, track.total_frames - track.start))
-            track.length = int(length)
-        track.fade_in = min(track.fade_in, self.frame_to_seconds(track.frames))
-        track.fade_out = min(track.fade_out, self.frame_to_seconds(track.frames))
+            length = max(1, min(frame - clip.offset, clip.total_frames - clip.start))
+            clip.length = int(length)
+        clip.fade_in = min(clip.fade_in, self.frame_to_seconds(clip.frames))
+        clip.fade_out = min(clip.fade_out, self.frame_to_seconds(clip.frames))
+        track.sort()
         self.touch()
         return track
 
-    def set_fade(self, track, side, seconds, record=True):
-        """Fade in/out length of a clip, in seconds (0 removes it)."""
+    def set_fade(self, track, side, seconds, record=True, clip=None):
+        """Fade in/out length of a clip (the first one of the track by default), in seconds (0 removes it)."""
+        clip = clip or track.primary
+        if clip is None:
+            return track
         if record:
             self.edit('Fade ' + side, [track.id])
-        value = float(max(0.0, min(seconds, self.frame_to_seconds(track.frames))))
+        length = self.frame_to_seconds(clip.frames)
+        value = float(max(0.0, min(seconds, length)))
         if side == 'in':
-            track.fade_in = min(value, self.frame_to_seconds(track.frames) - track.fade_out)
+            clip.fade_in = min(value, length - clip.fade_out)
         else:
-            track.fade_out = min(value, self.frame_to_seconds(track.frames) - track.fade_in)
+            clip.fade_out = min(value, length - clip.fade_in)
         self.touch()
         return track
 
-    def set_offset(self, track, seconds):
-        self.edit('Move track', [track.id])
-        track.offset = max(0, self.seconds_to_frame(seconds))
+    def set_offset(self, track, seconds, clip=None):
+        """Move a clip, or every clip of the track together."""
+        self.edit('Move clip' if clip is not None else 'Move track', [track.id])
+        if clip is not None:
+            clip.offset = max(0, self.seconds_to_frame(seconds))
+            track.sort()
+        else:
+            track.offset = max(0, self.seconds_to_frame(seconds))
+        self.touch()
+
+    def write_result(self, clip, a, b, result):
+        """Put a processed region back into a clip. A longer result (tail) is mixed over the audio that
+        follows the region and extends the clip when it runs past its end; a shorter one shrinks it."""
+        result = np.asarray(result, dtype=np.float32)
+        if result.ndim == 1:
+            result = result[np.newaxis, :]
+        if result.shape[0] != clip.channels:
+            result = np.repeat(np.mean(result, axis=0, keepdims=True), clip.channels, axis=0)
+        extra = result.shape[1] - (b - a)
+        if extra > 0:
+            after = clip.audio[:, b:].copy()
+            overlap = min(extra, after.shape[1])
+            after[:, :overlap] += result[:, b - a:b - a + overlap]
+            remainder = result[:, b - a + overlap:]
+            clip.audio = np.ascontiguousarray(np.concatenate([clip.audio[:, :a], result[:, :b - a], after, remainder], axis=1))
+            clip.invalidate()
+        else:
+            self._replace(clip, a, b, result)
+        self._clamp_fades(clip)
 
     def apply(self, label, function, all_tracks=False, whole_track=False):
-        """Apply ``function(audio, samplerate) -> audio`` to the selection (or whole track).
-
-        A longer result overlaps the following audio (tail), a shorter one shrinks the region."""
+        """Apply ``function(audio, samplerate) -> audio`` to the selected part of every clip (or to
+        whole clips). A longer result overlaps the following audio (tail), a shorter one shrinks the region."""
         tracks = self.targets(all_tracks)
         if not tracks:
             return False
         self.edit(label, [t.id for t in tracks])
-        self.flatten(tracks)
         for track in tracks:
-            if self.selection and not whole_track:
-                start, stop = self.selection_frames()
-                a, b = self._region(track, start, stop)
+            region = self.selection_frames() if (self.selection and not whole_track) else None
+            for clip in (track.clips_in(*region) if region else list(track.clips)):
+                clip.flatten()
+                a, b = self._region(clip, *region) if region else (0, clip.frames)
                 if b <= a:
                     continue
-            else:
-                a, b = 0, track.frames
-            block = np.ascontiguousarray(track.audio[:, a:b])
-            result = np.asarray(function(block, self.samplerate), dtype=np.float32)
-            if result.ndim == 1:
-                result = result[np.newaxis, :]
-            if result.shape[0] != track.channels:
-                result = np.repeat(np.mean(result, axis=0, keepdims=True), track.channels, axis=0)
-            extra = result.shape[1] - (b - a)
-            if extra > 0:
-                # The tail (reverb, delay) is mixed over the audio that follows the region and
-                # extends the track when it runs past its end.
-                after = track.audio[:, b:].copy()
-                overlap = min(extra, after.shape[1])
-                after[:, :overlap] += result[:, b - a:b - a + overlap]
-                remainder = result[:, b - a + overlap:]
-                track.audio = np.ascontiguousarray(np.concatenate([track.audio[:, :a], result[:, :b - a], after, remainder], axis=1))
-                track.invalidate()
-            else:
-                self._replace(track, a, b, result)
+                self.write_result(clip, a, b, function(np.ascontiguousarray(clip.audio[:, a:b]), self.samplerate))
+        return True
+
+    def apply_to_clip(self, label, track, clip, a, b, result):
+        """Write an already rendered region (local frames [a, b) of the clip as it is shown) back."""
+        if clip not in track.clips:
+            return False
+        self.edit(label, [track.id])
+        clip.flatten()
+        self.write_result(clip, a, min(b, clip.frames), result)
+        self.touch()
         return True
 
     # ------------------------------------------------------------------ inserts and automation
@@ -795,21 +1094,21 @@ class Document:
         renderer = renderer or Renderer(self)
         return renderer.render(start_frame, frames, channels)
 
-    def _fade_gain(self, track, local_a, local_b):
+    def _fade_gain(self, clip, local_a, local_b):
         """Fade envelope for frames [local_a, local_b) of a clip, or None when there is no fade."""
-        if track.fade_in <= 0 and track.fade_out <= 0:
+        if clip.fade_in <= 0 and clip.fade_out <= 0:
             return None
         count = local_b - local_a
         if count <= 0:
             return None
         index = np.arange(local_a, local_b, dtype=np.float32)
         gain = np.ones(count, np.float32)
-        fade_in = self.seconds_to_frame(track.fade_in)
-        fade_out = self.seconds_to_frame(track.fade_out)
+        fade_in = self.seconds_to_frame(clip.fade_in)
+        fade_out = self.seconds_to_frame(clip.fade_out)
         if fade_in > 0:
             gain *= np.clip(index / fade_in, 0.0, 1.0)
         if fade_out > 0:
-            gain *= np.clip((track.frames - index) / fade_out, 0.0, 1.0)
+            gain *= np.clip((clip.frames - index) / fade_out, 0.0, 1.0)
         return gain
 
     def mixdown(self, start_seconds=None, stop_seconds=None, channels=2, tail=None, progress=None):
@@ -830,12 +1129,14 @@ class Document:
                  'master': self.master.to_dict(), 'tail': dict(self.tail)}
         keep = set()
         for order, track in enumerate(self.tracks):
-            file = f'{order:02d}-{track.id}.wav'
-            audio_io.save(folder / file, track.audio, self.samplerate, fmt='wav', subtype='FLOAT')  # complete material
-            keep.add(file)
-            index['tracks'].append({'id': track.id, 'name': track.name, 'file': file, 'offset': track.offset, 'gain_db': track.gain_db, 'pan': track.pan,
-                                    'mute': track.mute, 'solo': track.solo, 'colour': list(track.colour), 'source': track.source, 'height': track.height,
-                                    'start': track.start, 'length': track.length, 'fadeIn': track.fade_in, 'fadeOut': track.fade_out,
+            clips = []
+            for number, clip in enumerate(track.clips):
+                file = f'{order:02d}-{track.id}-{number:02d}.wav'
+                audio_io.save(folder / file, clip.audio, self.samplerate, fmt='wav', subtype='FLOAT')  # complete material
+                keep.add(file)
+                clips.append(clip.to_dict(file))
+            index['tracks'].append({'id': track.id, 'name': track.name, 'clips': clips, 'channels': track.channels, 'gain_db': track.gain_db, 'pan': track.pan,
+                                    'mute': track.mute, 'solo': track.solo, 'colour': list(track.colour), 'height': track.height,
                                     'inserts': [{k: v for k, v in n.items() if not k.startswith('_')} for n in track.inserts if not n.get('_preview')],
                                     'automation': {k: lane.to_dict() for k, lane in track.automation.items()}, 'automationView': track.automation_view})
         for stale in folder.glob('*.wav'):
@@ -855,13 +1156,20 @@ class Document:
             raise ValueError('Not an AudioStudio session')
         document = cls(index.get('samplerate', 48000))
         for item in index.get('tracks', []):
-            audio, rate = audio_io.load(folder / item['file'])
-            track = Track(item.get('id', uuid.uuid4().hex[:8]), item.get('name', 'Track'), audio, int(item.get('offset', 0)), float(item.get('gain_db', 0.0)),
-                          float(item.get('pan', 0.0)), bool(item.get('mute', False)), bool(item.get('solo', False)), tuple(item.get('colour', COLOURS[0])),
-                          item.get('source', ''), float(item.get('height', 110.0)), int(item.get('start', 0)), int(item.get('length', -1)),
-                          float(item.get('fadeIn', 0.0)), float(item.get('fadeOut', 0.0)))
-            if rate != document.samplerate:
-                track.audio = audio_io.resample(track.audio, rate, document.samplerate)
+            # schema 2: one clip per track, its fields on the track; schema 3: a list of clips
+            clip_items = item.get('clips') if 'clips' in item else ([dict(item, id=uuid.uuid4().hex[:8])] if item.get('file') else [])
+            clips = []
+            for entry in clip_items:
+                audio, rate = audio_io.load(folder / entry['file'])
+                if rate != document.samplerate:
+                    audio = audio_io.resample(audio, rate, document.samplerate)
+                clips.append(Clip(entry.get('id') or _new_id(), entry.get('name', item.get('name', 'Track')), _as_audio(audio), int(entry.get('offset', 0)),
+                                  int(entry.get('start', 0)), int(entry.get('length', -1)), float(entry.get('fadeIn', 0.0)), float(entry.get('fadeOut', 0.0)),
+                                  entry.get('source', '')))
+            track = Track(item.get('id', _new_id()), item.get('name', 'Track'), gain_db=float(item.get('gain_db', 0.0)), pan=float(item.get('pan', 0.0)),
+                          mute=bool(item.get('mute', False)), solo=bool(item.get('solo', False)), colour=tuple(item.get('colour', COLOURS[0])),
+                          height=float(item.get('height', 110.0)), clips=clips)
+            track.empty_channels = int(item.get('channels', 2))
             track.inserts = _load_inserts(item.get('inserts'))
             track.automation = _load_automation(item.get('automation'))
             track.automation_view = str(item.get('automationView', '') or '')

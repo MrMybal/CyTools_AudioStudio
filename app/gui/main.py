@@ -97,9 +97,10 @@ class App:
         self.pending_drops.extend(str(p) for p in paths)
 
     def handle_drops(self, mouse=None):
-        """Audio files -> new tracks at the time under the mouse (below the hovered track), or into the
-        dialog's convolution effect when dropped on it; a session folder / session.json opens it; a
-        workflow .json loads into the Workflows tab."""
+        """Audio files dropped on a track become clips of that track, at the time under the mouse when that
+        place is free, otherwise after its last clip (an empty track simply takes the sound); dropped below the
+        tracks they become new tracks. Dropped on the convolution effect of the FX panel: its impulse response.
+        A session folder / session.json opens it; a workflow .json loads into the Workflows tab."""
         if not self.pending_drops:
             return []
         paths, self.pending_drops = list(self.pending_drops), []
@@ -134,38 +135,30 @@ class App:
             self.editor.message = tr('Impulse response set: ') + Path(audio[0]).name
             return handled
         document = self.document
-        seconds, insert_after = document.cursor, None
+        seconds, hovered_id = document.cursor, None
         if geometry is not None and geometry['x0'] <= mouse.x <= geometry['x1'] and geometry['y0'] <= mouse.y <= geometry['y1']:
             if mouse.x >= geometry['lane_x0']:
                 seconds = max(0.0, geometry['start'] + (mouse.x - geometry['lane_x0']) / geometry['lane_width'] * geometry['span'])
+            visible = geometry.get('lanes_y0', geometry['y0']) <= mouse.y < geometry.get('lanes_y1', geometry['y1'])
             for track_id, top, bottom in geometry['rows']:
-                if top <= mouse.y < bottom:
-                    insert_after = track_id
+                if visible and top <= mouse.y < bottom:
+                    hovered_id = track_id
         for path in audio:
-            hovered = document.track(insert_after) if insert_after else None
-            if hovered is not None and hovered.frames == 0:
-                # an empty track (the + button) takes the sound and keeps its inserts
-                try:
+            hovered = document.track(hovered_id) if hovered_id else None
+            try:
+                if hovered is not None and not hovered.clips:
+                    # an empty track (the + button) takes the sound and keeps its inserts
                     samples, rate = audio_io.load(path)
                     document.fill_track(hovered, samples, rate, offset_seconds=seconds, source=path)
                     hovered.name = Path(path).stem if hovered.name.startswith('Track ') else hovered.name
-                    handled.append(('track', path))
-                    continue
-                except Exception as exc:
-                    self.jobs.error = f'{Path(path).name}: {exc}'
-                    continue
-            try:
-                track = document.import_file(path, offset_seconds=seconds)
+                elif hovered is not None:
+                    clip = document.import_clip(hovered, path, offset_seconds=seconds)
+                    seconds = document.frame_to_seconds(clip.end)         # several files follow each other
+                else:
+                    track = document.import_file(path, offset_seconds=seconds)
             except Exception as exc:
                 self.jobs.error = f'{Path(path).name}: {exc}'
                 continue
-            if insert_after is not None:
-                position = next((i for i, t in enumerate(document.tracks) if t.id == insert_after), None)
-                if position is not None:
-                    document.tracks.remove(track)
-                    document.tracks.insert(position + 1, track)
-                    document.selected_track = position + 1
-                    insert_after = track.id
             handled.append(('track', path))
         if handled:
             self.select_tab('Editor')
@@ -214,14 +207,14 @@ class App:
             self.jobs.error = tr('No track selected')
             return None
         start, stop = document.selection_frames(track)
-        a, b = max(0, start - track.offset), min(track.frames, stop - track.offset)
-        if b <= a:
+        a, b = max(start, track.offset), min(stop, track.end)
+        if b <= a or not track.clips_in(a, b):
             self.jobs.error = tr('Empty selection')
             return None
         folder = DATA / 'sessions' / '_temp'
         folder.mkdir(parents=True, exist_ok=True)
         path = folder / f'selection-{int(time.time())}.wav'
-        audio_io.save(path, track.audio[:, a:b], document.samplerate, fmt='wav', subtype='FLOAT')
+        audio_io.save(path, track.mix_raw(a, b), document.samplerate, fmt='wav', subtype='FLOAT')
         return path
 
     def apply_current_workflow(self, all_tracks=False):
@@ -243,34 +236,32 @@ class App:
         folder.mkdir(parents=True, exist_ok=True)
         for track in targets:
             start, stop = document.selection_frames(track)
-            a, b = max(0, start - track.offset), min(track.frames, stop - track.offset)
-            if b <= a:
-                continue
-            source = folder / f'apply-{track.id}-{int(time.time() * 1000)}.wav'
-            audio_io.save(source, track.audio[:, a:b], document.samplerate, fmt='wav', subtype='FLOAT')
+            for clip in track.clips_in(start, stop):
+                a, b = document._region(clip, start, stop)
+                if b <= a:
+                    continue
+                source = folder / f'apply-{track.id}-{clip.id}-{int(time.time() * 1000)}.wav'
+                audio_io.save(source, clip.view()[:, a:b], document.samplerate, fmt='wav', subtype='FLOAT')
 
-            def done(job, track_id=track.id, region=(a, b), source=source):
-                try:
-                    if job['state'] != 'Completed':
-                        return
-                    rendered, rate = audio_io.load(job['outputs']['file'])
-                    if rate != document.samplerate:
-                        rendered = audio_io.resample(rendered, rate, document.samplerate)
-                    target = document.track(track_id)
-                    if target is None:
-                        return
-                    document.selected_track = document.tracks.index(target)
-                    saved_selection = document.selection
-                    document.selection = (document.frame_to_seconds(target.offset + region[0]), document.frame_to_seconds(target.offset + region[1]))
-                    document.apply('Workflow ' + workflow['name'], lambda audio, sr: rendered)
-                    document.selection = saved_selection
-                    self.editor.message = tr('Workflow applied: ') + workflow['name'] + f" ({job['outputs']['report'].get('tailSeconds', 0)} s tail)"
-                finally:
+                def done(job, track_id=track.id, clip_id=clip.id, region=(a, b), source=source):
                     try:
-                        source.unlink()
-                    except OSError:
-                        pass
-            self.jobs.submit('process_audio', {'input': str(source), 'workflow': workflow, 'output_format': 'wav', 'subtype': 'FLOAT'}, done, tr('Apply ') + workflow['name'])
+                        if job['state'] != 'Completed':
+                            return
+                        rendered, rate = audio_io.load(job['outputs']['file'])
+                        if rate != document.samplerate:
+                            rendered = audio_io.resample(rendered, rate, document.samplerate)
+                        target = document.track(track_id)
+                        clip = target.clip(clip_id) if target is not None else None
+                        if clip is None:
+                            return
+                        document.apply_to_clip('Workflow ' + workflow['name'], target, clip, region[0], region[1], rendered)
+                        self.editor.message = tr('Workflow applied: ') + workflow['name'] + f" ({job['outputs']['report'].get('tailSeconds', 0)} s tail)"
+                    finally:
+                        try:
+                            source.unlink()
+                        except OSError:
+                            pass
+                self.jobs.submit('process_audio', {'input': str(source), 'workflow': workflow, 'output_format': 'wav', 'subtype': 'FLOAT'}, done, tr('Apply ') + workflow['name'])
 
     def batch_process(self, files):
         try:
