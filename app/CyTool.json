@@ -3,7 +3,7 @@
   "protocolVersion": "1.0",
   "id": "cy.tool.audiostudio",
   "name": "CyTools_AudioStudio",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Audio studio: multitrack editor, effects and VST3 workflows with tail rendering, sound-effect, music and voice generation (procedural, AudioLDM, ACE-Step 1.5, Piper, Qwen3-TTS, Fish Speech S2 Pro), voice presets, mastering tools. Standalone Dear ImGui application, CLI and MCP on one runtime.",
   "vendor": "Cyberalien",
   "author": "Cyberalien",

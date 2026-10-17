@@ -18,7 +18,7 @@
     "name": "CyUI - themes, widgets and layout of the Cy* interfaces (Python port in app/gui/cyui)",
     "license": "GPL-3.0-only (as part of the application code)",
     "url": "",
-    "notes": "Ported from the C++ CyUI library (D:/_Project/CyImgui_Interface) of the same author, Cyberalien. Fonts and icons are the Windows system fonts Segoe UI, Segoe UI Semibold, Consolas and Segoe MDL2 Assets: they are read from C:/Windows/Fonts and not shipped."
+    "notes": "Ported from the C++ CyUI library (CyImgui_Interface) of the same author, Cyberalien. Fonts and icons are the Windows system fonts Segoe UI, Segoe UI Semibold, Consolas and Segoe MDL2 Assets: they are read from C:/Windows/Fonts and not shipped."
   },
   {
     "kind": "Engine",
