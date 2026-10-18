@@ -8,6 +8,12 @@ A standalone audio studio for Windows (desktop application, command line and MCP
 runtime), built on the [CyToolsCore](https://github.com/MrMybal/CyToolsCore) SDK. French user
 guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md](app/README.md).
 
+![Multitrack editor with a 10-band graphic EQ on a track: live scope and spectrum, response curve over the spectrum, band faders](docs/screenshots/editor-track-graphic-eq.png)
+*A track's insert chain: the graphic EQ with its live scope, spectrometer and response curve, while the session plays.*
+
+![Compressor on the master bus: transfer curve, gain-reduction meter and history, input and output meters](docs/screenshots/editor-master-compressor.png)
+*The master bus chain: a compressor with its transfer curve, gain-reduction meter and history.*
+
 ## What it does
 
 - **Multitrack editor** in the spirit of GoldWave / Audacity: waveforms per channel, several clips
