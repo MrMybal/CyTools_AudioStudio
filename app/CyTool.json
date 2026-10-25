@@ -3,7 +3,7 @@
   "protocolVersion": "1.0",
   "id": "cy.tool.audiostudio",
   "name": "CyTools_AudioStudio",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Audio studio: multitrack editor, effects and VST3/CLAP/LV2/JSFX workflows with tail rendering, sound-effect, music and voice generation (procedural, AudioLDM, ACE-Step 1.5, Piper, Qwen3-TTS, Fish Speech S2 Pro), voice presets, mastering tools. Standalone Dear ImGui application, CLI and MCP on one runtime.",
   "vendor": "Cyberalien",
   "author": "Cyberalien",
@@ -147,22 +147,6 @@
       },
       "models": [
         {
-          "id": "piper.en_US-lessac-medium",
-          "name": "lessac",
-          "version": "c10ece1aade4",
-          "source": "rhasspy/piper-voices",
-          "license": "MIT (see MODEL_CARD)",
-          "licenseUrl": "",
-          "location": "Local",
-          "runsLocally": true,
-          "installed": true,
-          "downloadSize": 63206530,
-          "installedSize": 63206530,
-          "resourceRequirements": {
-            "ramBytes": 1073741824
-          }
-        },
-        {
           "id": "piper.fr_FR-siwis-medium",
           "name": "siwis",
           "version": "c10ece1aade4",
@@ -171,7 +155,7 @@
           "licenseUrl": "",
           "location": "Local",
           "runsLocally": true,
-          "installed": true,
+          "installed": false,
           "downloadSize": 63206453,
           "installedSize": 63206453,
           "resourceRequirements": {
@@ -206,7 +190,7 @@
           "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0",
           "location": "Local",
           "runsLocally": true,
-          "installed": true,
+          "installed": false,
           "downloadSize": 2516100892,
           "installedSize": 2516100892,
           "resourceRequirements": {
@@ -225,7 +209,7 @@
           "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0",
           "location": "Local",
           "runsLocally": true,
-          "installed": true,
+          "installed": false,
           "downloadSize": 2498383610,
           "installedSize": 2498383610,
           "resourceRequirements": {
@@ -244,7 +228,7 @@
           "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0",
           "location": "Local",
           "runsLocally": true,
-          "installed": true,
+          "installed": false,
           "downloadSize": 4544170364,
           "installedSize": 4544170364,
           "resourceRequirements": {
@@ -263,7 +247,7 @@
           "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0",
           "location": "Local",
           "runsLocally": true,
-          "installed": true,
+          "installed": false,
           "downloadSize": 4520159586,
           "installedSize": 4520159586,
           "resourceRequirements": {
@@ -282,7 +266,7 @@
           "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0",
           "location": "Local",
           "runsLocally": true,
-          "installed": true,
+          "installed": false,
           "downloadSize": 4520159099,
           "installedSize": 4520159099,
           "resourceRequirements": {
@@ -320,7 +304,7 @@
           "licenseUrl": "https://huggingface.co/fishaudio/s2-pro/blob/1de9996b6be38b745688de084d87a5633f714e4e/LICENSE.md",
           "location": "Local",
           "runsLocally": true,
-          "installed": true,
+          "installed": false,
           "downloadSize": 11008078409,
           "installedSize": 11008078409,
           "resourceRequirements": {
@@ -396,7 +380,7 @@
           "licenseUrl": "https://huggingface.co/openai/whisper-large-v3-turbo",
           "location": "Local",
           "runsLocally": true,
-          "installed": true,
+          "installed": false,
           "downloadSize": 1622443339,
           "installedSize": 1622443339,
           "resourceRequirements": {
