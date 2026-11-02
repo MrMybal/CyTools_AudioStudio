@@ -123,7 +123,7 @@ class GeneratePanel:
         if not self.results:
             cyui.text_faint(tr('Generated files appear here: listen to them, add them to the editor or use them as a voice reference.'))
         for index, (label, file) in enumerate(self.results[:8]):
-            imgui.push_id(index)
+            cyui.push_id(index)
             cyui.begin_card('##result', None)
             duration = thumbnail(file, 240, 34)
             imgui.same_line()
@@ -145,7 +145,7 @@ class GeneratePanel:
                 self.app.open_folder(Path(file).parent)
             imgui.end_group()
             cyui.end_card()
-            imgui.pop_id()
+            cyui.pop_id()
         imgui.end_child()
 
     def _jobs_row(self):

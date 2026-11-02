@@ -53,13 +53,31 @@ def wait(ctx, frames=3):
         ctx.yield_()
 
 
+
+class CyUIContext:
+    """Resolve semantic host actions to the actual item ID emitted by CyUI.
+    ImGui's Python test binding does not resolve nested invisible icon labels.
+    """
+    def __init__(self,context):self.context=context
+    def __getattr__(self,name):
+        target=getattr(self.context,name)
+        if name not in {'item_click','item_exists','item_info','item_drag_with_delta','mouse_move'}:return target
+        def call(reference,*args,**kwargs):
+            if isinstance(reference,str):
+                from . import cyui
+                path=reference.removeprefix('**/').split('/')
+                matches=[value for scope,value in cyui.ICON_ITEMS.items() if list(scope[-len(path):])==path and value[0]>=imgui.get_frame_count()-2]
+                if matches:reference=te.TestRef(max(matches)[1])
+            return target(reference,*args,**kwargs)
+        return call
+
 def register(app, runner, recorder):
     engine = hello_imgui.get_imgui_test_engine()
     test = te.register_test(engine, 'audiostudio', 'interactions')
 
     def run(ctx):
         try:
-            _scenario(app, ctx, recorder)
+            _scenario(app, CyUIContext(ctx), recorder)
         except Exception:
             recorder.check('scenario raised no exception', False, traceback.format_exc())
         finally:

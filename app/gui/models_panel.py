@@ -51,7 +51,7 @@ class ModelsPanel:
         if cyui.begin_section(tr('Engines') + '###engines'):
             cyui.text_wrapped_faint(tr('Engines are private Python environments under runtime/engines. They are created at their final path with the pinned versions and checked by import before use.'))
             for name, info in self.engine_status.items():
-                imgui.push_id(name)
+                cyui.push_id(name)
                 cyui.begin_card('##engine', None, 0.0, cyui.NEUTRAL if info['installed'] else cyui.WARNING)
                 cyui.badge(tr(info['state']).upper(), cyui.SUCCESS if info['installed'] else cyui.WARNING)
                 imgui.same_line(0, 6)
@@ -73,7 +73,7 @@ class ModelsPanel:
                         if cyui.ghost_button(tr('Install CPU-only build') + '###Install CPU-only build'):
                             jobs.submit('install_engine', {'engine': name, 'cpu_only': True}, lambda job: self.refresh(), tr('Engine ') + name)
                 cyui.end_card()
-                imgui.pop_id()
+                cyui.pop_id()
             for job in jobs.running('install_engine'):
                 cyui.progress_bar(-1.0, (cyui.dp(400.0), 0), jobs.progress_text(job)[:90])
                 imgui.same_line()
@@ -121,7 +121,7 @@ class ModelsPanel:
         jobs = self.app.jobs
         icon = cyui.icon
         p = cyui.palette()
-        imgui.push_id(model['id'])
+        cyui.push_id(model['id'])
         tone = self._state_tone(model['state'])
         header = f"{model['name']}  [{model['backend']}]"
         opened = cyui.begin_section(header + '###hdr', False)
@@ -184,4 +184,4 @@ class ModelsPanel:
                     if cyui.danger_button(tr('Remove') + '###Remove'):
                         jobs.submit('remove_model', {'model': model['id']}, lambda job: self.refresh(), tr('Remove ') + model['name'])
             cyui.end_section()
-        imgui.pop_id()
+        cyui.pop_id()

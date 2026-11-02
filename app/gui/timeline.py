@@ -357,7 +357,7 @@ class Timeline:
             lane_height = float(track.height)
             rows.append((track.id, y, y + lane_height))
             selected = index == document.selected_track
-            imgui.push_id(track.id)
+            cyui.push_id(track.id)
             # -- header
             draw.add_rect_filled((child_origin.x, y), (child_origin.x + HEADER_WIDTH - 4, y + lane_height - 2),
                                  cyui.mix(P().bg2, P().accent, 0.10) if selected else P().bg2)
@@ -526,9 +526,9 @@ class Timeline:
             if not editing_points:
                 draw.push_clip_rect((x0, y0), (x1, y1), True)
                 for clip, clip_a, clip_b, vis_a, vis_b in visible:
-                    imgui.push_id(clip.id)
+                    cyui.push_id(clip.id)
                     self._clip_handles(document, track, index, clip, clip_a, clip_b, vis_a, vis_b, draw, x0, x1, y0, y1, to_x, to_t, mouse, lane_width, span, tr)
-                    imgui.pop_id()
+                    cyui.pop_id()
                 draw.pop_clip_rect()
 
             # -- cursor and playhead
@@ -549,7 +549,7 @@ class Timeline:
                 track.height = float(np.clip(self.resizing[1] + mouse.y - self.resizing[2], MIN_TRACK_HEIGHT, MAX_TRACK_HEIGHT))
             if imgui.is_item_deactivated():
                 self.resizing = None
-            imgui.pop_id()
+            cyui.pop_id()
             y += lane_height
         self._moving_ghost(document, draw, rows, to_x, tr)
         self._last_rows = list(rows)
@@ -738,7 +738,7 @@ class Timeline:
         master = document.master
         lane_height = float(master.height)
         renderer = player.renderer
-        imgui.push_id('master')
+        cyui.push_id('master')
         draw.add_rect_filled((child_origin.x, y), (child_origin.x + HEADER_WIDTH - 4, y + lane_height - 2), cyui.mix(P().bg2, P().accent, 0.08))
         draw.add_rect_filled((child_origin.x, y), (child_origin.x + 4, y + lane_height - 2), P().accent)
         imgui.set_cursor_screen_pos((child_origin.x + 8, y + 4))
@@ -807,7 +807,7 @@ class Timeline:
             master.height = float(np.clip(self.resizing[1] + mouse.y - self.resizing[2], MIN_TRACK_HEIGHT, MAX_TRACK_HEIGHT))
         if imgui.is_item_deactivated():
             self.resizing = None
-        imgui.pop_id()
+        cyui.pop_id()
         return y + lane_height
 
     def _scrollbar(self, document, lane_x0, lane_width, tr):

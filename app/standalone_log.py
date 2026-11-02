@@ -51,6 +51,8 @@ class Journal:
     def __init__(self,root):
         self.root=Path(root);folder=self.root/'data/logs';folder.mkdir(parents=True,exist_ok=True)
         self.path=folder/'standalone.log';self.selected=self.path;self.text='';self.paused=False;self.last=0.;self.focus=False
+        from gui_log_view import LogView
+        self.log_view=LogView()
         self.copy_thread=None;self.copy_result=None
         self.principals={};self.cursors={};self.files=set();self.bound=set();self.discovery={};self.test='--ui-test-logs' in sys.argv;self.frames=0
         self.handler=RotatingFileHandler(self.path,maxBytes=2*1024*1024,backupCount=3,encoding='utf-8',delay=True)
@@ -121,8 +123,7 @@ class Journal:
             if self.copy_result is not None:ui.set_clipboard_text(self.copy_result);self.copy_result=None
             ui.text_wrapped(tr('Select text and press Ctrl+C. Ctrl+A selects all. Refresh pauses while selecting.'))
             if not self.paused and not self.focus:self.text=self.read()
-            ui.input_text_multiline('##standalone-log',self.text,ui.ImVec2(-1,max(180,ui.get_content_region_avail().y-20)),flags=ui.InputTextFlags_.read_only)
-            self.focus=ui.is_item_active()
+            self.focus=self.log_view.draw(ui,self.text,self.selected.name,tr)
             if self.test:
                 self.frames+=1
                 if self.frames==3:

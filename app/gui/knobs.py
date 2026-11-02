@@ -8,6 +8,9 @@ import numpy as np
 from imgui_bundle import imgui
 
 from . import cyui
+from cyui_modules import audio
+from cyui_modules.plots import Axis
+from cyui_modules.common import Range
 
 KNOB_SIZE = 44.0
 METER_WIDTH = 10.0
@@ -72,117 +75,36 @@ def gain_to_db(value):
 
 # ----------------------------------------------------------------------------- knob
 
-def knob(label, value, minimum, maximum, fmt='%.2f', log=False, size=KNOB_SIZE, tooltip='', default=None, automated=False):
-    """Rotary knob with the CyDAW behaviour: drag (Ctrl = fine, Shift = fast), the wheel nudges, a
-    double click restores the default, a click on its value types it. Returns (changed, value).
-    The widget identity is ``label`` / '##knob'."""
-    p = cyui.palette()
-    io = imgui.get_io()
-    imgui.push_id(label)
-    origin = imgui.get_cursor_screen_pos()
-    text_h = imgui.get_text_line_height()
-    shown_label = label.split('##')[0]
-    width = max(size, imgui.calc_text_size(shown_label).x + 4)
-    imgui.invisible_button('##knob', (width, size + text_h * 2 + 4))
-    hovered, active = imgui.is_item_hovered(), imgui.is_item_active()
-    changed = False
-    minimum, maximum = float(minimum), float(maximum)
-    value = float(np.clip(value, minimum, maximum))
-    if log and minimum > 0:
-        to_norm = lambda v: (math.log(v) - math.log(minimum)) / (math.log(maximum) - math.log(minimum))
-        from_norm = lambda n: math.exp(math.log(minimum) + n * (math.log(maximum) - math.log(minimum)))
-    else:
-        to_norm = lambda v: (v - minimum) / (maximum - minimum) if maximum > minimum else 0.0
-        from_norm = lambda n: minimum + n * (maximum - minimum)
-    norm = float(np.clip(to_norm(value), 0.0, 1.0))
-    storage = imgui.get_state_storage()
-    moved_key, click_key = imgui.get_id('##moved'), imgui.get_id('##click-y')
-    if imgui.is_item_activated():
-        storage.set_bool(moved_key, False)
-        storage.set_float(click_key, io.mouse_pos.y)
-    if active and (io.mouse_delta.y != 0.0 or io.mouse_delta.x != 0.0):
-        storage.set_bool(moved_key, True)
-        speed = 0.0055 * cyui.value_speed()
-        norm = float(np.clip(norm - io.mouse_delta.y * speed + io.mouse_delta.x * speed * 0.35, 0.0, 1.0))
-        value = from_norm(norm)
-        changed = True
-    if hovered and imgui.is_mouse_double_clicked(imgui.MouseButton_.left) and default is not None:
-        value = float(np.clip(default, minimum, maximum))
-        norm = float(np.clip(to_norm(value), 0.0, 1.0))
-        changed = True
-    if hovered and io.mouse_wheel != 0.0:
-        norm = float(np.clip(norm + io.mouse_wheel * 0.02 * cyui.value_speed(), 0.0, 1.0))
-        value = from_norm(norm)
-        changed = True
-        cyui.take_wheel()
-    # its value (under the label) clicked without a drag: typed in
-    on_value = storage.get_float(click_key, origin.y) >= origin.y + size + text_h
-    open_entry = (imgui.is_item_deactivated() and not storage.get_bool(moved_key, False) and on_value
-                  and not imgui.is_mouse_double_clicked(imgui.MouseButton_.left))
-    typed, number = cyui.value_entry('knob', (origin.x, origin.y + size + text_h), (origin.x + width, origin.y + size + text_h * 2 + 4),
-                                     value, minimum, maximum, open_entry)
-    if typed:
-        value, changed = float(number), True
-        norm = float(np.clip(to_norm(value), 0.0, 1.0))
-    draw = imgui.get_window_draw_list()
-    centre = (origin.x + width / 2, origin.y + size / 2)
-    radius = size / 2 - 2
-    thickness = max(2.0, size * 0.085)
-    start_angle, sweep = math.pi * 0.75, math.pi * 1.5
-    draw.path_clear()
-    draw.path_arc_to(centre, radius, start_angle, start_angle + sweep, 32)
-    draw.path_stroke(p.bg5, thickness, 0)
-    angle = start_angle + norm * sweep
-    if norm > 0.001:
-        draw.path_clear()
-        draw.path_arc_to(centre, radius, start_angle, angle, 32)
-        draw.path_stroke(cyui.brighter(p.accent, 0.15) if (hovered or active) else p.accent, thickness, 0)
-    draw.add_circle_filled(centre, radius - thickness * 0.9, p.bg5 if (hovered or active) else p.bg4, 24)
-    tip = (centre[0] + math.cos(angle) * (radius - thickness * 1.1), centre[1] + math.sin(angle) * (radius - thickness * 1.1))
-    inner = (centre[0] + math.cos(angle) * radius * 0.25, centre[1] + math.sin(angle) * radius * 0.25)
-    draw.add_line(inner, tip, p.text, max(1.5, thickness * 0.55))
+def knob(label,value,minimum,maximum,fmt='%.2f',log=False,size=KNOB_SIZE,tooltip='',default=None,automated=False):
+    """Shared rotary control plus the host's formatted, directly editable value."""
+    imgui.begin_group()
+    origin=imgui.get_cursor_screen_pos()
+    changed,value=audio.knob(label,float(value),float(minimum),float(maximum),float(value if default is None else default),
+        diameter=size/cyui.core.dpi(),label=label.split('##')[0],logarithmic=log)
+    knob.last_activated=imgui.is_item_activated() or (changed and not imgui.is_item_active())
+    cyui.push_id(label)
+    if tooltip:cyui.tooltip(tooltip)
+    # CyUI Python does not expose its C++ typed-entry popover. Retain that host
+    # capability, including units/precision and Escape, rather than losing it.
+    text_h=imgui.get_text_line_height()
+    shown=fmt%value if '%' in fmt else fmt
+    open_now=imgui.selectable(shown+'##value',False,0,(max(size,cyui.dp(58)),text_h))[0]
+    pos=imgui.get_item_rect_min();maximum_pos=imgui.get_item_rect_max()
+    typed,number=cyui.value_entry('knob',tuple(pos),tuple(maximum_pos),value,minimum,maximum,open_now)
+    if typed:value=number;changed=True;knob.last_activated=True
     if automated:
-        draw.add_circle_filled((origin.x + width - 5, origin.y + 5), 3.5, p.warning, 12)
-    draw.add_text((origin.x + (width - imgui.calc_text_size(shown_label).x) / 2, origin.y + size + 2), p.text if (hovered or active) else p.textDim, shown_label)
-    try:
-        shown = fmt % value if '%' in fmt else fmt
-    except (TypeError, ValueError):
-        shown = '%.3g' % value
-    shown = shown.replace('%%', '%')
-    draw.add_text((origin.x + (width - imgui.calc_text_size(shown).x) / 2, origin.y + size + text_h + 2), p.text if (hovered or active) else p.textFaint, shown)
-    if hovered and tooltip:
-        imgui.set_tooltip(tooltip)
-    imgui.pop_id()
-    return changed, value
+        imgui.get_window_draw_list().add_circle_filled((origin.x+size,origin.y+cyui.dp(3)),cyui.dp(3),cyui.palette().warning)
+    cyui.pop_id()
+    imgui.end_group()
+    return changed,value
 
 
 # ----------------------------------------------------------------------------- meters
 
-def level_meter(peak, width=METER_WIDTH, height=90.0, floor=-60.0, hold=None, label=''):
-    """Vertical peak meter in dB (success / warning / error zones). ``hold`` is a peak-hold value in dB or None."""
-    p = cyui.palette()
-    origin = imgui.get_cursor_screen_pos()
-    imgui.dummy((width + (imgui.calc_text_size(label).x + 4 if label else 0), height))
-    draw = imgui.get_window_draw_list()
-    x0, y0, x1, y1 = origin.x, origin.y, origin.x + width, origin.y + height
-    draw.add_rect_filled((x0, y0), (x1, y1), p.bg0, 2.0)
-    db = gain_to_db(peak) if peak > 0 else floor
-    fill = db_to_unit(db, floor)
-    top = y1 - fill * height
-    green_top = y1 - db_to_unit(-12.0, floor) * height
-    yellow_top = y1 - db_to_unit(-3.0, floor) * height
-    if fill > 0:
-        draw.add_rect_filled((x0 + 1, max(top, green_top)), (x1 - 1, y1 - 1), p.success)
-        if top < green_top:
-            draw.add_rect_filled((x0 + 1, max(top, yellow_top)), (x1 - 1, green_top), p.warning)
-        if top < yellow_top:
-            draw.add_rect_filled((x0 + 1, top), (x1 - 1, yellow_top), p.error)
-    if hold is not None and hold > floor:
-        y = y1 - db_to_unit(hold, floor) * height
-        draw.add_line((x0 + 1, y), (x1 - 1, y), cyui.alpha(p.error if hold > -0.1 else p.text, 0.85), 1.5)
-    if label:
-        draw.add_text((x1 + 3, y1 - imgui.get_text_line_height()), p.textFaint, label)
-    return db
+def level_meter(peak,width=METER_WIDTH,height=90.0,floor=-60.0,hold=None,label=''):
+    audio.meter('##level-'+label,[float(peak)],[float(peak)],(width/cyui.core.dpi(),height/cyui.core.dpi()),True)
+    if label:imgui.same_line();cyui.text_faint(label)
+    return gain_to_db(peak) if peak>0 else floor
 
 
 def reduction_meter(reduction_db, width=METER_WIDTH, height=90.0, range_db=-30.0, label='GR'):

@@ -67,13 +67,13 @@ class PluginsPanel:
                 cyui.badge(tr('standard'))
             remove = None
             for index, folder in enumerate(self.settings.get('directories', [])):
-                imgui.push_id(index)
+                cyui.push_id(index)
                 imgui.align_text_to_frame_padding()
                 imgui.text(folder)
                 imgui.same_line()
                 if cyui.icon_button(icon.close, tr('Remove this folder'), id='Remove', fallback='x', active_colour=p.error):
                     remove = index
-                imgui.pop_id()
+                cyui.pop_id()
             if remove is not None:
                 del self.settings['directories'][remove]
                 self._save_settings()

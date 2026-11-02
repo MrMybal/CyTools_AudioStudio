@@ -23,6 +23,9 @@ from audiostudio.paths import PRESETS
 from .knobs import (knob, level_meter, reduction_meter, Plot, col, text_col, accent, accent_col, warm, cool, theme_col, freq_label, FREQ_GRID, gain_to_db)
 from .widgets import Row, draw_plugin_params
 from . import cyui
+from cyui_modules.audioviews import oscilloscope, spectrum
+from cyui_modules.plots import PlotState, Axis, Series
+from cyui_modules.common import Range
 
 SCOPE_FRAMES = 2048
 GR_HISTORY = 240
@@ -121,7 +124,7 @@ class EffectUI:
             fmt += ' ' + param.unit.replace('%', '%%')      # a '%' unit must not break the format
         changed, value = knob(label + '##' + param.id, float(current), lo, hi, fmt, log=use_log, size=size,
                               tooltip=tr(param.help) if param.help else '', default=float(param.default), automated=automated)
-        if imgui.is_item_activated():
+        if getattr(knob,'last_activated',False):
             self._record(owner, label)
         if changed:
             self._set_param(owner, node, param.id, int(round(value)) if param.kind == 'int' else float(value))
@@ -149,44 +152,38 @@ class EffectUI:
         imgui.begin_group()
         in_peaks = tap.in_peak if tap else (0.0, 0.0)
         out_peaks = tap.out_peak if tap else (0.0, 0.0)
-        level_meter(in_peaks[0], meter_w, height)
+        with cyui.scoped_id('meter-in-L'):
+            level_meter(in_peaks[0], meter_w, height)
         imgui.same_line(0, 2)
-        level_meter(in_peaks[1], meter_w, height, label=tr('in'))
+        with cyui.scoped_id('meter-in-R'):
+            level_meter(in_peaks[1], meter_w, height, label=tr('in'))
         imgui.same_line()
         available = max(240.0, width - (meter_w * 4 + 100))
         scope_w = available * 0.58
         spectrum_w = available - scope_w - imgui.get_style().item_spacing.x
-        plot = Plot(scope_w, height, (0, SCOPE_FRAMES), (-1.0, 1.0))
-        plot.draw.add_line((plot.x0, plot.py(0)), (plot.x1, plot.py(0)), text_col(0.15))
+        states=getattr(self,'_monitor_states',None)
+        if states is None:states=self._monitor_states={}
+        scope_state,spectrum_state=states.setdefault(node['id'],(PlotState(Axis(Range(0,SCOPE_FRAMES)),Axis(Range(-1,1))),PlotState(Axis(Range(20,20000),True),Axis(Range(-90,0)))))
+        scope_series=[]
         if tap is not None:
-            xs = np.arange(SCOPE_FRAMES)
-            mono_in = tap.recent('input', SCOPE_FRAMES).mean(axis=0)
-            mono_out = tap.recent('output', SCOPE_FRAMES).mean(axis=0)
-            step = max(1, SCOPE_FRAMES // int(scope_w))
-            plot.line(xs[::step], mono_in[::step], text_col(0.35), 1.0)
-            plot.line(xs[::step], mono_out[::step], accent_col(0.95), 1.2)
-        plot.end()
-        if plot.hovered:
-            imgui.set_tooltip(tr('Waveform entering (grey) and leaving (colour) this effect'))
+            mono_in=tap.recent('input',SCOPE_FRAMES).mean(axis=0);mono_out=tap.recent('output',SCOPE_FRAMES).mean(axis=0)
+            step=max(1,len(mono_in)//max(64,int(scope_w)))
+            scope_series=[Series(1,list(zip(np.arange(len(mono_in))[::step],mono_in[::step])),tr('Input'),color_index=1),
+                          Series(2,list(zip(np.arange(len(mono_out))[::step],mono_out[::step])),tr('Output'),color_index=0)]
+        oscilloscope('##effect-scope',scope_state,scope_series,(scope_w,height))
+        if imgui.is_item_hovered():cyui.tooltip(tr('Waveform entering (grey) and leaving (colour) this effect'))
         imgui.same_line()
-        # spectrometer: what the effect does to the frequencies, live
-        spectrum_plot = Plot(spectrum_w, height, (20.0, 20000.0), (-90.0, 0.0), log_x=True)
-        freqs, db_in = self.spectrum(node, renderer, 'input', slot='header')
-        _, db_out = self.spectrum(node, renderer, 'output', slot='header')
-        self.draw_spectrum_in(spectrum_plot, freqs, db_in, text_col(0.16))
-        spectrum_plot.line(freqs, db_out, accent_col(0.95), 1.2)
-        for value in (100, 1000, 10000):
-            x = spectrum_plot.px(value)
-            spectrum_plot.draw.add_line((x, spectrum_plot.y0), (x, spectrum_plot.y1), text_col(0.10))
-            spectrum_plot.draw.add_text((x + 2, spectrum_plot.y1 - imgui.get_text_line_height()), text_col(0.45), freq_label(value))
-        spectrum_plot.end()
-        if spectrum_plot.hovered:
-            mouse = imgui.get_mouse_pos()
-            imgui.set_tooltip(tr('Spectrum entering (grey) and leaving (colour) this effect') + '   %s Hz' % freq_label(round(spectrum_plot.x_at(mouse.x))))
+        freqs,db_in=self.spectrum(node,renderer,'input',slot='header')
+        _,db_out=self.spectrum(node,renderer,'output',slot='header')
+        series=[Series(1,list(zip(freqs,db_in)),tr('Input'),color_index=1),Series(2,list(zip(freqs,db_out)),tr('Output'),color_index=0)]
+        spectrum('##effect-spectrum',spectrum_state,series,(spectrum_w,height))
+        if imgui.is_item_hovered():cyui.tooltip(tr('Spectrum entering (grey) and leaving (colour) this effect'))
         imgui.same_line()
-        level_meter(out_peaks[0], meter_w, height)
+        with cyui.scoped_id('meter-out-L'):
+            level_meter(out_peaks[0], meter_w, height)
         imgui.same_line(0, 2)
-        level_meter(out_peaks[1], meter_w, height, label=tr('out'))
+        with cyui.scoped_id('meter-out-R'):
+            level_meter(out_peaks[1], meter_w, height, label=tr('out'))
         imgui.end_group()
 
     SPECTRUM_POINTS = 200
@@ -816,7 +813,7 @@ class EffectUI:
             for index, on in enumerate(steps):
                 if index:
                     imgui.same_line(0, 3)
-                imgui.push_id(index)
+                cyui.push_id(index)
                 p = cyui.palette()
                 ground = p.warning if index == current else (p.accent if on else p.bg3)
                 imgui.push_style_color(imgui.Col_.button, cyui.vec(ground))
@@ -825,7 +822,7 @@ class EffectUI:
                     steps[index] = not on
                     changed = True
                 imgui.pop_style_color(2)
-                imgui.pop_id()
+                cyui.pop_id()
             if changed:
                 self._record(owner, tr('Pattern'))
                 self._set_param(owner, node, 'pattern', ''.join('1' if on else '0' for on in steps))
@@ -954,7 +951,7 @@ class EffectUI:
                 imgui.text_disabled(tr('... more parameters in the plugin window'))
                 break
             shown += 1
-            imgui.push_id(name)
+            cyui.push_id(name)
             label = str(info.get('label') or name)
             if info.get('normalized'):
                 label += ' (0–1)'
@@ -982,7 +979,7 @@ class EffectUI:
             if changed:
                 self._set_param(owner, node, name, value)
             self._lane_menu(owner, node, name, label)
-            imgui.pop_id()
+            cyui.pop_id()
         imgui.pop_item_width()
         if not parameters:
             imgui.text_disabled(tr('This plugin exposes no parameters'))

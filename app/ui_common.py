@@ -274,6 +274,8 @@ def raw():
 def tr(text):
     if not isinstance(text, str) or not text: return text
     language = preferences.values['language']
+    from cyui_modules.locale import set_locale
+    set_locale(language)
     translation = catalog.get(text) or _normalized.get(normalized(text))
     if translation: return translation.get(language, translation.get('en', text))
     # Only registered display fragments are substituted. No remote translator,

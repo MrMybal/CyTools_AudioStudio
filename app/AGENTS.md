@@ -33,7 +33,7 @@ TaskFiles.md) before changing anything.
    file by file (`audiostudio/models`): a folder that exists is not an installed model. Licences
    requiring acceptance are accepted by the user in the Models tab, never in code or settings.
    Tokens come from the OS keyring only; never in argv, jobs, logs or configurations.
-7. The interface follows CyUI (`gui/cyui`, rules of D:/_Project/CyImgui_Interface/docs/AI_GUIDE.md):
+7. The interface follows CyUI (pinned upstream `cyui.py` / `cyui_modules`, host aliases in `gui/cyui`; see Docs/CyUIMigration.md):
    colours from `cyui.palette()` by role only, sizes through `cyui.dp()` or the style, one primary
    button per view, icon buttons with a tooltip naming the action and its shortcut and a stable
    identity (`id=`), property tables in forms, empty panels that say why, messages through the
@@ -61,3 +61,15 @@ cd <path>\CyTools_AudioStudio\app
 ..\runtime\python\Scripts\python.exe desktop.py --ui-test-tab=Editor
 powershell -ExecutionPolicy Bypass -File build_launcher.ps1
 ```
+
+## Modular CyUI maintenance
+
+Read Docs/CyUIMigration.md before changing the standalone UI. The selected upstream
+files in cyui.py and cyui_modules/ are unchanged and pinned/hash-checked by
+cyui-source.json. Do not patch them in the application or reintroduce a private
+palette/widget implementation. Refresh from the recorded checkout with
+scripts/sync_cyui.py. Keep host adapters outside the library and import only used
+families. Domain validation, decoding/rendering, jobs, persistence, task ownership
+and Undo remain in this application. Preserve documented advanced-editor gaps and
+all existing interactions. Run tests/test_modular_ui.py and the relevant native
+UI tests; keep the root LICENCES/CyUI-MIT.txt and Options source attribution.

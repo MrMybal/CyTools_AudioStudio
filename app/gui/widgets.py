@@ -10,7 +10,7 @@ def draw_effect_params(spec, values, tr=lambda t: t):
     """Draw the parameters of an EffectSpec; returns True when a value changed."""
     changed_any = False
     for param in spec.params:
-        imgui.push_id(param.id)
+        cyui.push_id(param.id)
         label = tr(param.label) + (f' ({param.unit})' if param.unit else '')
         current = values.get(param.id, param.default)
         if param.kind == 'bool':
@@ -34,7 +34,7 @@ def draw_effect_params(spec, values, tr=lambda t: t):
             changed_any = True
         if param.help and imgui.is_item_hovered():
             imgui.set_tooltip(tr(param.help))
-        imgui.pop_id()
+        cyui.pop_id()
     return changed_any
 
 
@@ -48,7 +48,7 @@ def draw_plugin_params(description, values, tr=lambda t: t, max_shown=64):
             imgui.text_disabled(tr('... more parameters in the plugin window'))
             break
         shown += 1
-        imgui.push_id(name)
+        cyui.push_id(name)
         label = str(info.get('label') or name)
         if info.get('normalized'):
             label += ' (0–1)'
@@ -72,7 +72,7 @@ def draw_plugin_params(description, values, tr=lambda t: t, max_shown=64):
         if changed:
             values[name] = value
             changed_any = True
-        imgui.pop_id()
+        cyui.pop_id()
     if not parameters:
         imgui.text_disabled(tr('This plugin exposes no parameters'))
     return changed_any

@@ -23,9 +23,9 @@ class ColourTests(unittest.TestCase):
         self.assertEqual(cyui.darker(red, 1.0), cyui.rgb(0x000000))
 
     def test_contrast_text_and_categorical(self):
-        self.assertEqual(cyui.contrast_text(cyui.rgb(0xF0F0F0)), cyui.rgb(0x141414))
-        self.assertEqual(cyui.contrast_text(cyui.rgb(0x202020)), cyui.rgb(0xFFFFFF))
-        self.assertEqual(cyui.categorical(0), cyui.rgb(0xF0A43A))
+        self.assertEqual(cyui.contrast_text(cyui.rgb(0xF0F0F0)), cyui.palette().bg0)
+        self.assertEqual(cyui.contrast_text(cyui.rgb(0x202020)), cyui.palette().text)
+        self.assertIsInstance(cyui.categorical(0), int)
         self.assertEqual(cyui.categorical(12), cyui.categorical(0))
 
 

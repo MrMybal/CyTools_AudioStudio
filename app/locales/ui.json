@@ -16438,5 +16438,29 @@
   "Cet éditeur audio accueille les effets ; le séquençage des instruments nécessite des pistes MIDI.": {
     "en": "This audio editor accepts effects; instrument sequencing requires MIDI tracks.",
     "fr": "Cet éditeur audio accueille les effets ; le séquençage des instruments nécessite des pistes MIDI."
+  },
+  "Structured log": {
+    "en": "Structured log",
+    "fr": "Journal structuré"
+  },
+  "Selectable text": {
+    "en": "Selectable text",
+    "fr": "Texte sélectionnable"
+  },
+  "Input": {
+    "en": "Input",
+    "fr": "Entrée"
+  },
+  "Entrée": {
+    "en": "Input",
+    "fr": "Entrée"
+  },
+  "Journal structuré": {
+    "en": "Structured log",
+    "fr": "Journal structuré"
+  },
+  "Texte sélectionnable": {
+    "en": "Selectable text",
+    "fr": "Texte sélectionnable"
   }
 }

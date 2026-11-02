@@ -1,4 +1,4 @@
-CyTools_AudioStudio 0.1.3 - sources and references of the delivered components
+CyTools_AudioStudio 0.1.4 - sources and references of the delivered components
 ====================================================================================
 
 Product
@@ -19,6 +19,13 @@ CyToolsCore SDK 0.10.1 (runtime, jobs, CLI / JSONL / HTTP / MCP transports, scaf
                  copies in this product   app/Docs/
   The MIT licence of the SDK does not change the licence of this product: CyTools_AudioStudio
   stays under the GPL-3.0 because of its own code and of pedalboard / JUCE.
+
+CyUI 1.2.0 (selected Python interface modules)
+  Licence        MIT; full text in LICENCES/CyUI-MIT.txt
+  Repository     https://github.com/MrMybal/CyUI
+  License link   https://github.com/MrMybal/CyUI/blob/main/LICENSE
+  Revision       ff023e646c6a3038b3dfbfd53f6d2b4a2f5955e3
+  File hashes    app/cyui-source.json
 
 CyUEMCPSDK (Unreal Engine MCP SDK)
   Repository     https://github.com/MrMybal/CyUEMCPSDK

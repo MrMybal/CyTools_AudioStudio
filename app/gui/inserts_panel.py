@@ -190,7 +190,7 @@ class InsertsPanel:
         for index, node in enumerate(owner.inserts):
             if node.get('_preview'):
                 continue
-            imgui.push_id(node['id'])
+            cyui.push_id(node['id'])
             changed, enabled = imgui.checkbox('##on', bool(node.get('enabled', True)))
             if changed:
                 node['enabled'] = enabled
@@ -227,7 +227,7 @@ class InsertsPanel:
             imgui.same_line(0, 0)
             if cyui.icon_button(icon.close, tr('Remove this insert (Ctrl+Z to undo)'), id='Remove insert', fallback='X', size=small, active_colour=p.error):
                 remove = node['id']
-            imgui.pop_id()
+            cyui.pop_id()
         if not chain:
             cyui.text_faint(tr('(no insert)'))
         else:
@@ -287,7 +287,7 @@ class InsertsPanel:
             cyui.empty_state(tr('No effect in this chain'), tr('Add an effect or a plugin to this chain.'), icon.equalizer)
         else:
             width = imgui.get_content_region_avail().x
-            imgui.push_id(node['id'])
+            cyui.push_id(node['id'])
             changed, enabled = cyui.toggle_switch(tr('On') + '##on', bool(node.get('enabled', True)))
             if changed:
                 node['enabled'] = enabled
@@ -332,6 +332,6 @@ class InsertsPanel:
                 if node.get('_description') is None:
                     node['_description'] = next((p_ for p_ in catalogue if p_.get('path', '').lower() == str(node['plugin']).lower() and (not node.get('pluginName') or node['pluginName'] in (p_.get('name'), p_.get('pluginId')))), None) or {'parameters': {}}
                 self.effect_ui.draw_vst(owner, node, renderer, width)
-            imgui.pop_id()
+            cyui.pop_id()
         imgui.end_child()
         imgui.end_child()

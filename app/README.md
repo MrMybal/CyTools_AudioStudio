@@ -152,22 +152,12 @@ scrollbar under the lanes.
 
 ### Interface: CyUI
 
-`gui/cyui/` is a Python port of CyUI (D:/_Project/CyImgui_Interface, C++ on Dear ImGui), the interface
-library of CyDAW 2, Shaderixel and CyEngineHub: `theme.py` (the semantic palette `bg0..bg5`, lines,
-three text levels, one accent, meaning colours; the five built-in themes; the compact and
-comfortable metrics; `.cytheme` files; Segoe UI / Semibold / Consolas fonts with the Segoe MDL2
-icons), `widgets.py` (buttons and their variants, icon and toggle buttons, switch, segmented
-control, slider bar with typed values, meters, search field, cards, sections, property tables,
-badges, progress bars, empty states, callouts, notifications) and `layout.py` (tool strips, the
-wrapping `FlowBar`, status bar, panel headers, modals). `ui_common.apply_style()` applies the theme
-and density chosen in Options (the former dark / light / classic values map to mid grey / light grey
-/ amber night) and `ui_common.load_fonts()` is the font callback. Every colour of the custom drawing
-(timeline, knobs, meters, plots, thumbnails) is taken from `cyui.palette()` by role; `knobs.col()`
-and `timeline.colour()` remain only for data colours (track colours). `--ui-test-theme=<key>` and
-`--ui-test-density=<compact|comfortable>` render a theme without saving it, for visual checks.
-`tests/test_cyui.py` checks the colour packing, the theme files, the value parsing and the text
-contrast of every theme; `tests/test_locales.py` also reads the labels and tooltips passed to the
-CyUI calls.
+`cyui.py` and the selected `cyui_modules/` files are unchanged upstream CyUI 1.2
+sources. `gui/cyui/` is now a compatibility import, not a second theme/widget
+implementation. Host adapters in `gui/style_bridge.py` retain transport wrapping,
+palette-file persistence and numeric entry where the Python library differs from C++.
+See [CyUIMigration.md](Docs/CyUIMigration.md) for the exact revision, module choices,
+specialized editor gaps and validation. Themes, density, DPI and EN/FR remain selectable.
 
 ### Track inserts, master bus, automation
 
@@ -398,3 +388,9 @@ et dans les workflows. Un éditeur EEL2 est disponible dans Plugins > JSFX scrip
 Les nouveaux formats utilisent un worker natif isolé. Depuis un clone source, compilez-le avec
 `runtime/python/Scripts/python.exe app/scripts/build_plugin_host.py` (depuis la racine du produit).
 Voir [Docs/PluginFormats.md](Docs/PluginFormats.md).
+
+## Modular CyUI
+
+The standalone interface uses the pinned, selected CyUI 1.2 modules. See
+[the migration and validation notes](Docs/CyUIMigration.md) for replacements, retained host
+adaptations, source hashes and reproducible refresh instructions.

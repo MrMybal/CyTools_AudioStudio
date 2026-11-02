@@ -22,7 +22,7 @@ guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md](app/README
   paste, delete, trim, silence, split into two clips), undo / redo, recording from the microphone,
   playback through the default output, sessions saved as folders.
 - **Interface** drawn with CyUI, the interface library of the Cy* applications (CyDAW 2, Shaderixel,
-  CyEngineHub), ported to Python in `app/gui/cyui`: five themes (mid grey, light grey, amber night,
+  CyEngineHub), provided by pinned CyUI modules: five themes (mid grey, light grey, amber night,
   violet, navy) and two densities chosen in Options, Segoe UI fonts with icon buttons, tooltips that
   name each action and its shortcut, property tables in the forms, a status bar (last message,
   running jobs with their progress and a cancel button, audio engine state) and notifications.
@@ -172,3 +172,13 @@ and in workflows. An EEL2 editor is available under Plugins > JSFX script editor
 The new formats use an isolated native worker. From a source clone, build it with
 `runtime/python/Scripts/python.exe app/scripts/build_plugin_host.py` (from the product root).
 See [the format guide](app/Docs/PluginFormats.md).
+
+## Modular CyUI
+
+The standalone interface uses the pinned, selected CyUI 1.2 modules. See
+[the migration and validation notes](app/Docs/CyUIMigration.md) for replacements, retained host
+adaptations, source hashes and reproducible refresh instructions.
+
+CyUI: MIT. Full license: LICENCES/CyUI-MIT.txt.
+Upstream license: https://github.com/MrMybal/CyUI/blob/main/LICENSE
+Repository: https://github.com/MrMybal/CyUI (currently private; no upstream access required to run this application).

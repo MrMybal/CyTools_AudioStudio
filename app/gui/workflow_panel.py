@@ -157,7 +157,7 @@ class WorkflowPanel:
         if not self.document['nodes']:
             cyui.empty_state(tr('No node yet'), tr('Add an effect or a plugin above; they run from top to bottom.'), icon.equalizer)
         for index, node in enumerate(self.document['nodes']):
-            imgui.push_id(node['id'])
+            cyui.push_id(node['id'])
             title = node.get('effect') if node['kind'] == 'effect' else (node['kind'].upper() + ': ' + (node.get('pluginName') or Path(node['plugin']).stem)) if node['kind'] in ('vst3', 'clap', 'lv2', 'jsfx') else 'model: ' + node.get('model', '')
             if node['kind'] == 'effect' and node.get('effect') in effects.REGISTRY:
                 title = tr(effects.REGISTRY[node['effect']].name)
@@ -201,7 +201,7 @@ class WorkflowPanel:
                     if node.get('state'):
                         cyui.text_faint(tr('Saved plugin state: ') + f"{len(node['state'])} chars")
                 cyui.end_section()
-            imgui.pop_id()
+            cyui.pop_id()
         imgui.end_child()
         if remove is not None:
             del self.document['nodes'][remove]

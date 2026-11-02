@@ -1117,5 +1117,8 @@
   "Add an effect or a plugin above; they run from top to bottom.": "Ajoutez un effet ou un plugin ci-dessus ; ils s’exécutent de haut en bas.",
   "Add the chosen plugin at the end of the chain": "Ajouter le plugin sélectionné à la fin de la chaîne",
   "Add an effect or a plugin to this chain.": "Ajoutez un effet ou un plugin à cette chaîne.",
-  "This audio editor accepts effects; instrument sequencing requires MIDI tracks.": "Cet éditeur audio accueille les effets ; le séquençage des instruments nécessite des pistes MIDI."
+  "This audio editor accepts effects; instrument sequencing requires MIDI tracks.": "Cet éditeur audio accueille les effets ; le séquençage des instruments nécessite des pistes MIDI.",
+  "Input": "Entrée",
+  "Structured log": "Journal structuré",
+  "Selectable text": "Texte sélectionnable"
 }

@@ -76,6 +76,13 @@ def sources_text(version):
           The MIT licence of the SDK does not change the licence of this product: CyTools_AudioStudio
           stays under the GPL-3.0 because of its own code and of pedalboard / JUCE.
 
+        CyUI 1.2.0 (selected Python interface modules)
+          Licence        MIT; full text in LICENCES/CyUI-MIT.txt
+          Repository     https://github.com/MrMybal/CyUI
+          License link   https://github.com/MrMybal/CyUI/blob/main/LICENSE
+          Revision       ff023e646c6a3038b3dfbfd53f6d2b4a2f5955e3
+          File hashes    app/cyui-source.json
+
         CyUEMCPSDK (Unreal Engine MCP SDK)
           Repository     {UNREAL_SDK_REPOSITORY}
           Not included: this product has no Unreal Engine plugin and no assistant runtime.
