@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "name": "CyTools_AudioStudio",
+  "documents": [
+    "LISEZ-MOI.md",
+    "README.md",
+    "app/Docs/Architecture.md",
+    "app/Docs/AutomaticInputs.md",
+    "app/Docs/CapabilityCoverage.md",
+    "app/Docs/CreatingYourFirstCyTool.md",
+    "app/Docs/CyUIMigration.md",
+    "app/Docs/Dependencies.md",
+    "app/Docs/Downloads.md",
+    "app/Docs/ErrorModel.md",
+    "app/Docs/Events.md",
+    "app/Docs/FullOperationAccess.md",
+    "app/Docs/GenerationConfigurations.md",
+    "app/Docs/ImplementationStatus.md",
+    "app/Docs/Index.md",
+    "app/Docs/Jobs.md",
+    "app/Docs/Licensing.md",
+    "app/Docs/Localization.md",
+    "app/Docs/MCP.md",
+    "app/Docs/MeshViewer.md",
+    "app/Docs/Models.md",
+    "app/Docs/MultiClient.md",
+    "app/Docs/Operations.md",
+    "app/Docs/Outputs.md",
+    "app/Docs/Overview.md",
+    "app/Docs/Parameters.md",
+    "app/Docs/Platforms.md",
+    "app/Docs/PluginFormats.md",
+    "app/Docs/Protocol.md",
+    "app/Docs/Resources.md",
+    "app/Docs/Scheduler.md",
+    "app/Docs/SharedInstallation.md",
+    "app/Docs/StandaloneDelivery.md",
+    "app/Docs/StandaloneDiagnosticsAndModels.md",
+    "app/Docs/TaskFiles.md",
+    "app/Docs/ToolFinalization.md",
+    "app/Docs/ToolManifest.md",
+    "app/Docs/Transports.md",
+    "app/Docs/UnrealIntegration.md",
+    "app/Docs/UpdateExistingProducts.md",
+    "app/Docs/Validation.md",
+    "app/Docs/Versioning.md",
+    "app/Docs/Workers.md",
+    "app/README.md",
+    "app/models/README.md",
+    "app/native/README.md",
+    "app/documentation/README.md",
+    "app/documentation/VALIDATION.md"
+  ],
+  "productGuides": [
+    "CapabilityCoverage.md",
+    "CreatingYourFirstCyTool.md",
+    "CyUIMigration.md",
+    "Dependencies.md",
+    "Downloads.md",
+    "ErrorModel.md",
+    "Events.md",
+    "GenerationConfigurations.md",
+    "ImplementationStatus.md",
+    "Jobs.md",
+    "Localization.md",
+    "MeshViewer.md",
+    "Models.md",
+    "MultiClient.md",
+    "Operations.md",
+    "Outputs.md",
+    "Overview.md",
+    "Parameters.md",
+    "Platforms.md",
+    "PluginFormats.md",
+    "Resources.md",
+    "StandaloneDiagnosticsAndModels.md",
+    "Transports.md",
+    "UnrealIntegration.md"
+  ],
+  "excluded": [
+    {
+      "source": "app/AGENTS.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/CyToolsGuide.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/Docs/AgentGuide.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/Docs/AgentPrompt.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/native/licenses/JUCE-LICENSE.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/native/third_party/clap/ChangeLog.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/native/third_party/clap/Contributors.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/native/third_party/clap/README.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/native/third_party/clap/conventions/extension-id.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/native/third_party/ysfx/MAINTENANCE.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/native/third_party/ysfx/README.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    },
+    {
+      "source": "app/native/third_party/ysfx/thirdparty/dr_libs/README.md",
+      "reason": "License/third-party original, cache or agent-only instructions; retained in place"
+    }
+  ]
+}

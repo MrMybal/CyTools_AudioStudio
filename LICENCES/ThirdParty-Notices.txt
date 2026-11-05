@@ -103,3 +103,9 @@ LICENCES/CyToolsCore-MIT.txt (SDK), and for each Python package its own .dist-in
   Source:  https://github.com/jpcima/ysfx
   Notes:   Pinned 8077347ccf4115567aed81400281dca57acbb0cc. Full sources and notices
            app/native/third_party/ysfx. Imported JSFX scripts keep their own licences.
+
+[Library] CyDoc 0.1.0
+  Licence: MIT
+  Source:  https://github.com/MrMybal/CyDoc
+  Notes:   Local documentation reader; full license in LICENCES/CyDoc-MIT.txt. Build
+           dependencies are not required for reading.

@@ -16462,5 +16462,33 @@
   "Texte sélectionnable": {
     "en": "Selectable text",
     "fr": "Texte sélectionnable"
+  },
+  "Documentation": {
+    "en": "Documentation",
+    "fr": "Documentation"
+  },
+  "Open local manual (F1)": {
+    "en": "Open local manual (F1)",
+    "fr": "Ouvrir le manuel local (F1)"
+  },
+  "Help for current workspace": {
+    "en": "Help for current workspace",
+    "fr": "Aide du panneau actuel"
+  },
+  "The manual opens locally in your browser and works offline.": {
+    "en": "The manual opens locally in your browser and works offline.",
+    "fr": "Le manuel s’ouvre localement dans le navigateur et fonctionne hors ligne."
+  },
+  "Ouvrir le manuel local (F1)": {
+    "en": "Open local manual (F1)",
+    "fr": "Ouvrir le manuel local (F1)"
+  },
+  "Aide du panneau actuel": {
+    "en": "Help for current workspace",
+    "fr": "Aide du panneau actuel"
+  },
+  "Le manuel s’ouvre localement dans le navigateur et fonctionne hors ligne.": {
+    "en": "The manual opens locally in your browser and works offline.",
+    "fr": "Le manuel s’ouvre localement dans le navigateur et fonctionne hors ligne."
   }
 }

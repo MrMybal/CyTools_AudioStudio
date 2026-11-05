@@ -1,0 +1,30 @@
+{
+  "name": "CyTools_AudioStudio",
+  "version": "0.1.4",
+  "defaultLocale": "en",
+  "locales": [
+    {
+      "code": "en",
+      "label": "English"
+    },
+    {
+      "code": "fr",
+      "label": "Français"
+    }
+  ],
+  "homePage": "overview",
+  "content": "manual",
+  "assets": "assets",
+  "out": "export",
+  "modules": [
+    "image"
+  ],
+  "translationReport": true,
+  "aliases": {
+    "home": "overview",
+    "readme": "overview",
+    "help": "overview",
+    "user-guide": "guide-lisez-moi",
+    "api": "operations"
+  }
+}

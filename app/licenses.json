@@ -125,5 +125,12 @@
     "license": "Apache-2.0; dependencies keep zlib / MIT-0 / MIT / public-domain notices",
     "url": "https://github.com/jpcima/ysfx",
     "notes": "Pinned 8077347ccf4115567aed81400281dca57acbb0cc. Full sources and notices app/native/third_party/ysfx. Imported JSFX scripts keep their own licences."
+  },
+  {
+    "kind": "Library",
+    "name": "CyDoc 0.1.0",
+    "license": "MIT",
+    "url": "https://github.com/MrMybal/CyDoc",
+    "notes": "Local documentation reader; full license in LICENCES/CyDoc-MIT.txt. Build dependencies are not required for reading."
   }
 ]

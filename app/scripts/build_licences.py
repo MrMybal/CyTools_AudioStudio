@@ -100,6 +100,10 @@ def sources_text(version):
           app/engines.json and app/models/catalog.json; each one keeps its own licence, and a gated or
           non-commercial model is only downloaded after the user accepted its terms.
 
+        CyDoc 0.1.0 (offline documentation reader)
+          Licence        MIT; full text in LICENCES/CyDoc-MIT.txt
+          Repository     https://github.com/MrMybal/CyDoc
+
         A link or the word MIT never replaces a licence text: keep this folder with every copy of the product.
         ''')
 
@@ -128,6 +132,7 @@ def documents():
     licence, notice = sdk_texts()
     return {
         LICENCES / 'CyToolsCore-MIT.txt': licence,
+        LICENCES / 'CyDoc-MIT.txt': (APP / 'documentation/CyDoc-MIT.txt').read_text('utf-8'),
         LICENCES / 'LICENSE-CyToolsCore.txt': notice,
         APP / 'LICENSE-CyToolsCore.txt': notice,
         LICENCES / 'SOURCES.txt': sources_text(version),

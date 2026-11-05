@@ -1,0 +1,375 @@
+{
+  "defaultLocale": "en",
+  "missing": [
+    {
+      "id": "guide-app-docs-capabilitycoverage",
+      "title": "Capability coverage — CyTools_AudioStudio 0.1.0",
+      "locale": "fr",
+      "expectedRevision": "92ef04885d3a9d6c"
+    },
+    {
+      "id": "guide-app-docs-cyuimigration",
+      "title": "Modular CyUI integration",
+      "locale": "fr",
+      "expectedRevision": "3f8bac8d58fae98c"
+    },
+    {
+      "id": "guide-app-docs-taskfiles",
+      "title": "Task files — SDK 0.9.0",
+      "locale": "fr",
+      "expectedRevision": "9b6360df7060f26c"
+    },
+    {
+      "id": "guide-app-docs-toolfinalization",
+      "title": "Tool delivery checklist",
+      "locale": "fr",
+      "expectedRevision": "fde78db2e97192ae"
+    },
+    {
+      "id": "guide-app-docs-unrealintegration",
+      "title": "Unreal integration",
+      "locale": "fr",
+      "expectedRevision": "76089759ddbe97c1"
+    },
+    {
+      "id": "guide-app-docs-validation",
+      "title": "Validation",
+      "locale": "fr",
+      "expectedRevision": "167bda94a58434c9"
+    },
+    {
+      "id": "guide-app-documentation-readme",
+      "title": "Local documentation (CyDoc)",
+      "locale": "fr",
+      "expectedRevision": "7813cec244e6cdf6"
+    },
+    {
+      "id": "guide-app-documentation-validation",
+      "title": "CyDoc migration validation",
+      "locale": "fr",
+      "expectedRevision": "e4b1dd22ce7c3655"
+    },
+    {
+      "id": "guide-app-models-readme",
+      "title": "Model catalogue",
+      "locale": "fr",
+      "expectedRevision": "a02fd1f4277f7e1f"
+    },
+    {
+      "id": "guide-app-native-readme",
+      "title": "AudioStudio isolated plugin host",
+      "locale": "fr",
+      "expectedRevision": "e1cc9b830530b569"
+    },
+    {
+      "id": "guide-app-readme",
+      "title": "CyTools_AudioStudio — developer guide",
+      "locale": "fr",
+      "expectedRevision": "d40957a2dd17752a"
+    },
+    {
+      "id": "guide-readme",
+      "title": "CyTools AudioStudio",
+      "locale": "fr",
+      "expectedRevision": "a573b545c8960ae8"
+    },
+    {
+      "id": "licenses",
+      "title": "Licenses",
+      "locale": "fr",
+      "expectedRevision": "320fb9764a5aebbd"
+    },
+    {
+      "id": "migration-notes",
+      "title": "Migration notes",
+      "locale": "fr",
+      "expectedRevision": "32c69573c2dd226f"
+    },
+    {
+      "id": "reference-app-docs-agentguide-md",
+      "title": "app/Docs/AgentGuide.md",
+      "locale": "fr",
+      "expectedRevision": "121c9a18170b6db7"
+    },
+    {
+      "id": "reference-app-docs-agentprompt-md",
+      "title": "app/Docs/AgentPrompt.md",
+      "locale": "fr",
+      "expectedRevision": "5a0ab7b5a3d0cdb5"
+    },
+    {
+      "id": "reference-app-licenses-json",
+      "title": "app/licenses.json",
+      "locale": "fr",
+      "expectedRevision": "fe12c210b878b82f"
+    },
+    {
+      "id": "reference-licences-cydoc-mit-txt",
+      "title": "LICENCES/CyDoc-MIT.txt",
+      "locale": "fr",
+      "expectedRevision": "1513dc9b71717581"
+    },
+    {
+      "id": "reference-licences-cytoolscore-mit-txt",
+      "title": "LICENCES/CyToolsCore-MIT.txt",
+      "locale": "fr",
+      "expectedRevision": "d604437eff19de43"
+    },
+    {
+      "id": "reference-licences-cyui-mit-txt",
+      "title": "LICENCES/CyUI-MIT.txt",
+      "locale": "fr",
+      "expectedRevision": "d4ddcf0e401b8515"
+    },
+    {
+      "id": "reference-licences-license-cytoolscore-txt",
+      "title": "LICENCES/LICENSE-CyToolsCore.txt",
+      "locale": "fr",
+      "expectedRevision": "99bcd9182b0951af"
+    },
+    {
+      "id": "reference-licences-sources-txt",
+      "title": "LICENCES/SOURCES.txt",
+      "locale": "fr",
+      "expectedRevision": "9a17d64d2588ab7e"
+    },
+    {
+      "id": "reference-licences-thirdparty-notices-txt",
+      "title": "LICENCES/ThirdParty-Notices.txt",
+      "locale": "fr",
+      "expectedRevision": "0054fe1a758f3bbf"
+    },
+    {
+      "id": "reference-license",
+      "title": "LICENSE",
+      "locale": "fr",
+      "expectedRevision": "aaa62e7f14d30e88"
+    }
+  ],
+  "outdated": [],
+  "untracked": [
+    {
+      "id": "guide-app-docs-architecture",
+      "title": "Architecture",
+      "locale": "fr",
+      "expectedRevision": "0dcfb7df60b228e3"
+    },
+    {
+      "id": "guide-app-docs-automaticinputs",
+      "title": "Entrées locales automatiques",
+      "locale": "fr",
+      "expectedRevision": "9cec7b10b5b2f376"
+    },
+    {
+      "id": "guide-app-docs-creatingyourfirstcytool",
+      "title": "Créer son premier CyTool",
+      "locale": "fr",
+      "expectedRevision": "b97866cef66537cd"
+    },
+    {
+      "id": "guide-app-docs-dependencies",
+      "title": "Dépendances",
+      "locale": "fr",
+      "expectedRevision": "5aa82f11150127ad"
+    },
+    {
+      "id": "guide-app-docs-downloads",
+      "title": "Téléchargements",
+      "locale": "fr",
+      "expectedRevision": "f6a27cf30df3f6af"
+    },
+    {
+      "id": "guide-app-docs-errormodel",
+      "title": "Erreurs",
+      "locale": "fr",
+      "expectedRevision": "0a75614678bbc1fc"
+    },
+    {
+      "id": "guide-app-docs-events",
+      "title": "Événements et logs",
+      "locale": "fr",
+      "expectedRevision": "efe31372dbb9d8e2"
+    },
+    {
+      "id": "guide-app-docs-fulloperationaccess",
+      "title": "Capacités complètes et orchestration",
+      "locale": "fr",
+      "expectedRevision": "2f11750de6a6a853"
+    },
+    {
+      "id": "guide-app-docs-generationconfigurations",
+      "title": "Sauvegarder et recharger une configuration de generation",
+      "locale": "fr",
+      "expectedRevision": "81c5efd2ae4bdc8f"
+    },
+    {
+      "id": "guide-app-docs-implementationstatus",
+      "title": "État de l'implémentation 0.10.1",
+      "locale": "fr",
+      "expectedRevision": "47274f1d2f4e2f5c"
+    },
+    {
+      "id": "guide-app-docs-index",
+      "title": "Documentation CyToolsCore",
+      "locale": "fr",
+      "expectedRevision": "fabf9f3fa826be4c"
+    },
+    {
+      "id": "guide-app-docs-jobs",
+      "title": "Jobs",
+      "locale": "fr",
+      "expectedRevision": "d35b2039cb606bc8"
+    },
+    {
+      "id": "guide-app-docs-licensing",
+      "title": "Licence et redistribution",
+      "locale": "fr",
+      "expectedRevision": "89f31178f0a8c33a"
+    },
+    {
+      "id": "guide-app-docs-localization",
+      "title": "Interface multilingue, Options et licences",
+      "locale": "fr",
+      "expectedRevision": "a282ebab9d695694"
+    },
+    {
+      "id": "guide-app-docs-mcp",
+      "title": "Adaptateur MCP",
+      "locale": "fr",
+      "expectedRevision": "dc280b287b5d6ff6"
+    },
+    {
+      "id": "guide-app-docs-meshviewer",
+      "title": "Visualisation 3D obligatoire pour les Tools de maillage",
+      "locale": "fr",
+      "expectedRevision": "397e9f2de22b0e6e"
+    },
+    {
+      "id": "guide-app-docs-models",
+      "title": "Backends et modèles",
+      "locale": "fr",
+      "expectedRevision": "a45b1c3998273744"
+    },
+    {
+      "id": "guide-app-docs-multiclient",
+      "title": "Plusieurs clients sur un même Tool",
+      "locale": "fr",
+      "expectedRevision": "3bf1d8fa2d43208c"
+    },
+    {
+      "id": "guide-app-docs-operations",
+      "title": "Opérations",
+      "locale": "fr",
+      "expectedRevision": "9752ee1fb34dbdae"
+    },
+    {
+      "id": "guide-app-docs-outputs",
+      "title": "Sorties",
+      "locale": "fr",
+      "expectedRevision": "5bbb6eaaa99d681b"
+    },
+    {
+      "id": "guide-app-docs-overview",
+      "title": "Vue d'ensemble",
+      "locale": "fr",
+      "expectedRevision": "2ae69402e1312ed7"
+    },
+    {
+      "id": "guide-app-docs-parameters",
+      "title": "Paramètres et génération d'UI",
+      "locale": "fr",
+      "expectedRevision": "250317af72ec2bcf"
+    },
+    {
+      "id": "guide-app-docs-platforms",
+      "title": "Plateformes",
+      "locale": "fr",
+      "expectedRevision": "908b579145427030"
+    },
+    {
+      "id": "guide-app-docs-pluginformats",
+      "title": "Plugins audio : VST3, CLAP, LV2, JSFX",
+      "locale": "fr",
+      "expectedRevision": "0668c7c872038cf5"
+    },
+    {
+      "id": "guide-app-docs-protocol",
+      "title": "CyTools protocol 1.0",
+      "locale": "fr",
+      "expectedRevision": "ff880d408117139a"
+    },
+    {
+      "id": "guide-app-docs-resources",
+      "title": "Ressources",
+      "locale": "fr",
+      "expectedRevision": "9dacee039a847976"
+    },
+    {
+      "id": "guide-app-docs-scheduler",
+      "title": "Scheduler local",
+      "locale": "fr",
+      "expectedRevision": "dc6224897739ef73"
+    },
+    {
+      "id": "guide-app-docs-sharedinstallation",
+      "title": "Stockage des installations et téléchargements",
+      "locale": "fr",
+      "expectedRevision": "8933ecdd2cf395af"
+    },
+    {
+      "id": "guide-app-docs-standalonedelivery",
+      "title": "Livraison obligatoire d'un CyTool autonome",
+      "locale": "fr",
+      "expectedRevision": "c6177aaab32449f9"
+    },
+    {
+      "id": "guide-app-docs-standalonediagnosticsandmodels",
+      "title": "Journaux, modèles personnalisés, LoRA et périphériques",
+      "locale": "fr",
+      "expectedRevision": "b15d340bd82eafbd"
+    },
+    {
+      "id": "guide-app-docs-toolmanifest",
+      "title": "Manifest du Tool",
+      "locale": "fr",
+      "expectedRevision": "89ad1ceaa9d2ce1d"
+    },
+    {
+      "id": "guide-app-docs-transports",
+      "title": "Transports",
+      "locale": "fr",
+      "expectedRevision": "da794edd5bf1c6b7"
+    },
+    {
+      "id": "guide-app-docs-updateexistingproducts",
+      "title": "Mettre à jour les logiciels et plugins qui utilisent les SDK Cy",
+      "locale": "fr",
+      "expectedRevision": "44e5e3edc57a23ec"
+    },
+    {
+      "id": "guide-app-docs-versioning",
+      "title": "Versions et compatibilité",
+      "locale": "fr",
+      "expectedRevision": "2c271b943cf38ab7"
+    },
+    {
+      "id": "guide-app-docs-workers",
+      "title": "Workers et libération",
+      "locale": "fr",
+      "expectedRevision": "6a038ac5059c805f"
+    },
+    {
+      "id": "guide-lisez-moi",
+      "title": "CyTools AudioStudio",
+      "locale": "fr",
+      "expectedRevision": "540064c0c3c91ba8"
+    },
+    {
+      "id": "python-create-runtime-create-runtime",
+      "title": "create_runtime",
+      "locale": "fr",
+      "expectedRevision": "0fc0407ef067"
+    }
+  ],
+  "current": 45
+}
