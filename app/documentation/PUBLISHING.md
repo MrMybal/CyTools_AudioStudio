@@ -21,6 +21,9 @@ The publisher validates `app/help` and copies it byte-for-byte into `_site`, add
 only `.nojekyll` and a staging marker. It never publishes application `data/`,
 `runtime/`, weights, credentials, conversations or generated user outputs.
 Do not hand-edit `_site` or `app/help`; edit the sources in `sources.json` instead.
+Source text hashes and indexed source copies use UTF-8 with LF newlines, and licence
+ordering is case-independent, so Windows and Linux produce the same reader.
+The original source documents are preserved.
 
 ## Automatic deployment
 

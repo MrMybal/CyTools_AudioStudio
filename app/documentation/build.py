@@ -82,7 +82,7 @@ class Manual:
                 self.issues.append({'source': name, 'reason': 'Source document no longer exists'}); continue
             text = p.read_text('utf-8-sig'); lang = language(text, name)
             self.docs[name.lower()] = (name, page_id(name), lang, text, headings(text))
-            self.originals[name] = digest(p.read_bytes())
+            self.originals[name] = digest(text.encode('utf-8'))
 
     def page(self, id, locale, title, section, body, order=100, translated=None):
         meta = {'id': id, 'title': title.replace('\n', ' ').replace('"', ''), 'description': title.replace('\n', ' '), 'section': section, 'order': order, 'revision': digest(body.encode())[:16]}
@@ -198,7 +198,7 @@ class Manual:
             self.page('operations',locale,'Référence des opérations' if fr else 'Operation reference','Reference',body,20)
         # Source extraction and lexical indexing: only the distributed public entry point.
         source=APP/'tool.py';target=self.work/'sources/tool.py';target.parent.mkdir(parents=True)
-        shutil.copy2(source,target)
+        write(target,source.read_text('utf-8-sig'))
         symbols=[]
         tree=ast.parse(source.read_text('utf-8-sig'))
         for node in tree.body:
@@ -207,7 +207,7 @@ class Manual:
                 symbols.append({'key':node.name,'name':node.name,'language':'python','kind':'class' if isinstance(node,ast.ClassDef) else 'function','signature':signature,'description':ast.get_docstring(node) or 'Public definition from the distributed tool.py.','source':{'file':'sources/tool.py','line':node.lineno}})
         write(self.work/'api.json',json.dumps({'symbols':symbols},ensure_ascii=False,indent=2))
         notices=[]
-        license_files=([ROOT/'LICENSE'] if (ROOT/'LICENSE').is_file() else [])+sorted((ROOT/'LICENCES').glob('*'))
+        license_files=([ROOT/'LICENSE'] if (ROOT/'LICENSE').is_file() else [])+sorted((ROOT/'LICENCES').glob('*'),key=lambda path:path.name.casefold())
         for path in license_files:
             id=self.attachment(path,'licenses')
             if id:notices.append(f'- [{path.name}](doc:{id})')
