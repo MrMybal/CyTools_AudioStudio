@@ -1,5 +1,7 @@
 # CyTools AudioStudio
 
+[Documentation](https://mrmybal.github.io/CyTools_AudioStudio/#/fr/overview) · [English](https://mrmybal.github.io/CyTools_AudioStudio/#/en/overview)
+
 Studio audio autonome : éditeur multipiste avec inserts par piste (106 effets natifs dont 92 en
 temps réel, plugins VST3, chacun avec son interface), automation, bus master, effets et plugins
 VST3 en workflows (avec rendu de la queue de reverb/delay), génération de bruitages, de musique et
@@ -160,4 +162,4 @@ Guide développeur, commandes CLI/MCP et tests : `app/README.md`.
 
 ## Documentation locale
 
-Dans l’application, ouvrir **Options → Ouvrir le manuel local (F1)** ou appuyer sur **F1**. Le lecteur hors ligne complet est livré dans [`app/help/index.html`](app/help/index.html). [Régénérer le manuel](app/documentation/README.md).
+Dans l’application, ouvrir **Options → Ouvrir le manuel local (F1)** ou appuyer sur **F1**. Le lecteur hors ligne complet est livré dans `app/help/index.html`. [Régénérer le manuel](app/documentation/README.md).

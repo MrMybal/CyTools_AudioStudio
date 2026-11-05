@@ -5,13 +5,13 @@
       "source": "LISEZ-MOI.md",
       "id": "guide-lisez-moi",
       "locale": "fr",
-      "sha256": "43c3135f657f59257dfdb735897d4d22fa32a5b9d6cb3e0cd5fa47a02fd1e2c9"
+      "sha256": "b00b0e08f6d30de65dca01f8c87e68cb60bcded3b99df78169644124bf7135db"
     },
     {
       "source": "README.md",
       "id": "guide-readme",
       "locale": "en",
-      "sha256": "21fb5720aef5a7b20821dc843d7448fdbb11bf49f5aef291c5b9fe8700848350"
+      "sha256": "45463e36636225570effd3a519dea049f8346016c9fdab4b3d0c99eedbde3f7f"
     },
     {
       "source": "app/Docs/Architecture.md",
@@ -263,7 +263,25 @@
       "source": "app/README.md",
       "id": "guide-app-readme",
       "locale": "en",
-      "sha256": "5bcfc5f7fa6c53e8d8782b8f3187c6c093d897ae7d26ea24c29fe3280ad28167"
+      "sha256": "69d117f5bd55a707b72bd2d9b4ca9b24a85b1b7924a05d5e3a90b9faf310f111"
+    },
+    {
+      "source": "app/documentation/PUBLISHING.md",
+      "id": "guide-app-documentation-publishing",
+      "locale": "en",
+      "sha256": "2d438ecfc81c317080e1305502355d44bb85caf00c4e2c74b6a7bd70d9890405"
+    },
+    {
+      "source": "app/documentation/README.md",
+      "id": "guide-app-documentation-readme",
+      "locale": "en",
+      "sha256": "71a231cc5efb65b6a9ce7086cf7ad601eac33f6a094efc2408effc503f881fd1"
+    },
+    {
+      "source": "app/documentation/VALIDATION.md",
+      "id": "guide-app-documentation-validation",
+      "locale": "en",
+      "sha256": "54bf1d94dab3ac58e5af64fb1ebf956ed379a22cb0502066f782e5ef1f409411"
     },
     {
       "source": "app/models/README.md",
@@ -276,18 +294,6 @@
       "id": "guide-app-native-readme",
       "locale": "en",
       "sha256": "7445e130abfa19d96debff191bc26fd7f30c120ed6322dbc02745cbe9223bf87"
-    },
-    {
-      "source": "app/documentation/README.md",
-      "id": "guide-app-documentation-readme",
-      "locale": "en",
-      "sha256": "aebad11f76f73968b71d99a280f47c556fd97038915ae0992b784e5b205616da"
-    },
-    {
-      "source": "app/documentation/VALIDATION.md",
-      "id": "guide-app-documentation-validation",
-      "locale": "en",
-      "sha256": "54bf1d94dab3ac58e5af64fb1ebf956ed379a22cb0502066f782e5ef1f409411"
     }
   ],
   "issues": [],

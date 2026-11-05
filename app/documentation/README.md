@@ -33,3 +33,7 @@ Review `app/help/migration-report.json` for old/missing links and `translation-r
 for missing/stale translations. SDK reference pages are labelled separately from actual
 application capabilities. Linux/macOS launchers remain unverified unless a validation
 report records an execution on those platforms.
+
+## Web documentation
+
+[Documentation](https://mrmybal.github.io/CyTools_AudioStudio/#/en/overview) · [Français](https://mrmybal.github.io/CyTools_AudioStudio/#/fr/overview). See [Publishing the reader](PUBLISHING.md) for the GitHub Actions workflow and local staging commands. Embedded help continues to work offline.

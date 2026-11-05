@@ -1,5 +1,7 @@
 # CyTools_AudioStudio — developer guide
 
+[Documentation](https://mrmybal.github.io/CyTools_AudioStudio/#/en/guide-app-readme) · [Français](https://mrmybal.github.io/CyTools_AudioStudio/#/fr/overview)
+
 Standalone audio studio built on the CyToolsCore SDK 0.10.1 (public, MIT: https://github.com/MrMybal/CyToolsCore): a multitrack editor with per-track
 insert chains (106 native effects, 92 of them real-time, and VST3 plugins) with their own
 interfaces, automation lanes, a master bus, saved workflows (tail rendering included),

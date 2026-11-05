@@ -13,3 +13,4 @@
 *.mp3 binary
 *.ogg binary
 *.ico binary
+.github export-ignore

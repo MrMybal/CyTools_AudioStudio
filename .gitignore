@@ -31,3 +31,6 @@ Thumbs.db
 
 # Native plugin host binaries are built before packaging.
 app/native/bin/
+/_site/
+/_site.previous/
+/_pages-stage-*/

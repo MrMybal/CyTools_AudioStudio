@@ -38,10 +38,16 @@
       "expectedRevision": "167bda94a58434c9"
     },
     {
+      "id": "guide-app-documentation-publishing",
+      "title": "Publishing the CyDoc reader",
+      "locale": "fr",
+      "expectedRevision": "2f158ae527514cdb"
+    },
+    {
       "id": "guide-app-documentation-readme",
       "title": "Local documentation (CyDoc)",
       "locale": "fr",
-      "expectedRevision": "7813cec244e6cdf6"
+      "expectedRevision": "d62d0ebe0618ed55"
     },
     {
       "id": "guide-app-documentation-validation",
@@ -65,13 +71,13 @@
       "id": "guide-app-readme",
       "title": "CyTools_AudioStudio — developer guide",
       "locale": "fr",
-      "expectedRevision": "d40957a2dd17752a"
+      "expectedRevision": "4f8c1fa62cfb4c42"
     },
     {
       "id": "guide-readme",
       "title": "CyTools AudioStudio",
       "locale": "fr",
-      "expectedRevision": "a573b545c8960ae8"
+      "expectedRevision": "a46b5761ed016374"
     },
     {
       "id": "licenses",

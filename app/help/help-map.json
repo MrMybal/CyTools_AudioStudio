@@ -45,10 +45,11 @@
     "app/Docs/Versioning.md": "guide-app-docs-versioning",
     "app/Docs/Workers.md": "guide-app-docs-workers",
     "app/README.md": "guide-app-readme",
-    "app/models/README.md": "guide-app-models-readme",
-    "app/native/README.md": "guide-app-native-readme",
+    "app/documentation/PUBLISHING.md": "guide-app-documentation-publishing",
     "app/documentation/README.md": "guide-app-documentation-readme",
-    "app/documentation/VALIDATION.md": "guide-app-documentation-validation"
+    "app/documentation/VALIDATION.md": "guide-app-documentation-validation",
+    "app/models/README.md": "guide-app-models-readme",
+    "app/native/README.md": "guide-app-native-readme"
   },
   "pages": {
     "guide-app-docs-architecture": {
@@ -376,9 +377,19 @@
       ],
       "locale": "fr"
     },
+    "guide-app-documentation-publishing": {
+      "headings": [
+        "publishing-the-cydoc-reader",
+        "regenerate-and-stage",
+        "automatic-deployment",
+        "embedded-help"
+      ],
+      "locale": "en"
+    },
     "guide-app-documentation-readme": {
       "headings": [
-        "local-documentation-cydoc"
+        "local-documentation-cydoc",
+        "web-documentation"
       ],
       "locale": "en"
     },
