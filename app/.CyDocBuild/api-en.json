@@ -1,0 +1,14 @@
+{
+  "symbols": [
+    {
+      "key": "create_runtime",
+      "name": "create_runtime",
+      "language": "python",
+      "kind": "function",
+      "signature": "create_runtime(data_dir, **options)",
+      "description": "Create the application runtime and register its public operations. Import from tool in the installed application environment.",
+      "returnType": "Runtime",
+      "returns": "The configured CyToolsCore runtime; the caller owns its lifecycle."
+    }
+  ]
+}

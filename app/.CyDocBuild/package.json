@@ -1,0 +1,8 @@
+{
+  "name": "cydoc-application-manual",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "cydoc": "file:vendor/cydoc-0.1.0.tgz"
+  }
+}

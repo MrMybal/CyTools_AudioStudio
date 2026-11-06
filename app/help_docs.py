@@ -15,17 +15,17 @@ _workspace_frame = -1
 
 @lru_cache(maxsize=1)
 def catalog():
-    return json.loads((APP/'help/help-map.json').read_text('utf-8'))
+    return json.loads((APP/'Documentation/DocData/help-map.json').read_text('utf-8'))
 
 
 def help_url(page='overview', locale='en', anchor=None, media=None):
     """Encode a local file route; unknown legacy targets safely fall back to overview."""
-    index=APP/'help/index.html'
-    if not index.is_file():raise FileNotFoundError('The local manual is missing. Regenerate it with app/documentation/build.py.')
+    index=APP/'Documentation/Documentation.html'
+    if not index.is_file():raise FileNotFoundError('The local manual is missing. Repair or reinstall the application documentation.')
     data=catalog();page=data['legacyPaths'].get(str(page).replace('\\','/'),page)
-    aliases={'user-guide':'guide-lisez-moi','api':'operations','readme':'overview','help':'overview'}
+    aliases={'user-guide':'guide-lisez-moi','api':'operations','readme':'guide-readme','help':'overview'}
     page=aliases.get(page,page)
-    if page not in data['pages']:page='overview'
+    if page not in data['pages'] and page not in data.get('aliases',{}):page='overview'
     locale='fr' if str(locale).lower().startswith('fr') else 'en'
     fragment='#/'+quote(locale,safe='')+'/'+quote(str(page),safe='')
     if anchor:fragment+='/'+quote(str(anchor),safe='')
@@ -73,11 +73,11 @@ def contextual_page():
     lower=page.lower()
     candidates=[]
     if 'workflow' in lower:candidates=['guide-app-docs-workflow']
-    elif any(x in lower for x in ('install','model','compute')):candidates=['guide-app-docs-dependencies','guide-app-docs-runtimeinstallation','guide-app-docs-models']
-    elif 'update' in lower:candidates=['guide-app-updates','guide-app-docs-updates']
+    elif any(x in lower for x in ('install','model','compute')):candidates=['installation']
+    elif 'update' in lower:candidates=['settings']
     elif any(x in lower for x in ('viewer','3d')):candidates=['mesh-preview','guide-app-docs-meshviewer']
-    elif any(x in lower for x in ('log','diagnostic')):candidates=['guide-app-docs-standalonediagnosticsandmodels']
-    elif any(x in lower for x in ('option','setting')):candidates=['guide-app-ui-options','guide-app-docs-localization']
+    elif any(x in lower for x in ('log','diagnostic')):candidates=['troubleshooting']
+    elif any(x in lower for x in ('option','setting')):candidates=['settings']
     for id in candidates:
         if id in catalog()['pages']:return id
     for id in ('guide-readme','guide-app-readme','guide-lisez-moi'):

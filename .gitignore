@@ -34,3 +34,10 @@ app/native/bin/
 /_site/
 /_site.previous/
 /_pages-stage-*/
+
+# Private CyDoc build dependencies and work notes
+/app/.CyDocBuild/node_modules/
+/app/.CyDocBuild/internal/
+/app/.CyDocBuild/cydoc.active.json
+/app/.CyDocExport/
+/app/.CyDocExport.previous/

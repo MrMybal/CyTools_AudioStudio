@@ -24,11 +24,11 @@ jobs:
         with:
           python-version: '3.11'
       - name: Generate and validate the offline CyDoc reader
-        run: python app/documentation/build.py --install --check
+        run: python app/.CyDocBuild/build.py --install --check
       - name: Check the documentation publication boundary
         run: python app/tests/test_pages.py
       - name: Stage the complete reader
-        run: python app/documentation/publish.py
+        run: python app/.CyDocBuild/publish.py
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: _site

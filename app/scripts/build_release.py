@@ -36,7 +36,7 @@ PYTHON_NUGET_URL = 'https://www.nuget.org/api/v2/package/python/' + PYTHON_NUGET
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build_licences  # noqa: E402
 SDK_REQUIREMENT = build_licences.SDK_REQUIREMENT
-EXCLUDED_DIRS = {'__pycache__', '.pytest_cache'}
+EXCLUDED_DIRS = {'__pycache__', '.pytest_cache', '.CyDocBuild', '.CyDocExport', '.CyDocExport.previous', 'node_modules'}
 EXCLUDED_SUFFIXES = {'.pyc', '.pyo', '.obj'}
 
 
@@ -207,6 +207,6 @@ def main():
 if __name__ == '__main__':
     import subprocess as _doc_subprocess, sys as _doc_sys
     from pathlib import Path as _DocPath
-    _doc_build = _DocPath(__file__).resolve().parents[1] / 'documentation' / 'build.py'
+    _doc_build = _DocPath(__file__).resolve().parents[1] / '.CyDocBuild' / 'build.py'
     _doc_subprocess.run([_doc_sys.executable, str(_doc_build), '--check'], check=True)
     sys.exit(main())

@@ -1,4 +1,4 @@
-CyTools_AudioStudio 0.1.4 - third-party notices
+CyTools_AudioStudio 0.1.5 - third-party notices
 ====================================================
 
 Components used by the application, with their licence and their source. Generated from

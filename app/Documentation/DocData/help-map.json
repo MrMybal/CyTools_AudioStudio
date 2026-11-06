@@ -1,0 +1,554 @@
+{
+  "schemaVersion": 2,
+  "legacyPaths": {
+    "LISEZ-MOI.md": "guide-lisez-moi",
+    "README.md": "guide-readme",
+    "app/Docs/Architecture.md": "guide-app-docs-architecture",
+    "app/Docs/AutomaticInputs.md": "guide-app-docs-automaticinputs",
+    "app/Docs/CapabilityCoverage.md": "guide-app-docs-capabilitycoverage",
+    "app/Docs/CreatingYourFirstCyTool.md": "guide-app-docs-creatingyourfirstcytool",
+    "app/Docs/CyUIMigration.md": "guide-app-docs-cyuimigration",
+    "app/Docs/Dependencies.md": "guide-app-docs-dependencies",
+    "app/Docs/Downloads.md": "guide-app-docs-downloads",
+    "app/Docs/ErrorModel.md": "guide-app-docs-errormodel",
+    "app/Docs/Events.md": "guide-app-docs-events",
+    "app/Docs/FullOperationAccess.md": "guide-app-docs-fulloperationaccess",
+    "app/Docs/GenerationConfigurations.md": "guide-app-docs-generationconfigurations",
+    "app/Docs/ImplementationStatus.md": "guide-app-docs-implementationstatus",
+    "app/Docs/Index.md": "guide-app-docs-index",
+    "app/Docs/Jobs.md": "guide-app-docs-jobs",
+    "app/Docs/Licensing.md": "guide-app-docs-licensing",
+    "app/Docs/Localization.md": "guide-app-docs-localization",
+    "app/Docs/MCP.md": "guide-app-docs-mcp",
+    "app/Docs/MeshViewer.md": "guide-app-docs-meshviewer",
+    "app/Docs/Models.md": "guide-app-docs-models",
+    "app/Docs/MultiClient.md": "guide-app-docs-multiclient",
+    "app/Docs/Operations.md": "guide-app-docs-operations",
+    "app/Docs/Outputs.md": "guide-app-docs-outputs",
+    "app/Docs/Overview.md": "guide-app-docs-overview",
+    "app/Docs/Parameters.md": "guide-app-docs-parameters",
+    "app/Docs/Platforms.md": "guide-app-docs-platforms",
+    "app/Docs/PluginFormats.md": "guide-app-docs-pluginformats",
+    "app/Docs/Protocol.md": "guide-app-docs-protocol",
+    "app/Docs/Resources.md": "guide-app-docs-resources",
+    "app/Docs/Scheduler.md": "guide-app-docs-scheduler",
+    "app/Docs/SharedInstallation.md": "guide-app-docs-sharedinstallation",
+    "app/Docs/StandaloneDelivery.md": "guide-app-docs-standalonedelivery",
+    "app/Docs/StandaloneDiagnosticsAndModels.md": "guide-app-docs-standalonediagnosticsandmodels",
+    "app/Docs/TaskFiles.md": "guide-app-docs-taskfiles",
+    "app/Docs/ToolFinalization.md": "guide-app-docs-toolfinalization",
+    "app/Docs/ToolManifest.md": "guide-app-docs-toolmanifest",
+    "app/Docs/Transports.md": "guide-app-docs-transports",
+    "app/Docs/UnrealIntegration.md": "guide-app-docs-unrealintegration",
+    "app/Docs/UpdateExistingProducts.md": "guide-app-docs-updateexistingproducts",
+    "app/Docs/Validation.md": "guide-app-docs-validation",
+    "app/Docs/Versioning.md": "guide-app-docs-versioning",
+    "app/Docs/Workers.md": "guide-app-docs-workers",
+    "app/README.md": "guide-app-readme",
+    "app/documentation/PUBLISHING.md": "guide-app-documentation-publishing",
+    "app/documentation/README.md": "guide-app-documentation-readme",
+    "app/documentation/VALIDATION.md": "guide-app-documentation-validation",
+    "app/models/README.md": "guide-app-models-readme",
+    "app/native/README.md": "guide-app-native-readme"
+  },
+  "aliases": {
+    "guide-app-docs-architecture": "overview",
+    "guide-app-docs-automaticinputs": "overview",
+    "guide-app-docs-capabilitycoverage": "overview",
+    "guide-app-docs-creatingyourfirstcytool": "overview",
+    "guide-app-docs-cyuimigration": "overview",
+    "guide-app-docs-dependencies": "overview",
+    "guide-app-docs-downloads": "overview",
+    "guide-app-docs-errormodel": "overview",
+    "guide-app-docs-events": "overview",
+    "guide-app-docs-fulloperationaccess": "overview",
+    "guide-app-docs-generationconfigurations": "overview",
+    "guide-app-docs-implementationstatus": "overview",
+    "guide-app-docs-index": "overview",
+    "guide-app-docs-jobs": "overview",
+    "guide-app-docs-licensing": "overview",
+    "guide-app-docs-localization": "overview",
+    "guide-app-docs-mcp": "overview",
+    "guide-app-docs-meshviewer": "overview",
+    "guide-app-docs-models": "overview",
+    "guide-app-docs-multiclient": "overview",
+    "guide-app-docs-operations": "overview",
+    "guide-app-docs-outputs": "overview",
+    "guide-app-docs-overview": "overview",
+    "guide-app-docs-parameters": "overview",
+    "guide-app-docs-platforms": "overview",
+    "guide-app-docs-protocol": "overview",
+    "guide-app-docs-resources": "overview",
+    "guide-app-docs-scheduler": "overview",
+    "guide-app-docs-sharedinstallation": "overview",
+    "guide-app-docs-standalonedelivery": "overview",
+    "guide-app-docs-standalonediagnosticsandmodels": "overview",
+    "guide-app-docs-taskfiles": "overview",
+    "guide-app-docs-toolfinalization": "overview",
+    "guide-app-docs-toolmanifest": "overview",
+    "guide-app-docs-transports": "overview",
+    "guide-app-docs-unrealintegration": "overview",
+    "guide-app-docs-updateexistingproducts": "overview",
+    "guide-app-docs-validation": "overview",
+    "guide-app-docs-versioning": "overview",
+    "guide-app-docs-workers": "overview",
+    "guide-app-readme": "operations",
+    "guide-app-documentation-publishing": "overview",
+    "guide-app-documentation-readme": "overview",
+    "guide-app-documentation-validation": "overview",
+    "guide-app-models-readme": "overview",
+    "guide-app-native-readme": "overview",
+    "home": "overview",
+    "readme": "guide-readme",
+    "help": "overview",
+    "user-guide": "guide-lisez-moi",
+    "api": "operations",
+    "migration-notes": "overview",
+    "reference-app-docs-agentguide-md": "overview",
+    "reference-app-docs-agentprompt-md": "overview",
+    "reference-app-licenses-json": "overview",
+    "reference-licences-cydoc-mit-txt": "overview",
+    "reference-licences-cytoolscore-mit-txt": "overview",
+    "reference-licences-cyui-mit-txt": "overview",
+    "reference-licences-license-cytoolscore-txt": "overview",
+    "reference-licences-sources-txt": "overview",
+    "reference-licences-thirdparty-notices-txt": "overview",
+    "reference-license": "overview",
+    "source-sources-tool-py": "operations",
+    "translation-report": "overview"
+  },
+  "pages": {
+    "guide-app-docs-pluginformats": {
+      "headings": [
+        "plugins-audio-vst3-clap-lv2-jsfx",
+        "utilisation",
+        "scripts-jsfx",
+        "execution-et-limites-verifiees"
+      ],
+      "locale": "fr"
+    },
+    "guide-lisez-moi": {
+      "headings": [
+        "cytools-audiostudio",
+        "demarrer",
+        "traitement-par-lots-d-une-session-cli-mcp-sans-interface",
+        "voix-presets-et-annotations",
+        "emplacements"
+      ],
+      "locale": "fr"
+    },
+    "guide-readme": {
+      "headings": [
+        "workflow",
+        "requirements"
+      ],
+      "locale": "fr"
+    },
+    "installation": {
+      "headings": [
+        "start",
+        "models",
+        "storage"
+      ],
+      "locale": "fr"
+    },
+    "licenses": {
+      "headings": [
+        "application",
+        "models"
+      ],
+      "locale": "fr"
+    },
+    "operation-analyze-audio": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-batch-process": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-batch-session": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-convert-audio": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-delete-voice-preset": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-describe-plugin": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-diagnose-backend": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-edit-session": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-engine-status": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-generate-music": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-generate-sfx": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-generate-voice": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-get-workflow": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-install-engine": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-install-model": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-list-effects": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-list-models": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-list-plugins": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-list-sfx-types": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-list-voice-presets": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-list-voices": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-list-workflows": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-master-audio": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-prepare-tts-text": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-preview-sfx-recipe": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-process-audio": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-read-jsfx": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-release-workers": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-remix-music": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-remove-model": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-render-session": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-repaint-music": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-save-jsfx": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-save-voice-preset": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-save-workflow": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-scan-plugins": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-transcribe-audio": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-validate-jsfx": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-verify-model": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-voice-fishspeech": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-voice-piper": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-voice-qwen3tts": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operation-write-lyrics": {
+      "headings": [
+        "contract",
+        "returns",
+        "behaviour"
+      ],
+      "locale": "fr"
+    },
+    "operations": {
+      "headings": [
+        "cli",
+        "mcp",
+        "task-files",
+        "operations"
+      ],
+      "locale": "fr"
+    },
+    "overview": {
+      "headings": [
+        "getting-started",
+        "topics"
+      ],
+      "locale": "fr"
+    },
+    "screenshots": {
+      "headings": [],
+      "locale": "fr"
+    },
+    "settings": {
+      "headings": [
+        "appearance",
+        "configurations",
+        "help"
+      ],
+      "locale": "fr"
+    },
+    "troubleshooting": {
+      "headings": [
+        "installation",
+        "jobs",
+        "outputs"
+      ],
+      "locale": "fr"
+    },
+    "python-create-runtime-create-runtime": {
+      "headings": [
+        "signature",
+        "returns"
+      ],
+      "locale": "fr"
+    }
+  },
+  "modules": [
+    "gallery",
+    "image"
+  ]
+}

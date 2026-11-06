@@ -1,4 +1,4 @@
-CyTools_AudioStudio 0.1.4 - sources and references of the delivered components
+CyTools_AudioStudio 0.1.5 - sources and references of the delivered components
 ====================================================================================
 
 Product

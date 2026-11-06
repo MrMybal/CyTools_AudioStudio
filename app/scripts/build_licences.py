@@ -132,7 +132,7 @@ def documents():
     licence, notice = sdk_texts()
     return {
         LICENCES / 'CyToolsCore-MIT.txt': licence,
-        LICENCES / 'CyDoc-MIT.txt': (APP / 'documentation/CyDoc-MIT.txt').read_text('utf-8'),
+        LICENCES / 'CyDoc-MIT.txt': (APP / 'Documentation/DocData/CyDoc-MIT.txt').read_text('utf-8'),
         LICENCES / 'LICENSE-CyToolsCore.txt': notice,
         APP / 'LICENSE-CyToolsCore.txt': notice,
         LICENCES / 'SOURCES.txt': sources_text(version),

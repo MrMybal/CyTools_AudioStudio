@@ -1,0 +1,5424 @@
+# CyTools_AudioStudio — application integration
+
+Use the installed private Python interpreter and `app/tool.py`. CLI inspection: `describe`, `list-operations`, and `describe-operation OPERATION_ID`; MCP: `mcp`. File inputs accept readable absolute paths and are automatically imported into the task. Export wanted outputs before finishing a temporary task. Never accept a model licence or file modification confirmation for the user.
+
+## Public operation contracts
+
+```json
+[
+  {
+    "id": "process_audio",
+    "name": "Process audio",
+    "description": "Render a workflow (effects, VST3/CLAP/LV2/JSFX plugins, models) over a file, with tail rendering so reverb and delay decays are never cut. A selection processes only that region and overlaps its tail onto the following audio.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Audio file to process",
+          "x-cy-kind": "Audio",
+          "maxLength": 1024
+        },
+        "workflow": {
+          "type": "object",
+          "description": "Inline workflow document (format cytools-audiostudio-workflow). Use workflow_name instead to reference a saved workflow.",
+          "x-cy-kind": "Object",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "workflow_name": {
+          "type": "string",
+          "description": "Name of a workflow saved in data/workflows (see list_workflows). Empty = no processing.",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        },
+        "output_format": {
+          "enum": [
+            "wav",
+            "flac",
+            "mp3",
+            "ogg",
+            "aac"
+          ],
+          "description": "Output audio format",
+          "default": "wav",
+          "x-cy-kind": "Enum"
+        },
+        "subtype": {
+          "enum": [
+            "PCM_16",
+            "PCM_24",
+            "PCM_32",
+            "FLOAT"
+          ],
+          "description": "Sample format for WAV/FLAC/AIFF (ignored by lossy formats)",
+          "default": "PCM_24",
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "bitrate_kbps": {
+          "enum": [
+            64,
+            96,
+            128,
+            160,
+            192,
+            256,
+            320
+          ],
+          "description": "Bitrate in kbit/s for MP3/AAC",
+          "default": 192,
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "selection_start": {
+          "type": "number",
+          "description": "Start of the region to process (s); -1 = whole file",
+          "default": -1.0,
+          "x-cy-kind": "Float",
+          "minimum": -1.0,
+          "maximum": 360000.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "selection_end": {
+          "type": "number",
+          "description": "End of the region to process (s); -1 = end of file",
+          "default": -1.0,
+          "x-cy-kind": "Float",
+          "minimum": -1.0,
+          "maximum": 360000.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "tail": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Keep rendering after the input ends until the output is silent (reverb/delay tails)",
+              "default": true,
+              "x-cy-kind": "Boolean"
+            },
+            "threshold_db": {
+              "type": "number",
+              "description": "Silence threshold (dBFS)",
+              "default": -60.0,
+              "x-cy-kind": "Float",
+              "minimum": -120.0,
+              "maximum": 0.0
+            },
+            "max_seconds": {
+              "type": "number",
+              "description": "Maximum extension (s)",
+              "default": 10.0,
+              "x-cy-kind": "Float",
+              "minimum": 0.0,
+              "maximum": 600.0
+            },
+            "hold_seconds": {
+              "type": "number",
+              "description": "Kept after the last audible sample (s)",
+              "default": 0.1,
+              "x-cy-kind": "Float",
+              "minimum": 0.0,
+              "maximum": 10.0
+            }
+          },
+          "additionalProperties": false,
+          "description": "Tail rendering override; when omitted the workflow settings apply.",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "output_name": {
+          "type": "string",
+          "description": "Output file name without extension; default = input name + suffix",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "input"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Result file",
+          "x-cy-kind": "File",
+          "maxLength": 1024
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 48000,
+          "x-cy-kind": "Integer"
+        },
+        "channels": {
+          "type": "integer",
+          "description": "Channels",
+          "default": 2,
+          "x-cy-kind": "Integer"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Duration (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "description": "Size in bytes",
+          "default": 0,
+          "x-cy-kind": "Integer"
+        },
+        "report": {
+          "type": "object",
+          "description": "Render report"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "file",
+        "mimeType",
+        "sampleRate",
+        "channels",
+        "durationSeconds"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "file",
+        "type": "Audio",
+        "description": "Processed audio file"
+      }
+    ],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 2147483648,
+      "cpuThreads": 4,
+      "diskBytes": 2147483648
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "batch_process",
+    "name": "Batch process",
+    "description": "Render the same workflow over several files. Each output keeps the source name plus a suffix.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "description": "Audio files",
+          "items": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "minItems": 1,
+          "maxItems": 500,
+          "x-cy-kind": "Files"
+        },
+        "workflow": {
+          "type": "object",
+          "description": "Inline workflow document (format cytools-audiostudio-workflow). Use workflow_name instead to reference a saved workflow.",
+          "x-cy-kind": "Object",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "workflow_name": {
+          "type": "string",
+          "description": "Name of a workflow saved in data/workflows (see list_workflows). Empty = no processing.",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        },
+        "output_format": {
+          "enum": [
+            "wav",
+            "flac",
+            "mp3",
+            "ogg",
+            "aac"
+          ],
+          "description": "Output audio format",
+          "default": "wav",
+          "x-cy-kind": "Enum"
+        },
+        "subtype": {
+          "enum": [
+            "PCM_16",
+            "PCM_24",
+            "PCM_32",
+            "FLOAT"
+          ],
+          "description": "Sample format for WAV/FLAC/AIFF (ignored by lossy formats)",
+          "default": "PCM_24",
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "bitrate_kbps": {
+          "enum": [
+            64,
+            96,
+            128,
+            160,
+            192,
+            256,
+            320
+          ],
+          "description": "Bitrate in kbit/s for MP3/AAC",
+          "default": 192,
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "suffix": {
+          "type": "string",
+          "description": "Suffix appended to each output name",
+          "default": "_processed",
+          "maxLength": 40,
+          "x-cy-kind": "String"
+        },
+        "tail": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Keep rendering after the input ends until the output is silent (reverb/delay tails)",
+              "default": true,
+              "x-cy-kind": "Boolean"
+            },
+            "threshold_db": {
+              "type": "number",
+              "description": "Silence threshold (dBFS)",
+              "default": -60.0,
+              "x-cy-kind": "Float",
+              "minimum": -120.0,
+              "maximum": 0.0
+            },
+            "max_seconds": {
+              "type": "number",
+              "description": "Maximum extension (s)",
+              "default": 10.0,
+              "x-cy-kind": "Float",
+              "minimum": 0.0,
+              "maximum": 600.0
+            },
+            "hold_seconds": {
+              "type": "number",
+              "description": "Kept after the last audible sample (s)",
+              "default": 0.1,
+              "x-cy-kind": "Float",
+              "minimum": 0.0,
+              "maximum": 10.0
+            }
+          },
+          "additionalProperties": false,
+          "description": "Tail rendering override; when omitted the workflow settings apply.",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "continue_on_error": {
+          "type": "boolean",
+          "description": "Keep going when one file fails",
+          "default": true,
+          "x-cy-kind": "Boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "inputs"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "count": {
+          "type": "integer",
+          "description": "Processed files",
+          "default": 0,
+          "x-cy-kind": "Integer"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "results",
+        "count"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "results",
+        "type": "Object",
+        "description": "One entry per processed file"
+      }
+    ],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 2147483648,
+      "cpuThreads": 4,
+      "diskBytes": 8589934592
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "convert_audio",
+    "name": "Convert audio",
+    "description": "Change format, sample rate, bit depth or channel count.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Audio file",
+          "x-cy-kind": "Audio",
+          "maxLength": 1024
+        },
+        "output_format": {
+          "enum": [
+            "wav",
+            "flac",
+            "mp3",
+            "ogg",
+            "aac"
+          ],
+          "description": "Output audio format",
+          "default": "wav",
+          "x-cy-kind": "Enum"
+        },
+        "subtype": {
+          "enum": [
+            "PCM_16",
+            "PCM_24",
+            "PCM_32",
+            "FLOAT"
+          ],
+          "description": "Sample format for WAV/FLAC/AIFF (ignored by lossy formats)",
+          "default": "PCM_24",
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "bitrate_kbps": {
+          "enum": [
+            64,
+            96,
+            128,
+            160,
+            192,
+            256,
+            320
+          ],
+          "description": "Bitrate in kbit/s for MP3/AAC",
+          "default": 192,
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "samplerate": {
+          "enum": [
+            0,
+            8000,
+            11025,
+            16000,
+            22050,
+            24000,
+            32000,
+            44100,
+            48000,
+            88200,
+            96000
+          ],
+          "description": "Target sample rate; 0 keeps the source rate",
+          "default": 0,
+          "x-cy-kind": "Enum"
+        },
+        "channels": {
+          "enum": [
+            0,
+            1,
+            2
+          ],
+          "description": "Target channels; 0 keeps the source layout",
+          "default": 0,
+          "x-cy-kind": "Enum"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "input"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Result file",
+          "x-cy-kind": "File",
+          "maxLength": 1024
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 48000,
+          "x-cy-kind": "Integer"
+        },
+        "channels": {
+          "type": "integer",
+          "description": "Channels",
+          "default": 2,
+          "x-cy-kind": "Integer"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Duration (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "description": "Size in bytes",
+          "default": 0,
+          "x-cy-kind": "Integer"
+        },
+        "report": {
+          "type": "object",
+          "description": "Render report"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "file",
+        "mimeType",
+        "sampleRate",
+        "channels",
+        "durationSeconds"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "file",
+        "type": "Audio",
+        "description": "Converted file"
+      }
+    ],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 1073741824,
+      "cpuThreads": 2,
+      "diskBytes": 2147483648
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "analyze_audio",
+    "name": "Analyze audio",
+    "description": "Duration, peak, RMS, integrated loudness (LUFS), true peak, clipping, DC offset, leading/trailing silence.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Audio file",
+          "x-cy-kind": "Audio",
+          "maxLength": 1024
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "input"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [
+      {
+        "id": "info",
+        "type": "Object",
+        "description": "Measurements"
+      }
+    ],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 1073741824,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "render_session",
+    "name": "Render session",
+    "description": "Mix an editor session (tracks, insert chains, automation lanes, master bus) to a file; stateful inserts ring out after the end (tail).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string",
+          "description": "Session folder or session.json saved by the editor",
+          "maxLength": 1024,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        },
+        "output_format": {
+          "enum": [
+            "wav",
+            "flac",
+            "mp3",
+            "ogg",
+            "aac"
+          ],
+          "description": "Output audio format",
+          "default": "wav",
+          "x-cy-kind": "Enum"
+        },
+        "subtype": {
+          "enum": [
+            "PCM_16",
+            "PCM_24",
+            "PCM_32",
+            "FLOAT"
+          ],
+          "description": "Sample format for WAV/FLAC/AIFF (ignored by lossy formats)",
+          "default": "PCM_24",
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "bitrate_kbps": {
+          "enum": [
+            64,
+            96,
+            128,
+            160,
+            192,
+            256,
+            320
+          ],
+          "description": "Bitrate in kbit/s for MP3/AAC",
+          "default": 192,
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "tail": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Keep rendering after the input ends until the output is silent (reverb/delay tails)",
+              "default": true,
+              "x-cy-kind": "Boolean"
+            },
+            "threshold_db": {
+              "type": "number",
+              "description": "Silence threshold (dBFS)",
+              "default": -60.0,
+              "x-cy-kind": "Float",
+              "minimum": -120.0,
+              "maximum": 0.0
+            },
+            "max_seconds": {
+              "type": "number",
+              "description": "Maximum extension (s)",
+              "default": 10.0,
+              "x-cy-kind": "Float",
+              "minimum": 0.0,
+              "maximum": 600.0
+            },
+            "hold_seconds": {
+              "type": "number",
+              "description": "Kept after the last audible sample (s)",
+              "default": 0.1,
+              "x-cy-kind": "Float",
+              "minimum": 0.0,
+              "maximum": 10.0
+            }
+          },
+          "additionalProperties": false,
+          "description": "Tail rendering override; when omitted the workflow settings apply.",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "selection": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "default": null,
+          "description": "Optional [start, end] seconds to render instead of the whole session",
+          "x-cy-kind": "Array"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "session"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Result file",
+          "x-cy-kind": "File",
+          "maxLength": 1024
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 48000,
+          "x-cy-kind": "Integer"
+        },
+        "channels": {
+          "type": "integer",
+          "description": "Channels",
+          "default": 2,
+          "x-cy-kind": "Integer"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Duration (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "description": "Size in bytes",
+          "default": 0,
+          "x-cy-kind": "Integer"
+        },
+        "report": {
+          "type": "object",
+          "description": "Render report"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "file",
+        "mimeType",
+        "sampleRate",
+        "channels",
+        "durationSeconds"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "file",
+        "type": "Audio",
+        "description": "Rendered mix"
+      }
+    ],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 2147483648,
+      "cpuThreads": 2,
+      "diskBytes": 2147483648
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "edit_session",
+    "name": "Edit session (scripted)",
+    "description": "Create or open a session, apply actions (add / replace / remove tracks, add / move / reverse / remove clips, insert chains, master, tail, automation), save it and optionally render the mix. The headless counterpart of the editor.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string",
+          "description": "Existing session folder or session.json; empty = new session",
+          "maxLength": 1024,
+          "x-cy-kind": "String"
+        },
+        "samplerate": {
+          "enum": [
+            44100,
+            48000,
+            96000
+          ],
+          "description": "Sample rate of a new session",
+          "default": 48000,
+          "x-cy-kind": "Enum"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "action"
+            ],
+            "properties": {
+              "action": {
+                "enum": [
+                  "add_track",
+                  "replace_audio",
+                  "remove_track",
+                  "add_clip",
+                  "move_clip",
+                  "remove_clip",
+                  "reverse_clip",
+                  "set_track",
+                  "set_inserts",
+                  "set_master",
+                  "clear_automation",
+                  "set_tail"
+                ],
+                "description": "What to do",
+                "default": "add_track",
+                "x-cy-kind": "Enum"
+              },
+              "file": {
+                "type": "string",
+                "description": "Audio file (add_track, replace_audio, add_clip)",
+                "x-cy-kind": "Audio",
+                "maxLength": 1024
+              },
+              "track": {
+                "type": "string",
+                "description": "Track id or exact name",
+                "maxLength": 200,
+                "x-cy-kind": "String"
+              },
+              "name": {
+                "type": "string",
+                "description": "Track or clip name",
+                "maxLength": 200,
+                "x-cy-kind": "String"
+              },
+              "clip": {
+                "type": "string",
+                "description": "Clip id, exact name or index such as \"0\" (move_clip, remove_clip, reverse_clip)",
+                "maxLength": 200,
+                "x-cy-kind": "String"
+              },
+              "to_track": {
+                "type": "string",
+                "description": "Track that receives the clip (move_clip); its inserts then apply to it",
+                "maxLength": 200,
+                "x-cy-kind": "String"
+              },
+              "after_clips": {
+                "type": "boolean",
+                "description": "add_clip: a position already taken by a clip puts the new clip after the last one",
+                "default": true,
+                "x-cy-kind": "Boolean"
+              },
+              "target": {
+                "type": "string",
+                "description": "Track id / name, or 'master'",
+                "maxLength": 200,
+                "x-cy-kind": "String"
+              },
+              "offset_seconds": {
+                "type": "number",
+                "description": "Start position",
+                "default": 0.0,
+                "x-cy-kind": "Float",
+                "minimum": 0.0
+              },
+              "gain_db": {
+                "type": "number",
+                "description": "Gain",
+                "default": 0.0,
+                "x-cy-kind": "Float",
+                "minimum": -60.0,
+                "maximum": 24.0
+              },
+              "pan": {
+                "type": "number",
+                "description": "Pan",
+                "default": 0.0,
+                "x-cy-kind": "Float",
+                "minimum": -1.0,
+                "maximum": 1.0
+              },
+              "mute": {
+                "type": "boolean",
+                "description": "Mute",
+                "default": false,
+                "x-cy-kind": "Boolean"
+              },
+              "solo": {
+                "type": "boolean",
+                "description": "Solo",
+                "default": false,
+                "x-cy-kind": "Boolean"
+              },
+              "inserts_from": {
+                "type": "string",
+                "description": "Copy the chain and lanes of this track",
+                "maxLength": 200,
+                "x-cy-kind": "String"
+              },
+              "workflow_name": {
+                "type": "string",
+                "description": "Saved workflow to install as the chain",
+                "maxLength": 200,
+                "x-cy-kind": "String"
+              },
+              "nodes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "x-cy-kind": "Array"
+              },
+              "key": {
+                "type": "string",
+                "description": "Automation lane key",
+                "maxLength": 200,
+                "x-cy-kind": "String"
+              }
+            }
+          },
+          "maxItems": 500,
+          "default": [],
+          "description": "Actions applied in order",
+          "x-cy-kind": "Array"
+        },
+        "save_as": {
+          "type": "string",
+          "description": "Session name (under data/sessions) or absolute folder; empty = do not save",
+          "maxLength": 1024,
+          "x-cy-kind": "String"
+        },
+        "render": {
+          "type": "boolean",
+          "description": "Render the mix after the actions",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        },
+        "output_format": {
+          "enum": [
+            "wav",
+            "flac",
+            "mp3",
+            "ogg",
+            "aac"
+          ],
+          "description": "Output audio format",
+          "default": "wav",
+          "x-cy-kind": "Enum"
+        },
+        "subtype": {
+          "enum": [
+            "PCM_16",
+            "PCM_24",
+            "PCM_32",
+            "FLOAT"
+          ],
+          "description": "Sample format for WAV/FLAC/AIFF (ignored by lossy formats)",
+          "default": "PCM_24",
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "bitrate_kbps": {
+          "enum": [
+            64,
+            96,
+            128,
+            160,
+            192,
+            256,
+            320
+          ],
+          "description": "Bitrate in kbit/s for MP3/AAC",
+          "default": 192,
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "tail": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Keep rendering after the input ends until the output is silent (reverb/delay tails)",
+              "default": true,
+              "x-cy-kind": "Boolean"
+            },
+            "threshold_db": {
+              "type": "number",
+              "description": "Silence threshold (dBFS)",
+              "default": -60.0,
+              "x-cy-kind": "Float",
+              "minimum": -120.0,
+              "maximum": 0.0
+            },
+            "max_seconds": {
+              "type": "number",
+              "description": "Maximum extension (s)",
+              "default": 10.0,
+              "x-cy-kind": "Float",
+              "minimum": 0.0,
+              "maximum": 600.0
+            },
+            "hold_seconds": {
+              "type": "number",
+              "description": "Kept after the last audible sample (s)",
+              "default": 0.1,
+              "x-cy-kind": "Float",
+              "minimum": 0.0,
+              "maximum": 10.0
+            }
+          },
+          "additionalProperties": false,
+          "description": "Tail rendering override; when omitted the workflow settings apply.",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "selection": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "default": null,
+          "description": "Optional [start, end] seconds to render",
+          "x-cy-kind": "Array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "session": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "document": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "actions",
+        "document"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "document",
+        "type": "Object",
+        "description": "Session description after the actions"
+      },
+      {
+        "id": "file",
+        "type": "Audio",
+        "description": "Rendered mix (when render is true)"
+      }
+    ],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 2147483648,
+      "cpuThreads": 2,
+      "diskBytes": 4294967296
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "batch_session",
+    "name": "Batch sounds through a session",
+    "description": "Render a session once per input sound: each sound is placed in a slot track (an existing placeholder track whose audio is replaced, keeping its inserts and automation, or a new track), the mix is rendered with the tail, then the next sound takes its place.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string",
+          "description": "Session folder or session.json",
+          "maxLength": 1024,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        },
+        "inputs": {
+          "type": "array",
+          "description": "Sounds to batch",
+          "items": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "minItems": 1,
+          "maxItems": 500,
+          "x-cy-kind": "Files"
+        },
+        "slot": {
+          "type": "object",
+          "properties": {
+            "track": {
+              "type": "string",
+              "description": "Placeholder track name/id to replace, or name of the track to create",
+              "default": "Batch",
+              "maxLength": 200,
+              "x-cy-kind": "String"
+            },
+            "offset_seconds": {
+              "type": "number",
+              "description": "Start position of the sound",
+              "default": 0.0,
+              "x-cy-kind": "Float",
+              "minimum": 0.0
+            },
+            "gain_db": {
+              "type": "number",
+              "description": "Gain",
+              "default": 0.0,
+              "x-cy-kind": "Float",
+              "minimum": -60.0,
+              "maximum": 24.0
+            },
+            "pan": {
+              "type": "number",
+              "description": "Pan",
+              "default": 0.0,
+              "x-cy-kind": "Float",
+              "minimum": -1.0,
+              "maximum": 1.0
+            },
+            "inserts_from": {
+              "type": "string",
+              "description": "Copy the chain of this track onto a new slot track",
+              "maxLength": 200,
+              "x-cy-kind": "String"
+            },
+            "workflow_name": {
+              "type": "string",
+              "description": "Saved workflow to install on a new slot track",
+              "maxLength": 200,
+              "x-cy-kind": "String"
+            },
+            "solo": {
+              "type": "boolean",
+              "description": "Render the slot track alone (other tracks muted)",
+              "default": false,
+              "x-cy-kind": "Boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "output_dir": {
+          "type": "string",
+          "description": "Output folder; empty = job workspace",
+          "maxLength": 1024,
+          "x-cy-kind": "String"
+        },
+        "suffix": {
+          "type": "string",
+          "description": "Suffix appended to each output name",
+          "default": "",
+          "maxLength": 40,
+          "x-cy-kind": "String"
+        },
+        "output_format": {
+          "enum": [
+            "wav",
+            "flac",
+            "mp3",
+            "ogg",
+            "aac"
+          ],
+          "description": "Output audio format",
+          "default": "wav",
+          "x-cy-kind": "Enum"
+        },
+        "subtype": {
+          "enum": [
+            "PCM_16",
+            "PCM_24",
+            "PCM_32",
+            "FLOAT"
+          ],
+          "description": "Sample format for WAV/FLAC/AIFF (ignored by lossy formats)",
+          "default": "PCM_24",
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "bitrate_kbps": {
+          "enum": [
+            64,
+            96,
+            128,
+            160,
+            192,
+            256,
+            320
+          ],
+          "description": "Bitrate in kbit/s for MP3/AAC",
+          "default": 192,
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "tail": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Keep rendering after the input ends until the output is silent (reverb/delay tails)",
+              "default": true,
+              "x-cy-kind": "Boolean"
+            },
+            "threshold_db": {
+              "type": "number",
+              "description": "Silence threshold (dBFS)",
+              "default": -60.0,
+              "x-cy-kind": "Float",
+              "minimum": -120.0,
+              "maximum": 0.0
+            },
+            "max_seconds": {
+              "type": "number",
+              "description": "Maximum extension (s)",
+              "default": 10.0,
+              "x-cy-kind": "Float",
+              "minimum": 0.0,
+              "maximum": 600.0
+            },
+            "hold_seconds": {
+              "type": "number",
+              "description": "Kept after the last audible sample (s)",
+              "default": 0.1,
+              "x-cy-kind": "Float",
+              "minimum": 0.0,
+              "maximum": 10.0
+            }
+          },
+          "additionalProperties": false,
+          "description": "Tail rendering override; when omitted the workflow settings apply.",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "selection": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "default": null,
+          "description": "Optional [start, end] seconds to render",
+          "x-cy-kind": "Array"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "session",
+        "inputs"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "count": {
+          "type": "integer",
+          "description": "Rendered files",
+          "default": 0,
+          "x-cy-kind": "Integer"
+        },
+        "outputDir": {
+          "type": "string",
+          "description": "Folder",
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "results",
+        "count"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "results",
+        "type": "Object",
+        "description": "One entry per rendered sound"
+      }
+    ],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 2147483648,
+      "cpuThreads": 4,
+      "diskBytes": 8589934592
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "list_effects",
+    "name": "List effects",
+    "description": "Native effects available as workflow nodes and track inserts, with their parameter schemas; \"realtime\" marks the ones usable as inserts, \"sidechain\" the ones keyed by another track.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "list_workflows",
+    "name": "List workflows",
+    "description": "Saved workflows in data/workflows.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "get_workflow",
+    "name": "Get workflow",
+    "description": "Read a saved workflow document.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Workflow name or path",
+          "maxLength": 260,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "save_workflow",
+    "name": "Save workflow",
+    "description": "Persist a workflow document under data/workflows (explicit user action).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Workflow name",
+          "maxLength": 80,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        },
+        "workflow": {
+          "type": "object",
+          "description": "Inline workflow document (format cytools-audiostudio-workflow). Use workflow_name instead to reference a saved workflow.",
+          "x-cy-kind": "Object",
+          "x-cy-ui": {}
+        },
+        "overwrite": {
+          "type": "boolean",
+          "description": "Replace an existing workflow of that name",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "workflow"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Saved path",
+          "x-cy-kind": "String"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name",
+          "x-cy-kind": "String"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Chain summary",
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "path"
+      ]
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "scan_plugins",
+    "name": "Scan audio plugins",
+    "description": "Scan folders for VST3, CLAP, LV2 and JSFX plugins in an isolated worker process and cache their parameters. A crashing plugin is reported, not fatal.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "directories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "maxItems": 32,
+          "default": [],
+          "description": "Extra folders; the standard plugin folders are always scanned",
+          "x-cy-kind": "Array"
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Rescan plugins already cached",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "plugins": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "failures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "count": {
+          "type": "integer",
+          "description": "Plugins found",
+          "default": 0,
+          "x-cy-kind": "Integer"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "plugins",
+        "count"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "plugins",
+        "type": "Object",
+        "description": "Plugin catalogue"
+      }
+    ],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 1073741824,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "list_plugins",
+    "name": "List audio plugins",
+    "description": "Cached VST3, CLAP, LV2 and JSFX catalogue (run scan_plugins first).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "describe_plugin",
+    "name": "Describe audio plugin",
+    "description": "Load one VST3, CLAP, LV2 or JSFX plugin in a worker and return its parameters.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "plugin": {
+          "type": "string",
+          "description": "Path to a VST3, CLAP, LV2 bundle or JSFX script",
+          "x-cy-kind": "File",
+          "maxLength": 1024
+        },
+        "plugin_name": {
+          "type": "string",
+          "description": "Plugin name or ID within a bundle",
+          "default": "",
+          "maxLength": 1024,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "plugin"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 1073741824,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "read_jsfx",
+    "name": "Read JSFX script",
+    "description": "Read a JSFX script without executing it.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "script": {
+          "type": "string",
+          "description": "JSFX source path",
+          "x-cy-kind": "File",
+          "maxLength": 1024
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "script"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "validate_jsfx",
+    "name": "Compile JSFX script",
+    "description": "Compile source in an isolated process. Relative imports resolve beside the selected source directory. Does not replace any script.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "JSFX source code",
+          "maxLength": 2097152,
+          "minLength": 1,
+          "x-cy-kind": "MultilineString"
+        },
+        "directory": {
+          "type": "string",
+          "description": "Directory for relative JSFX imports",
+          "default": "",
+          "maxLength": 1024,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "source"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 268435456,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "save_jsfx",
+    "name": "Save JSFX script",
+    "description": "Compile first, then save under data/scripts/JSFX. A compilation error preserves the existing script.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Script name without extension",
+          "maxLength": 80,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        },
+        "source": {
+          "type": "string",
+          "description": "JSFX source code",
+          "maxLength": 2097152,
+          "minLength": 1,
+          "x-cy-kind": "MultilineString"
+        },
+        "overwrite": {
+          "type": "boolean",
+          "description": "Replace existing script",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "source"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 268435456,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "generate_sfx",
+    "name": "Generate sound effect",
+    "description": "Text to sound effect. Backend sfx_procedural synthesises deterministically from a catalogue of 36 archetypes (no model, instant); backend audioldm runs the AudioLDM diffusion model on CPU or CUDA.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Description of the sound (English or French)",
+          "maxLength": 600,
+          "minLength": 1,
+          "x-cy-kind": "MultilineString"
+        },
+        "negative_prompt": {
+          "type": "string",
+          "description": "What to avoid (audioldm only)",
+          "default": "",
+          "maxLength": 600,
+          "x-cy-kind": "String",
+          "advanced": true
+        },
+        "duration_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0.2,
+          "maximum": 30.0,
+          "default": null,
+          "description": "Length in seconds; null = natural length (procedural) or 5 s (audioldm)",
+          "x-cy-kind": "Float"
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Seed; variation N uses seed+N",
+          "default": 0,
+          "x-cy-kind": "Seed",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "variations": {
+          "type": "integer",
+          "description": "Number of variations",
+          "default": 1,
+          "x-cy-kind": "Integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "sample_rate": {
+          "enum": [
+            16000,
+            22050,
+            24000,
+            44100,
+            48000
+          ],
+          "description": "Output sample rate",
+          "default": 44100,
+          "x-cy-kind": "Enum"
+        },
+        "bit_depth": {
+          "enum": [
+            16,
+            24
+          ],
+          "description": "WAV bit depth",
+          "default": 16,
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "peak_dbfs": {
+          "type": "number",
+          "description": "Peak normalisation target (dBFS)",
+          "default": -1.0,
+          "x-cy-kind": "Float",
+          "minimum": -40.0,
+          "maximum": 0.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "steps": {
+          "type": "integer",
+          "description": "Diffusion steps (audioldm only)",
+          "default": 20,
+          "x-cy-kind": "Integer",
+          "minimum": 5,
+          "maximum": 100,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "guidance_scale": {
+          "type": "number",
+          "description": "Guidance scale (audioldm only)",
+          "default": 2.5,
+          "x-cy-kind": "Float",
+          "minimum": 1.0,
+          "maximum": 15.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "device": {
+          "enum": [
+            "cuda",
+            "cpu"
+          ],
+          "description": "Compute device (audioldm only)",
+          "default": "cuda",
+          "x-cy-kind": "Enum"
+        },
+        "post_workflow": {
+          "type": "string",
+          "description": "Optional workflow (saved name) applied to the generated audio, with tail rendering.",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "prompt"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "variations": {
+          "type": "array",
+          "description": "Generated files",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "WAV file",
+                "x-cy-kind": "File",
+                "maxLength": 1024
+              },
+              "seed": {
+                "type": "integer",
+                "description": "Seed",
+                "default": 0,
+                "x-cy-kind": "Integer"
+              },
+              "durationSeconds": {
+                "type": "number",
+                "description": "Duration",
+                "default": 0.0,
+                "x-cy-kind": "Float"
+              },
+              "peakDbfs": {
+                "type": "number",
+                "description": "Peak",
+                "default": -1.0,
+                "x-cy-kind": "Float"
+              },
+              "rmsDbfs": {
+                "type": "number",
+                "description": "RMS",
+                "default": -20.0,
+                "x-cy-kind": "Float"
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "description": "Size",
+                "default": 0,
+                "x-cy-kind": "Integer"
+              },
+              "processedFile": {
+                "type": "string",
+                "description": "After post workflow",
+                "default": "",
+                "x-cy-kind": "String"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "backend": {
+          "type": "string",
+          "description": "Backend id",
+          "x-cy-kind": "String"
+        },
+        "engine": {
+          "type": "string",
+          "description": "Engine name",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 44100,
+          "x-cy-kind": "Integer"
+        },
+        "recipe": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Procedural recipe (sfx_procedural only)"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "report": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "variations",
+        "backend",
+        "sampleRate"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "variations",
+        "type": "Audio",
+        "description": "Generated WAV files"
+      }
+    ],
+    "supportedBackends": [
+      "sfx_procedural",
+      "audioldm"
+    ],
+    "resourceRequirements": {
+      "ramBytes": 3221225472,
+      "cpuThreads": 2,
+      "diskBytes": 268435456
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "model_files"
+    ]
+  },
+  {
+    "id": "preview_sfx_recipe",
+    "name": "Preview procedural recipe",
+    "description": "Parse a prompt with the procedural synthesizer and return the exact recipe without rendering.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Description",
+          "maxLength": 600,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        },
+        "duration_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0.2,
+          "maximum": 30.0,
+          "default": null,
+          "x-cy-kind": "Float"
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Seed",
+          "default": 0,
+          "x-cy-kind": "Seed",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "sample_rate": {
+          "enum": [
+            16000,
+            22050,
+            24000,
+            44100,
+            48000
+          ],
+          "description": "Sample rate",
+          "default": 44100,
+          "x-cy-kind": "Enum"
+        },
+        "peak_dbfs": {
+          "type": "number",
+          "description": "Peak",
+          "default": -1.0,
+          "x-cy-kind": "Float",
+          "minimum": -40.0,
+          "maximum": 0.0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "prompt"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 268435456,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "list_sfx_types",
+    "name": "List procedural sound types",
+    "description": "Archetypes of the procedural synthesizer with the English and French words that select them.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "enum": [
+            "all",
+            "en",
+            "fr"
+          ],
+          "description": "Keyword language",
+          "default": "all",
+          "x-cy-kind": "Enum"
+        },
+        "query": {
+          "type": "string",
+          "description": "Filter",
+          "default": "",
+          "maxLength": 64,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 134217728,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "generate_music",
+    "name": "Generate music",
+    "description": "Text to music with ACE-Step 1.5: a full arrangement, optional sung lyrics, optional style reference recording. 48 kHz stereo.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "caption": {
+          "type": "string",
+          "description": "Style caption (genre, mood, instruments, production)",
+          "maxLength": 512,
+          "minLength": 1,
+          "x-cy-kind": "MultilineString"
+        },
+        "lyrics": {
+          "type": "string",
+          "description": "Lyrics with optional [Verse]/[Chorus] tags; empty for instrumental",
+          "default": "",
+          "maxLength": 4096,
+          "x-cy-kind": "MultilineString"
+        },
+        "instrumental": {
+          "type": "boolean",
+          "description": "No vocals",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        },
+        "language": {
+          "enum": [
+            "unknown",
+            "ar",
+            "az",
+            "bg",
+            "bn",
+            "ca",
+            "cs",
+            "da",
+            "de",
+            "el",
+            "en",
+            "es",
+            "fa",
+            "fi",
+            "fr",
+            "he",
+            "hi",
+            "hr",
+            "ht",
+            "hu",
+            "id",
+            "is",
+            "it",
+            "ja",
+            "ko",
+            "la",
+            "lt",
+            "ms",
+            "ne",
+            "nl",
+            "no",
+            "pa",
+            "pl",
+            "pt",
+            "ro",
+            "ru",
+            "sa",
+            "sk",
+            "sr",
+            "sv",
+            "sw",
+            "ta",
+            "te",
+            "th",
+            "tl",
+            "tr",
+            "uk",
+            "ur",
+            "vi",
+            "yue",
+            "zh"
+          ],
+          "description": "Vocal language (unknown = let the model decide)",
+          "default": "unknown",
+          "x-cy-kind": "Enum"
+        },
+        "bpm": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 30,
+          "maximum": 300,
+          "default": null,
+          "description": "Tempo; null = model decides",
+          "x-cy-kind": "Integer"
+        },
+        "keyscale": {
+          "type": "string",
+          "description": "Key, e.g. \"C Major\"; empty = model decides",
+          "default": "",
+          "maxLength": 32,
+          "x-cy-kind": "String"
+        },
+        "time_signature": {
+          "enum": [
+            "",
+            "2",
+            "3",
+            "4",
+            "6"
+          ],
+          "description": "Time signature; empty = model decides",
+          "default": "",
+          "x-cy-kind": "Enum"
+        },
+        "steps": {
+          "type": "integer",
+          "description": "Diffusion steps (turbo model trained for 8)",
+          "default": 8,
+          "x-cy-kind": "Integer",
+          "minimum": 1,
+          "maximum": 60,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 2147483647,
+          "default": null,
+          "description": "Seed; null = random. Track N uses seed+N-1",
+          "x-cy-kind": "Seed"
+        },
+        "output_format": {
+          "enum": [
+            "flac",
+            "wav",
+            "mp3"
+          ],
+          "description": "Track format (mp3 needs ffmpeg)",
+          "default": "flac",
+          "x-cy-kind": "Enum"
+        },
+        "track_count": {
+          "type": "integer",
+          "description": "Number of tracks",
+          "default": 1,
+          "x-cy-kind": "Integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "post_workflow": {
+          "type": "string",
+          "description": "Optional workflow (saved name) applied to the generated audio, with tail rendering.",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        },
+        "duration_seconds": {
+          "type": "number",
+          "description": "Length of the song (s)",
+          "default": 60.0,
+          "x-cy-kind": "Float",
+          "minimum": 10.0,
+          "maximum": 600.0
+        },
+        "plan_with_lm": {
+          "type": "boolean",
+          "description": "Let the 5Hz planning language model refine caption, lyrics and metadata (+6 GiB VRAM)",
+          "default": true,
+          "x-cy-kind": "Boolean"
+        },
+        "creativity": {
+          "type": "number",
+          "description": "Planner temperature",
+          "default": 0.85,
+          "x-cy-kind": "Float",
+          "minimum": 0.0,
+          "maximum": 2.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "nucleus": {
+          "type": "number",
+          "description": "Planner top-p",
+          "default": 0.9,
+          "x-cy-kind": "Float",
+          "minimum": 0.1,
+          "maximum": 1.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "reference_audio": {
+          "type": "string",
+          "description": "Optional reference recording whose timbre and production are followed",
+          "x-cy-kind": "Audio",
+          "maxLength": 1024,
+          "default": ""
+        },
+        "reference_strength": {
+          "type": "number",
+          "description": "How strongly the reference is followed",
+          "default": 0.2,
+          "x-cy-kind": "Float",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "caption"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "tracks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "Track",
+                "x-cy-kind": "File",
+                "maxLength": 1024
+              },
+              "seed": {
+                "type": "integer",
+                "description": "Seed",
+                "default": 0,
+                "x-cy-kind": "Integer"
+              },
+              "durationSeconds": {
+                "type": "number",
+                "description": "Duration",
+                "default": 0.0,
+                "x-cy-kind": "Float"
+              },
+              "channels": {
+                "type": "integer",
+                "description": "Channels",
+                "default": 2,
+                "x-cy-kind": "Integer"
+              },
+              "sampleRate": {
+                "type": "integer",
+                "description": "Sample rate",
+                "default": 48000,
+                "x-cy-kind": "Integer"
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "description": "Size",
+                "default": 0,
+                "x-cy-kind": "Integer"
+              },
+              "processedFile": {
+                "type": "string",
+                "description": "After post workflow",
+                "default": "",
+                "x-cy-kind": "String"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "captionUsed": {
+          "type": "string",
+          "description": "Caption sent to the model",
+          "x-cy-kind": "String"
+        },
+        "lyricsUsed": {
+          "type": "string",
+          "description": "Lyrics sent to the model",
+          "x-cy-kind": "String"
+        },
+        "metadata": {
+          "type": "object"
+        },
+        "taskType": {
+          "type": "string",
+          "description": "Task",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 48000,
+          "x-cy-kind": "Integer"
+        },
+        "outputFormat": {
+          "type": "string",
+          "description": "Format",
+          "x-cy-kind": "String"
+        },
+        "timings": {
+          "type": "object"
+        },
+        "vramPeakBytes": {
+          "type": "integer",
+          "description": "VRAM peak",
+          "default": 0,
+          "x-cy-kind": "Integer"
+        },
+        "report": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "tracks",
+        "sampleRate"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "tracks",
+        "type": "Audio",
+        "description": "Generated tracks"
+      }
+    ],
+    "supportedBackends": [
+      "acestep"
+    ],
+    "resourceRequirements": {
+      "ramBytes": 13958643712,
+      "cpuThreads": 4,
+      "diskBytes": 1073741824,
+      "vramBytes": {
+        "auto": 17179869184
+      }
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "estimatedDurationSeconds": 90,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "model_files"
+    ]
+  },
+  {
+    "id": "remix_music",
+    "name": "Remix music",
+    "description": "Audio to audio: regenerate a recording under a new caption and optional lyrics while keeping its structure (task cover).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "caption": {
+          "type": "string",
+          "description": "Style caption (genre, mood, instruments, production)",
+          "maxLength": 512,
+          "minLength": 1,
+          "x-cy-kind": "MultilineString"
+        },
+        "lyrics": {
+          "type": "string",
+          "description": "Lyrics with optional [Verse]/[Chorus] tags; empty for instrumental",
+          "default": "",
+          "maxLength": 4096,
+          "x-cy-kind": "MultilineString"
+        },
+        "instrumental": {
+          "type": "boolean",
+          "description": "No vocals",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        },
+        "language": {
+          "enum": [
+            "unknown",
+            "ar",
+            "az",
+            "bg",
+            "bn",
+            "ca",
+            "cs",
+            "da",
+            "de",
+            "el",
+            "en",
+            "es",
+            "fa",
+            "fi",
+            "fr",
+            "he",
+            "hi",
+            "hr",
+            "ht",
+            "hu",
+            "id",
+            "is",
+            "it",
+            "ja",
+            "ko",
+            "la",
+            "lt",
+            "ms",
+            "ne",
+            "nl",
+            "no",
+            "pa",
+            "pl",
+            "pt",
+            "ro",
+            "ru",
+            "sa",
+            "sk",
+            "sr",
+            "sv",
+            "sw",
+            "ta",
+            "te",
+            "th",
+            "tl",
+            "tr",
+            "uk",
+            "ur",
+            "vi",
+            "yue",
+            "zh"
+          ],
+          "description": "Vocal language (unknown = let the model decide)",
+          "default": "unknown",
+          "x-cy-kind": "Enum"
+        },
+        "bpm": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 30,
+          "maximum": 300,
+          "default": null,
+          "description": "Tempo; null = model decides",
+          "x-cy-kind": "Integer"
+        },
+        "keyscale": {
+          "type": "string",
+          "description": "Key, e.g. \"C Major\"; empty = model decides",
+          "default": "",
+          "maxLength": 32,
+          "x-cy-kind": "String"
+        },
+        "time_signature": {
+          "enum": [
+            "",
+            "2",
+            "3",
+            "4",
+            "6"
+          ],
+          "description": "Time signature; empty = model decides",
+          "default": "",
+          "x-cy-kind": "Enum"
+        },
+        "steps": {
+          "type": "integer",
+          "description": "Diffusion steps (turbo model trained for 8)",
+          "default": 8,
+          "x-cy-kind": "Integer",
+          "minimum": 1,
+          "maximum": 60,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 2147483647,
+          "default": null,
+          "description": "Seed; null = random. Track N uses seed+N-1",
+          "x-cy-kind": "Seed"
+        },
+        "output_format": {
+          "enum": [
+            "flac",
+            "wav",
+            "mp3"
+          ],
+          "description": "Track format (mp3 needs ffmpeg)",
+          "default": "flac",
+          "x-cy-kind": "Enum"
+        },
+        "track_count": {
+          "type": "integer",
+          "description": "Number of tracks",
+          "default": 1,
+          "x-cy-kind": "Integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "post_workflow": {
+          "type": "string",
+          "description": "Optional workflow (saved name) applied to the generated audio, with tail rendering.",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        },
+        "source_audio": {
+          "type": "string",
+          "description": "Recording to remix",
+          "x-cy-kind": "Audio",
+          "maxLength": 1024
+        },
+        "similarity": {
+          "type": "number",
+          "description": "Similarity to the source",
+          "default": 0.6,
+          "x-cy-kind": "Float",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "caption",
+        "source_audio"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "tracks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "Track",
+                "x-cy-kind": "File",
+                "maxLength": 1024
+              },
+              "seed": {
+                "type": "integer",
+                "description": "Seed",
+                "default": 0,
+                "x-cy-kind": "Integer"
+              },
+              "durationSeconds": {
+                "type": "number",
+                "description": "Duration",
+                "default": 0.0,
+                "x-cy-kind": "Float"
+              },
+              "channels": {
+                "type": "integer",
+                "description": "Channels",
+                "default": 2,
+                "x-cy-kind": "Integer"
+              },
+              "sampleRate": {
+                "type": "integer",
+                "description": "Sample rate",
+                "default": 48000,
+                "x-cy-kind": "Integer"
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "description": "Size",
+                "default": 0,
+                "x-cy-kind": "Integer"
+              },
+              "processedFile": {
+                "type": "string",
+                "description": "After post workflow",
+                "default": "",
+                "x-cy-kind": "String"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "captionUsed": {
+          "type": "string",
+          "description": "Caption sent to the model",
+          "x-cy-kind": "String"
+        },
+        "lyricsUsed": {
+          "type": "string",
+          "description": "Lyrics sent to the model",
+          "x-cy-kind": "String"
+        },
+        "metadata": {
+          "type": "object"
+        },
+        "taskType": {
+          "type": "string",
+          "description": "Task",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 48000,
+          "x-cy-kind": "Integer"
+        },
+        "outputFormat": {
+          "type": "string",
+          "description": "Format",
+          "x-cy-kind": "String"
+        },
+        "timings": {
+          "type": "object"
+        },
+        "vramPeakBytes": {
+          "type": "integer",
+          "description": "VRAM peak",
+          "default": 0,
+          "x-cy-kind": "Integer"
+        },
+        "report": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "tracks",
+        "sampleRate"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "tracks",
+        "type": "Audio",
+        "description": "Remixed tracks"
+      }
+    ],
+    "supportedBackends": [
+      "acestep"
+    ],
+    "resourceRequirements": {
+      "ramBytes": 13958643712,
+      "cpuThreads": 4,
+      "diskBytes": 1073741824,
+      "vramBytes": {
+        "auto": 10737418240
+      }
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "estimatedDurationSeconds": 60,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "model_files"
+    ]
+  },
+  {
+    "id": "repaint_music",
+    "name": "Repaint section",
+    "description": "Rewrite one time range of a recording and splice it back, leaving the rest untouched.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "caption": {
+          "type": "string",
+          "description": "Style caption (genre, mood, instruments, production)",
+          "maxLength": 512,
+          "minLength": 1,
+          "x-cy-kind": "MultilineString"
+        },
+        "lyrics": {
+          "type": "string",
+          "description": "Lyrics with optional [Verse]/[Chorus] tags; empty for instrumental",
+          "default": "",
+          "maxLength": 4096,
+          "x-cy-kind": "MultilineString"
+        },
+        "instrumental": {
+          "type": "boolean",
+          "description": "No vocals",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        },
+        "language": {
+          "enum": [
+            "unknown",
+            "ar",
+            "az",
+            "bg",
+            "bn",
+            "ca",
+            "cs",
+            "da",
+            "de",
+            "el",
+            "en",
+            "es",
+            "fa",
+            "fi",
+            "fr",
+            "he",
+            "hi",
+            "hr",
+            "ht",
+            "hu",
+            "id",
+            "is",
+            "it",
+            "ja",
+            "ko",
+            "la",
+            "lt",
+            "ms",
+            "ne",
+            "nl",
+            "no",
+            "pa",
+            "pl",
+            "pt",
+            "ro",
+            "ru",
+            "sa",
+            "sk",
+            "sr",
+            "sv",
+            "sw",
+            "ta",
+            "te",
+            "th",
+            "tl",
+            "tr",
+            "uk",
+            "ur",
+            "vi",
+            "yue",
+            "zh"
+          ],
+          "description": "Vocal language (unknown = let the model decide)",
+          "default": "unknown",
+          "x-cy-kind": "Enum"
+        },
+        "bpm": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 30,
+          "maximum": 300,
+          "default": null,
+          "description": "Tempo; null = model decides",
+          "x-cy-kind": "Integer"
+        },
+        "keyscale": {
+          "type": "string",
+          "description": "Key, e.g. \"C Major\"; empty = model decides",
+          "default": "",
+          "maxLength": 32,
+          "x-cy-kind": "String"
+        },
+        "time_signature": {
+          "enum": [
+            "",
+            "2",
+            "3",
+            "4",
+            "6"
+          ],
+          "description": "Time signature; empty = model decides",
+          "default": "",
+          "x-cy-kind": "Enum"
+        },
+        "steps": {
+          "type": "integer",
+          "description": "Diffusion steps (turbo model trained for 8)",
+          "default": 8,
+          "x-cy-kind": "Integer",
+          "minimum": 1,
+          "maximum": 60,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 2147483647,
+          "default": null,
+          "description": "Seed; null = random. Track N uses seed+N-1",
+          "x-cy-kind": "Seed"
+        },
+        "output_format": {
+          "enum": [
+            "flac",
+            "wav",
+            "mp3"
+          ],
+          "description": "Track format (mp3 needs ffmpeg)",
+          "default": "flac",
+          "x-cy-kind": "Enum"
+        },
+        "track_count": {
+          "type": "integer",
+          "description": "Number of tracks",
+          "default": 1,
+          "x-cy-kind": "Integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "post_workflow": {
+          "type": "string",
+          "description": "Optional workflow (saved name) applied to the generated audio, with tail rendering.",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        },
+        "source_audio": {
+          "type": "string",
+          "description": "Recording to edit",
+          "x-cy-kind": "Audio",
+          "maxLength": 1024
+        },
+        "start_seconds": {
+          "type": "number",
+          "description": "Start of the region",
+          "default": 0.0,
+          "x-cy-kind": "Float",
+          "minimum": 0.0,
+          "maximum": 600.0
+        },
+        "end_seconds": {
+          "type": "number",
+          "description": "End of the region; -1 = end of file",
+          "default": -1.0,
+          "x-cy-kind": "Float",
+          "minimum": -1.0,
+          "maximum": 600.0
+        },
+        "repaint_mode": {
+          "enum": [
+            "conservative",
+            "balanced",
+            "aggressive"
+          ],
+          "description": "Mode",
+          "default": "balanced",
+          "x-cy-kind": "Enum"
+        },
+        "repaint_strength": {
+          "type": "number",
+          "description": "Strength (balanced mode)",
+          "default": 0.5,
+          "x-cy-kind": "Float",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "caption",
+        "source_audio"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "tracks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "Track",
+                "x-cy-kind": "File",
+                "maxLength": 1024
+              },
+              "seed": {
+                "type": "integer",
+                "description": "Seed",
+                "default": 0,
+                "x-cy-kind": "Integer"
+              },
+              "durationSeconds": {
+                "type": "number",
+                "description": "Duration",
+                "default": 0.0,
+                "x-cy-kind": "Float"
+              },
+              "channels": {
+                "type": "integer",
+                "description": "Channels",
+                "default": 2,
+                "x-cy-kind": "Integer"
+              },
+              "sampleRate": {
+                "type": "integer",
+                "description": "Sample rate",
+                "default": 48000,
+                "x-cy-kind": "Integer"
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "description": "Size",
+                "default": 0,
+                "x-cy-kind": "Integer"
+              },
+              "processedFile": {
+                "type": "string",
+                "description": "After post workflow",
+                "default": "",
+                "x-cy-kind": "String"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "captionUsed": {
+          "type": "string",
+          "description": "Caption sent to the model",
+          "x-cy-kind": "String"
+        },
+        "lyricsUsed": {
+          "type": "string",
+          "description": "Lyrics sent to the model",
+          "x-cy-kind": "String"
+        },
+        "metadata": {
+          "type": "object"
+        },
+        "taskType": {
+          "type": "string",
+          "description": "Task",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 48000,
+          "x-cy-kind": "Integer"
+        },
+        "outputFormat": {
+          "type": "string",
+          "description": "Format",
+          "x-cy-kind": "String"
+        },
+        "timings": {
+          "type": "object"
+        },
+        "vramPeakBytes": {
+          "type": "integer",
+          "description": "VRAM peak",
+          "default": 0,
+          "x-cy-kind": "Integer"
+        },
+        "report": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "tracks",
+        "sampleRate"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "tracks",
+        "type": "Audio",
+        "description": "Edited tracks"
+      }
+    ],
+    "supportedBackends": [
+      "acestep"
+    ],
+    "resourceRequirements": {
+      "ramBytes": 13958643712,
+      "cpuThreads": 4,
+      "diskBytes": 1073741824,
+      "vramBytes": {
+        "auto": 10737418240
+      }
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "estimatedDurationSeconds": 60,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "model_files"
+    ]
+  },
+  {
+    "id": "write_lyrics",
+    "name": "Write lyrics",
+    "description": "Planning language model only: turn an idea into caption, lyrics and metadata (create) or format existing lyrics (format).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "create",
+            "format"
+          ],
+          "description": "Mode",
+          "default": "create",
+          "x-cy-kind": "Enum"
+        },
+        "idea": {
+          "type": "string",
+          "description": "Idea or theme (create)",
+          "default": "",
+          "maxLength": 1024,
+          "x-cy-kind": "MultilineString"
+        },
+        "caption": {
+          "type": "string",
+          "description": "Caption (format)",
+          "default": "",
+          "maxLength": 512,
+          "x-cy-kind": "String"
+        },
+        "lyrics": {
+          "type": "string",
+          "description": "Lyrics (format)",
+          "default": "",
+          "maxLength": 4096,
+          "x-cy-kind": "MultilineString"
+        },
+        "instrumental": {
+          "type": "boolean",
+          "description": "Instrumental",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        },
+        "language": {
+          "enum": [
+            "unknown",
+            "ar",
+            "az",
+            "bg",
+            "bn",
+            "ca",
+            "cs",
+            "da",
+            "de",
+            "el",
+            "en",
+            "es",
+            "fa",
+            "fi",
+            "fr",
+            "he",
+            "hi",
+            "hr",
+            "ht",
+            "hu",
+            "id",
+            "is",
+            "it",
+            "ja",
+            "ko",
+            "la",
+            "lt",
+            "ms",
+            "ne",
+            "nl",
+            "no",
+            "pa",
+            "pl",
+            "pt",
+            "ro",
+            "ru",
+            "sa",
+            "sk",
+            "sr",
+            "sv",
+            "sw",
+            "ta",
+            "te",
+            "th",
+            "tl",
+            "tr",
+            "uk",
+            "ur",
+            "vi",
+            "yue",
+            "zh"
+          ],
+          "description": "Language",
+          "default": "unknown",
+          "x-cy-kind": "Enum"
+        },
+        "bpm": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 30,
+          "maximum": 300,
+          "default": null,
+          "x-cy-kind": "Integer",
+          "description": "Tempo"
+        },
+        "duration_seconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 10,
+          "maximum": 600,
+          "default": null,
+          "x-cy-kind": "Float",
+          "description": "Target duration"
+        },
+        "keyscale": {
+          "type": "string",
+          "description": "Key",
+          "default": "",
+          "maxLength": 32,
+          "x-cy-kind": "String"
+        },
+        "time_signature": {
+          "enum": [
+            "",
+            "2",
+            "3",
+            "4",
+            "6"
+          ],
+          "description": "Time signature",
+          "default": "",
+          "x-cy-kind": "Enum"
+        },
+        "creativity": {
+          "type": "number",
+          "description": "Temperature",
+          "default": 0.85,
+          "x-cy-kind": "Float",
+          "minimum": 0.0,
+          "maximum": 2.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "nucleus": {
+          "type": "number",
+          "description": "Top-p",
+          "default": 0.9,
+          "x-cy-kind": "Float",
+          "minimum": 0.1,
+          "maximum": 1.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "caption": {
+          "type": "string",
+          "description": "Caption",
+          "x-cy-kind": "String"
+        },
+        "lyrics": {
+          "type": "string",
+          "description": "Lyrics",
+          "x-cy-kind": "String"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "statusMessage": {
+          "type": "string",
+          "description": "Status",
+          "default": "",
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "caption",
+        "lyrics"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "lyrics",
+        "type": "Object",
+        "description": "Caption, lyrics and metadata"
+      }
+    ],
+    "supportedBackends": [
+      "acestep"
+    ],
+    "resourceRequirements": {
+      "ramBytes": 13958643712,
+      "cpuThreads": 4,
+      "diskBytes": 67108864,
+      "vramBytes": {
+        "auto": 10737418240
+      }
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "estimatedDurationSeconds": 45,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "model_files"
+    ]
+  },
+  {
+    "id": "voice_piper",
+    "name": "Speak with Piper",
+    "description": "CPU text-to-speech with a Piper ONNX voice (22.05 kHz mono). Raw text only, no annotations.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Text to speak",
+          "maxLength": 20000,
+          "minLength": 1,
+          "x-cy-kind": "MultilineString"
+        },
+        "voice": {
+          "type": "string",
+          "description": "Voice key, e.g. fr_FR-siwis-medium (see list_voices)",
+          "default": "fr_FR-siwis-medium",
+          "maxLength": 80,
+          "x-cy-kind": "String"
+        },
+        "speaker": {
+          "type": "integer",
+          "description": "Speaker index for multi-speaker voices",
+          "default": 0,
+          "x-cy-kind": "Integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "length_scale": {
+          "type": "number",
+          "description": "Speed (1 = normal, 2 = twice slower)",
+          "default": 1.0,
+          "x-cy-kind": "Float",
+          "minimum": 0.25,
+          "maximum": 4.0
+        },
+        "noise_scale": {
+          "type": "number",
+          "description": "Expressiveness",
+          "default": 0.667,
+          "x-cy-kind": "Float",
+          "minimum": 0.0,
+          "maximum": 2.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "noise_w_scale": {
+          "type": "number",
+          "description": "Phoneme width variation",
+          "default": 0.8,
+          "x-cy-kind": "Float",
+          "minimum": 0.0,
+          "maximum": 2.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "volume": {
+          "type": "number",
+          "description": "Volume",
+          "default": 1.0,
+          "x-cy-kind": "Float",
+          "minimum": 0.01,
+          "maximum": 2.0
+        },
+        "normalize": {
+          "type": "boolean",
+          "description": "Normalise output",
+          "default": true,
+          "x-cy-kind": "Boolean",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "threads": {
+          "type": "integer",
+          "description": "CPU threads",
+          "default": 2,
+          "x-cy-kind": "Integer",
+          "minimum": 1,
+          "maximum": 16,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "post_workflow": {
+          "type": "string",
+          "description": "Optional workflow (saved name) applied to the generated audio, with tail rendering.",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "text"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Speech WAV",
+          "x-cy-kind": "File",
+          "maxLength": 1024
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 24000,
+          "x-cy-kind": "Integer"
+        },
+        "channels": {
+          "type": "integer",
+          "description": "Channels",
+          "default": 1,
+          "x-cy-kind": "Integer"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Duration (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "backend": {
+          "type": "string",
+          "description": "Backend id",
+          "x-cy-kind": "String"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model id",
+          "x-cy-kind": "String"
+        },
+        "processedFile": {
+          "type": "string",
+          "description": "Result after the post workflow, when one was applied",
+          "default": "",
+          "x-cy-kind": "String"
+        },
+        "generationSeconds": {
+          "type": "number",
+          "description": "Generation time (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "preset": {
+          "type": "object",
+          "description": "Reusable preset (parameters without text) to regenerate the same voice"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "file",
+        "mimeType",
+        "sampleRate",
+        "channels",
+        "durationSeconds",
+        "backend"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "file",
+        "type": "Audio",
+        "description": "Speech WAV"
+      }
+    ],
+    "supportedBackends": [
+      "piper"
+    ],
+    "resourceRequirements": {
+      "ramBytes": 1073741824,
+      "cpuThreads": 2,
+      "diskBytes": 268435456
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "engine_piper",
+      "model_files"
+    ]
+  },
+  {
+    "id": "voice_qwen3tts",
+    "name": "Speak with Qwen3-TTS",
+    "description": "Expressive text-to-speech: preset speakers with natural-language instructions (custom), voice cloning from a reference recording (clone) or voice design from a description (design). Inline [tone: ...] and [pause: 500ms] annotations are supported with the 1.7B CustomVoice model. 24 kHz mono.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Text to speak; paragraphs separated by blank lines",
+          "maxLength": 10000,
+          "minLength": 1,
+          "x-cy-kind": "MultilineString"
+        },
+        "model": {
+          "enum": [
+            "0.6B-CustomVoice",
+            "1.7B-CustomVoice",
+            "0.6B-Base",
+            "1.7B-Base",
+            "1.7B-VoiceDesign"
+          ],
+          "description": "Model variant (custom needs CustomVoice, clone needs Base, design needs VoiceDesign)",
+          "default": "1.7B-CustomVoice",
+          "x-cy-kind": "Enum"
+        },
+        "mode": {
+          "enum": [
+            "custom",
+            "clone",
+            "design"
+          ],
+          "description": "Mode",
+          "default": "custom",
+          "x-cy-kind": "Enum"
+        },
+        "language": {
+          "enum": [
+            "Auto",
+            "French",
+            "English",
+            "Chinese",
+            "Japanese",
+            "Korean",
+            "German",
+            "Russian",
+            "Portuguese",
+            "Spanish",
+            "Italian"
+          ],
+          "description": "Language",
+          "default": "French",
+          "x-cy-kind": "Enum"
+        },
+        "speaker": {
+          "enum": [
+            "Ryan",
+            "Aiden",
+            "Vivian",
+            "Serena",
+            "Uncle_Fu",
+            "Dylan",
+            "Eric",
+            "Ono_Anna",
+            "Sohee"
+          ],
+          "description": "Preset speaker (custom)",
+          "default": "Ryan",
+          "x-cy-kind": "Enum"
+        },
+        "instruction": {
+          "type": "string",
+          "description": "Delivery instruction (custom, 1.7B) or voice description (design)",
+          "default": "",
+          "maxLength": 2000,
+          "x-cy-kind": "MultilineString"
+        },
+        "reference_audio": {
+          "type": "string",
+          "description": "Reference recording (clone)",
+          "x-cy-kind": "Audio",
+          "maxLength": 1024,
+          "default": ""
+        },
+        "reference_text": {
+          "type": "string",
+          "description": "Exact transcription of the reference (clone)",
+          "default": "",
+          "maxLength": 4000,
+          "x-cy-kind": "MultilineString"
+        },
+        "x_vector_only": {
+          "type": "boolean",
+          "description": "Clone from the speaker embedding only, no transcription",
+          "default": false,
+          "x-cy-kind": "Boolean",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "device": {
+          "enum": [
+            "cuda",
+            "cpu"
+          ],
+          "description": "Compute device",
+          "default": "cuda",
+          "x-cy-kind": "Enum"
+        },
+        "delivery": {
+          "enum": [
+            "paragraphs",
+            "segments",
+            "complete"
+          ],
+          "description": "Split the text into passages",
+          "default": "paragraphs",
+          "x-cy-kind": "Enum"
+        },
+        "temperature": {
+          "type": "number",
+          "description": "Temperature",
+          "default": 0.9,
+          "x-cy-kind": "Float",
+          "minimum": 0.1,
+          "maximum": 2.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "top_k": {
+          "type": "integer",
+          "description": "Top-k",
+          "default": 50,
+          "x-cy-kind": "Integer",
+          "minimum": 1,
+          "maximum": 200,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "top_p": {
+          "type": "number",
+          "description": "Top-p",
+          "default": 1.0,
+          "x-cy-kind": "Float",
+          "minimum": 0.05,
+          "maximum": 1.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "repetition_penalty": {
+          "type": "number",
+          "description": "Repetition penalty",
+          "default": 1.05,
+          "x-cy-kind": "Float",
+          "minimum": 1.0,
+          "maximum": 2.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "max_new_tokens": {
+          "type": "integer",
+          "description": "Max new tokens per passage",
+          "default": 2048,
+          "x-cy-kind": "Integer",
+          "minimum": 32,
+          "maximum": 4096,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Seed",
+          "default": 42,
+          "x-cy-kind": "Seed",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "text_annotations": {
+          "type": "boolean",
+          "description": "Enable [tone: ...] / [pause: ...] annotations (1.7B CustomVoice only)",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        },
+        "post_workflow": {
+          "type": "string",
+          "description": "Optional workflow (saved name) applied to the generated audio, with tail rendering.",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "text"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Speech WAV",
+          "x-cy-kind": "File",
+          "maxLength": 1024
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 24000,
+          "x-cy-kind": "Integer"
+        },
+        "channels": {
+          "type": "integer",
+          "description": "Channels",
+          "default": 1,
+          "x-cy-kind": "Integer"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Duration (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "backend": {
+          "type": "string",
+          "description": "Backend id",
+          "x-cy-kind": "String"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model id",
+          "x-cy-kind": "String"
+        },
+        "processedFile": {
+          "type": "string",
+          "description": "Result after the post workflow, when one was applied",
+          "default": "",
+          "x-cy-kind": "String"
+        },
+        "generationSeconds": {
+          "type": "number",
+          "description": "Generation time (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "preset": {
+          "type": "object",
+          "description": "Reusable preset (parameters without text) to regenerate the same voice"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "file",
+        "mimeType",
+        "sampleRate",
+        "channels",
+        "durationSeconds",
+        "backend"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "file",
+        "type": "Audio",
+        "description": "Speech WAV"
+      }
+    ],
+    "supportedBackends": [
+      "qwen3tts"
+    ],
+    "resourceRequirements": {
+      "ramBytes": 10737418240,
+      "cpuThreads": 4,
+      "diskBytes": 536870912,
+      "vramBytes": {
+        "auto": 8589934592
+      }
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "estimatedDurationSeconds": 30,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "model_files"
+    ]
+  },
+  {
+    "id": "voice_fishspeech",
+    "name": "Speak with Fish Speech S2 Pro",
+    "description": "Multi-speaker dialogue with natural-language expressions per turn and voice cloning from short references (0.1-30 s with their transcription). CUDA only, 44.1 kHz mono.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "turns": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 30,
+          "x-cy-kind": "Array",
+          "description": "Dialogue turns in order",
+          "items": {
+            "type": "object",
+            "properties": {
+              "speaker": {
+                "type": "integer",
+                "description": "Speaker index (maps to references[N])",
+                "default": 0,
+                "x-cy-kind": "Integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "text": {
+                "type": "string",
+                "description": "Text",
+                "maxLength": 4000,
+                "minLength": 1,
+                "x-cy-kind": "MultilineString"
+              },
+              "expression": {
+                "type": "string",
+                "description": "Expression in natural language, e.g. whisper, excited",
+                "default": "",
+                "maxLength": 150,
+                "x-cy-kind": "String"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "text"
+            ]
+          }
+        },
+        "references": {
+          "type": "array",
+          "maxItems": 5,
+          "default": [],
+          "x-cy-kind": "Array",
+          "description": "Reference recordings per speaker index",
+          "items": {
+            "type": "object",
+            "properties": {
+              "audio": {
+                "type": "string",
+                "description": "Reference recording",
+                "x-cy-kind": "Audio",
+                "maxLength": 1024
+              },
+              "text": {
+                "type": "string",
+                "description": "Exact transcription",
+                "maxLength": 2000,
+                "minLength": 1,
+                "x-cy-kind": "String"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "audio",
+              "text"
+            ]
+          }
+        },
+        "temperature": {
+          "type": "number",
+          "description": "Temperature",
+          "default": 0.8,
+          "x-cy-kind": "Float",
+          "minimum": 0.1,
+          "maximum": 1.5,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "top_p": {
+          "type": "number",
+          "description": "Top-p",
+          "default": 0.8,
+          "x-cy-kind": "Float",
+          "minimum": 0.1,
+          "maximum": 1.0,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "top_k": {
+          "type": "integer",
+          "description": "Top-k",
+          "default": 30,
+          "x-cy-kind": "Integer",
+          "minimum": 1,
+          "maximum": 100,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Seed",
+          "default": 42,
+          "x-cy-kind": "Seed",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "max_new_tokens": {
+          "type": "integer",
+          "description": "Max new tokens",
+          "default": 1024,
+          "x-cy-kind": "Integer",
+          "minimum": 128,
+          "maximum": 4096,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "chunk_length": {
+          "type": "integer",
+          "description": "Chunk length",
+          "default": 200,
+          "x-cy-kind": "Integer",
+          "minimum": 50,
+          "maximum": 500,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "precision": {
+          "enum": [
+            "bfloat16",
+            "float16"
+          ],
+          "description": "Precision",
+          "default": "bfloat16",
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "post_workflow": {
+          "type": "string",
+          "description": "Optional workflow (saved name) applied to the generated audio, with tail rendering.",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "turns"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Speech WAV",
+          "x-cy-kind": "File",
+          "maxLength": 1024
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 24000,
+          "x-cy-kind": "Integer"
+        },
+        "channels": {
+          "type": "integer",
+          "description": "Channels",
+          "default": 1,
+          "x-cy-kind": "Integer"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Duration (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "backend": {
+          "type": "string",
+          "description": "Backend id",
+          "x-cy-kind": "String"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model id",
+          "x-cy-kind": "String"
+        },
+        "processedFile": {
+          "type": "string",
+          "description": "Result after the post workflow, when one was applied",
+          "default": "",
+          "x-cy-kind": "String"
+        },
+        "generationSeconds": {
+          "type": "number",
+          "description": "Generation time (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "preset": {
+          "type": "object",
+          "description": "Reusable preset (parameters without text) to regenerate the same voice"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "file",
+        "mimeType",
+        "sampleRate",
+        "channels",
+        "durationSeconds",
+        "backend"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "file",
+        "type": "Audio",
+        "description": "Speech WAV"
+      }
+    ],
+    "supportedBackends": [
+      "fishspeech"
+    ],
+    "resourceRequirements": {
+      "ramBytes": 17179869184,
+      "cpuThreads": 4,
+      "diskBytes": 536870912,
+      "vramBytes": {
+        "auto": 21474836480
+      }
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "estimatedDurationSeconds": 60,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "model_files"
+    ]
+  },
+  {
+    "id": "generate_voice",
+    "name": "Speak with a saved voice preset",
+    "description": "Regenerate a voice from a saved preset (backend, model, every parameter) with new text. Warns when a reference recording changed.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "preset": {
+          "type": "string",
+          "description": "Preset id (see list_voice_presets)",
+          "maxLength": 200,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        },
+        "text": {
+          "type": "string",
+          "description": "Text to speak",
+          "maxLength": 20000,
+          "minLength": 1,
+          "x-cy-kind": "MultilineString"
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 2147483647,
+          "default": null,
+          "x-cy-kind": "Seed",
+          "description": "Override the preset seed"
+        },
+        "post_workflow": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "maxLength": 200,
+          "description": "Override the preset post workflow (empty string = none)"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "preset",
+        "text"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Speech WAV",
+          "x-cy-kind": "File",
+          "maxLength": 1024
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 24000,
+          "x-cy-kind": "Integer"
+        },
+        "channels": {
+          "type": "integer",
+          "description": "Channels",
+          "default": 1,
+          "x-cy-kind": "Integer"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Duration (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "backend": {
+          "type": "string",
+          "description": "Backend id",
+          "x-cy-kind": "String"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model id",
+          "x-cy-kind": "String"
+        },
+        "processedFile": {
+          "type": "string",
+          "description": "Result after the post workflow, when one was applied",
+          "default": "",
+          "x-cy-kind": "String"
+        },
+        "generationSeconds": {
+          "type": "number",
+          "description": "Generation time (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "preset": {
+          "type": "object",
+          "description": "Reusable preset (parameters without text) to regenerate the same voice"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "file",
+        "mimeType",
+        "sampleRate",
+        "channels",
+        "durationSeconds",
+        "backend"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "file",
+        "type": "Audio",
+        "description": "Speech WAV"
+      }
+    ],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 2147483648,
+      "cpuThreads": 4,
+      "diskBytes": 536870912
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "estimatedDurationSeconds": 60,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "engine_piper",
+      "model_files"
+    ]
+  },
+  {
+    "id": "list_voices",
+    "name": "List voices",
+    "description": "Voices per backend: Piper voice catalogue (installed and downloadable), Qwen3-TTS speakers and modes, Fish Speech capabilities, and saved presets.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "backend": {
+          "enum": [
+            "all",
+            "piper",
+            "qwen3tts",
+            "fishspeech"
+          ],
+          "description": "Backend filter",
+          "default": "all",
+          "x-cy-kind": "Enum"
+        },
+        "language": {
+          "type": "string",
+          "description": "Language filter (e.g. fr, en)",
+          "default": "",
+          "maxLength": 16,
+          "x-cy-kind": "String"
+        },
+        "installed_only": {
+          "type": "boolean",
+          "description": "Only installed Piper voices",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 134217728,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "save_voice_preset",
+    "name": "Save voice preset",
+    "description": "Store the parameters of a voice (without text) as a reusable preset.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Preset name",
+          "maxLength": 120,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        },
+        "backend": {
+          "enum": [
+            "piper",
+            "qwen3tts",
+            "fishspeech"
+          ],
+          "description": "Voice backend",
+          "default": "qwen3tts",
+          "x-cy-kind": "Enum"
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Parameters of the corresponding voice_* operation (text is ignored)",
+          "x-cy-kind": "Object"
+        },
+        "post_workflow": {
+          "type": "string",
+          "description": "Optional workflow (saved name) applied to the generated audio, with tail rendering.",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Notes",
+          "default": "",
+          "maxLength": 2000,
+          "x-cy-kind": "MultilineString"
+        },
+        "preset_id": {
+          "type": "string",
+          "description": "Existing preset id to overwrite",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "backend",
+        "parameters"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Preset id",
+          "x-cy-kind": "String"
+        },
+        "path": {
+          "type": "string",
+          "description": "Saved path",
+          "x-cy-kind": "String"
+        },
+        "preset": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "path"
+      ]
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "list_voice_presets",
+    "name": "List voice presets",
+    "description": "Saved voice presets.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "delete_voice_preset",
+    "name": "Delete voice preset",
+    "description": "Remove a saved voice preset.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "preset": {
+          "type": "string",
+          "description": "Preset id",
+          "maxLength": 200,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "preset"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "deleted": {
+          "type": "boolean",
+          "description": "Deleted",
+          "default": true,
+          "x-cy-kind": "Boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "deleted"
+      ]
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "prepare_tts_text",
+    "name": "Prepare text for a voice",
+    "description": "Turn plain text into the markup a voice backend expects: [tone]/[pause] annotations for Qwen3-TTS, dialogue turns with expressions for Fish Speech, sentence-per-line text for Piper. Method heuristic needs no model; method llm uses the local Qwen3-1.7B assistant and falls back to the heuristic when its output is not usable. An AI client can skip this and annotate itself.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Plain text",
+          "maxLength": 20000,
+          "minLength": 1,
+          "x-cy-kind": "MultilineString"
+        },
+        "target": {
+          "enum": [
+            "qwen3tts",
+            "fishspeech",
+            "piper"
+          ],
+          "description": "Voice backend",
+          "default": "qwen3tts",
+          "x-cy-kind": "Enum"
+        },
+        "method": {
+          "enum": [
+            "heuristic",
+            "llm"
+          ],
+          "description": "Annotation method",
+          "default": "heuristic",
+          "x-cy-kind": "Enum"
+        },
+        "style": {
+          "type": "string",
+          "description": "Overall delivery wanted (e.g. warm and calm narration)",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        },
+        "language": {
+          "type": "string",
+          "description": "Language hint for the assistant",
+          "default": "",
+          "maxLength": 40,
+          "x-cy-kind": "String"
+        },
+        "pause_ms": {
+          "type": "integer",
+          "description": "Pause inserted between paragraphs (heuristic)",
+          "default": 500,
+          "x-cy-kind": "Integer",
+          "minimum": 0,
+          "maximum": 3000
+        },
+        "device": {
+          "enum": [
+            "cuda",
+            "cpu"
+          ],
+          "description": "Compute device",
+          "default": "cuda",
+          "x-cy-kind": "Enum"
+        },
+        "max_new_tokens": {
+          "type": "integer",
+          "description": "Assistant output budget",
+          "default": 1024,
+          "x-cy-kind": "Integer",
+          "minimum": 64,
+          "maximum": 4096,
+          "x-cy-ui": {
+            "advanced": true
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "text"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "Backend",
+          "x-cy-kind": "String"
+        },
+        "method": {
+          "type": "string",
+          "description": "Method actually used",
+          "x-cy-kind": "String"
+        },
+        "text": {
+          "type": "string",
+          "description": "Annotated text (qwen3tts, piper)",
+          "default": "",
+          "x-cy-kind": "String"
+        },
+        "turns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "textAnnotations": {
+          "type": "boolean",
+          "description": "Pass text_annotations=true to voice_qwen3tts",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        },
+        "fallbackReason": {
+          "type": "string",
+          "description": "Why the llm output was replaced by the heuristic",
+          "default": "",
+          "x-cy-kind": "String"
+        },
+        "raw": {
+          "type": "string",
+          "description": "Raw assistant output",
+          "default": "",
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "target",
+        "method"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "text",
+        "type": "Object",
+        "description": "Annotated text or turns"
+      }
+    ],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 9663676416,
+      "cpuThreads": 4,
+      "diskBytes": 67108864,
+      "vramBytes": {
+        "auto": 5368709120
+      }
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "estimatedDurationSeconds": 20,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "model_files"
+    ]
+  },
+  {
+    "id": "transcribe_audio",
+    "name": "Transcribe audio",
+    "description": "Speech to text with Whisper large-v3 turbo (99 languages, segment timestamps). Used to get the exact transcription of a reference recording before cloning a voice.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Recording to transcribe",
+          "x-cy-kind": "Audio",
+          "maxLength": 1024
+        },
+        "language": {
+          "type": "string",
+          "description": "Language code (fr, en, ...); empty = automatic detection",
+          "default": "",
+          "maxLength": 8,
+          "x-cy-kind": "String"
+        },
+        "device": {
+          "enum": [
+            "cuda",
+            "cpu"
+          ],
+          "description": "Compute device",
+          "default": "cuda",
+          "x-cy-kind": "Enum"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "input"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Transcription",
+          "x-cy-kind": "String"
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Audio duration",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "language": {
+          "type": "string",
+          "description": "Language used",
+          "x-cy-kind": "String"
+        },
+        "seconds": {
+          "type": "number",
+          "description": "Processing time",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "text"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "text",
+        "type": "Object",
+        "description": "Transcription"
+      }
+    ],
+    "supportedBackends": [
+      "whisper"
+    ],
+    "resourceRequirements": {
+      "ramBytes": 4294967296,
+      "cpuThreads": 4,
+      "diskBytes": 67108864,
+      "vramBytes": {
+        "auto": 3221225472
+      }
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "estimatedDurationSeconds": 15,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "model_files"
+    ]
+  },
+  {
+    "id": "master_audio",
+    "name": "Master audio",
+    "description": "Mastering: match a reference recording (Matchering: spectrum, dynamics and loudness) or normalise to a loudness target with a true-peak limiter. Optional post workflow.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Track to master",
+          "x-cy-kind": "Audio",
+          "maxLength": 1024
+        },
+        "reference": {
+          "type": "string",
+          "description": "Reference recording to match (mode reference)",
+          "x-cy-kind": "Audio",
+          "maxLength": 1024,
+          "default": ""
+        },
+        "mode": {
+          "enum": [
+            "reference",
+            "loudness"
+          ],
+          "description": "Mode",
+          "default": "loudness",
+          "x-cy-kind": "Enum"
+        },
+        "target_lufs": {
+          "type": "number",
+          "description": "Integrated loudness target (mode loudness)",
+          "default": -14.0,
+          "x-cy-kind": "Float",
+          "minimum": -30.0,
+          "maximum": -5.0
+        },
+        "ceiling_db": {
+          "type": "number",
+          "description": "True-peak ceiling (dBTP)",
+          "default": -1.0,
+          "x-cy-kind": "Float",
+          "minimum": -6.0,
+          "maximum": 0.0
+        },
+        "output_format": {
+          "enum": [
+            "wav",
+            "flac",
+            "mp3",
+            "ogg",
+            "aac"
+          ],
+          "description": "Output audio format",
+          "default": "wav",
+          "x-cy-kind": "Enum"
+        },
+        "subtype": {
+          "enum": [
+            "PCM_16",
+            "PCM_24",
+            "PCM_32",
+            "FLOAT"
+          ],
+          "description": "Sample format for WAV/FLAC/AIFF (ignored by lossy formats)",
+          "default": "PCM_24",
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "bitrate_kbps": {
+          "enum": [
+            64,
+            96,
+            128,
+            160,
+            192,
+            256,
+            320
+          ],
+          "description": "Bitrate in kbit/s for MP3/AAC",
+          "default": 192,
+          "x-cy-kind": "Enum",
+          "x-cy-ui": {
+            "advanced": true
+          }
+        },
+        "post_workflow": {
+          "type": "string",
+          "description": "Optional workflow (saved name) applied to the generated audio, with tail rendering.",
+          "default": "",
+          "maxLength": 200,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "input"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Result file",
+          "x-cy-kind": "File",
+          "maxLength": 1024
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type",
+          "x-cy-kind": "String"
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate",
+          "default": 48000,
+          "x-cy-kind": "Integer"
+        },
+        "channels": {
+          "type": "integer",
+          "description": "Channels",
+          "default": 2,
+          "x-cy-kind": "Integer"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Duration (s)",
+          "default": 0.0,
+          "x-cy-kind": "Float"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "description": "Size in bytes",
+          "default": 0,
+          "x-cy-kind": "Integer"
+        },
+        "report": {
+          "type": "object",
+          "description": "Render report"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "file",
+        "mimeType",
+        "sampleRate",
+        "channels",
+        "durationSeconds"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "file",
+        "type": "Audio",
+        "description": "Mastered file"
+      }
+    ],
+    "supportedBackends": [
+      "matchering"
+    ],
+    "resourceRequirements": {
+      "ramBytes": 4294967296,
+      "cpuThreads": 4,
+      "diskBytes": 2147483648
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "estimatedDurationSeconds": 60,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "list_models",
+    "name": "List models",
+    "description": "Catalogue and installation state of every model (state, size, present bytes, licence, source).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "backend": {
+          "type": "string",
+          "description": "Backend filter",
+          "default": "",
+          "maxLength": 40,
+          "x-cy-kind": "String"
+        },
+        "include_voices": {
+          "type": "boolean",
+          "description": "Include the 177 Piper voices",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 134217728,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "install_model",
+    "name": "Install model",
+    "description": "Download or resume a model with verification. The licence must be accepted personally when the source requires it; a gated source returns AccessRequired with the official page.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Model id (see list_models), e.g. piper.en_US-lessac-medium",
+          "maxLength": 200,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        },
+        "accept_license": {
+          "type": "boolean",
+          "description": "I have read and accept the licence of this model",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        },
+        "repair": {
+          "type": "boolean",
+          "description": "Re-hash existing files and re-download corrupted ones",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "model"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "modelId": {
+          "type": "string",
+          "description": "Model",
+          "x-cy-kind": "String"
+        },
+        "state": {
+          "type": "string",
+          "description": "State",
+          "x-cy-kind": "String"
+        },
+        "downloaded": {
+          "type": "integer",
+          "description": "Bytes downloaded",
+          "default": 0,
+          "x-cy-kind": "Integer"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "modelId",
+        "state"
+      ]
+    },
+    "outputs": [
+      {
+        "id": "state",
+        "type": "Object",
+        "description": "Installation state"
+      }
+    ],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 536870912,
+      "cpuThreads": 2,
+      "diskBytes": 12884901888
+    },
+    "permissions": [
+      "network"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "model_files"
+    ]
+  },
+  {
+    "id": "verify_model",
+    "name": "Verify model",
+    "description": "Re-check presence, sizes and hashes of an installed model.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Model id",
+          "maxLength": 200,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "model"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 268435456,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "exclusiveGroups": [
+      "model_files"
+    ]
+  },
+  {
+    "id": "remove_model",
+    "name": "Remove model",
+    "description": "Delete the files of a model under data/models.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Model id",
+          "maxLength": 200,
+          "minLength": 1,
+          "x-cy-kind": "String"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "model"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": false,
+    "exclusiveGroups": [
+      "model_files"
+    ]
+  },
+  {
+    "id": "engine_status",
+    "name": "Engine status",
+    "description": "State of the engine environments (torch, piper), their sources and the worker pool.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": []
+  },
+  {
+    "id": "install_engine",
+    "name": "Install engine",
+    "description": "Create or repair an engine environment (PyTorch CUDA or CPU, Piper) at its final path, with vendored sources and an import check.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "enum": [
+            "torch",
+            "piper"
+          ],
+          "description": "Engine",
+          "default": "torch",
+          "x-cy-kind": "Enum"
+        },
+        "cpu_only": {
+          "type": "boolean",
+          "description": "Install the CPU build of PyTorch",
+          "default": false,
+          "x-cy-kind": "Boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "engine"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 1073741824,
+      "cpuThreads": 2,
+      "diskBytes": 16106127360
+    },
+    "permissions": [
+      "network"
+    ],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": true,
+    "estimatedDurationSeconds": 1200,
+    "exclusiveGroups": [
+      "engine_torch",
+      "engine_piper"
+    ]
+  },
+  {
+    "id": "diagnose_backend",
+    "name": "Diagnose backend",
+    "description": "Start the worker of a backend and report engine versions, CUDA availability and resident models.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "backend": {
+          "enum": [
+            "sfx_procedural",
+            "audioldm",
+            "acestep",
+            "piper",
+            "qwen3tts",
+            "fishspeech",
+            "llm",
+            "whisper",
+            "matchering"
+          ],
+          "description": "Backend",
+          "default": "sfx_procedural",
+          "x-cy-kind": "Enum"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "backend"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 536870912,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": true,
+    "supportsProgress": false,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "engine_piper"
+    ]
+  },
+  {
+    "id": "release_workers",
+    "name": "Release workers",
+    "description": "Stop resident workers to free VRAM and RAM.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "outputs": [],
+    "supportedBackends": [],
+    "resourceRequirements": {
+      "ramBytes": 67108864,
+      "cpuThreads": 2,
+      "diskBytes": 67108864
+    },
+    "permissions": [],
+    "canRunAsync": true,
+    "canCancel": false,
+    "supportsProgress": false,
+    "exclusiveGroups": [
+      "gpu",
+      "engine_torch",
+      "engine_piper"
+    ]
+  }
+]
+```
+
+## Host project instructions
+
+# Maintaining CyTools_AudioStudio
+
+Read README.md (this folder), CyTool.json, tool.py and the SDK contract in Docs/ (AgentGuide.md,
+StandaloneDelivery.md, Localization.md, GenerationConfigurations.md, FullOperationAccess.md,
+TaskFiles.md) before changing anything.
+
+## Rules specific to this Tool
+
+1. `CyTool.json` is generated: edit `build_manifest.py`, then run
+   `..\runtime\python\Scripts\python.exe build_manifest.py` and
+   `..\runtime\python\Scripts\cytools.exe validate CyTool.json` (the SDK is public: https://github.com/MrMybal/CyToolsCore, MIT since 0.10.1).
+   Every new operation needs a handler registered in `audiostudio/operations/*.py` and a test.
+2. Regeneration order after a change: `scripts/build_model_catalog.py` (only when a model pin
+   changes) -> `build_manifest.py` -> `scripts/merge_locales.py` (after adding UI strings to
+   `locales/audiostudio.fr.json`) -> `cytools validate` -> `python -m unittest discover -s tests`.
+3. Heavy code lives in `workers/` and runs in engine environments declared by `engines.json`.
+   The application process (interface, CLI, MCP) never imports torch, transformers, diffusers or
+   any model library. Base-environment dependencies are `requirements.txt`; engine dependencies are
+   `requirements-engine-*.txt` and are installed by `setup_engine.py` at their final path.
+   The SDK pin (version and commit) lives in `scripts/build_licences.py`; after changing it run
+   that script: it rewrites `../LICENCES/` from the SDK really installed and `tests/test_licences.py`
+   fails while the folder is stale. The product stays GPL-3.0 (LICENSE); never replace GPL by MIT
+   in a dependency, a model or a third-party source.
+4. Workers speak the JSON-lines protocol of `workers/_protocol.py`; the host is
+   `audiostudio/engines/workerhost.py`. Progress goes through `reporter.progress`, never stdout.
+   A GPU backend keeps its model resident; `WorkerPool.make_exclusive` stops the others first.
+   Operations that must never overlap carry `exclusiveGroups` (`EXCLUSIVE_GROUPS` in
+   `build_manifest.py`: `gpu`, `engine_torch`, `engine_piper`, `model_files`); a new GPU, engine or
+   model-file operation must be added to that table.
+5. Tail rendering is mandatory in every rendering path (`audiostudio/dsp/tail.py`): never cut a
+   reverb or delay tail; a selection rendered in the editor overlaps its tail onto what follows.
+6. Model weights are declared in `models/catalog.json` / `models/piper-voices.json` and checked
+   file by file (`audiostudio/models`): a folder that exists is not an installed model. Licences
+   requiring acceptance are accepted by the user in the Models tab, never in code or settings.
+   Tokens come from the OS keyring only; never in argv, jobs, logs or configurations.
+7. The interface follows CyUI (pinned upstream `cyui.py` / `cyui_modules`, host aliases in `gui/cyui`; see Docs/CyUIMigration.md):
+   colours from `cyui.palette()` by role only, sizes through `cyui.dp()` or the style, one primary
+   button per view, icon buttons with a tooltip naming the action and its shortcut and a stable
+   identity (`id=`), property tables in forms, empty panels that say why, messages through the
+   panels' `message` (status bar and notification). Check a change in the five themes
+   (`desktop.py --ui-test-tab=Editor --ui-test-theme=<key>`).
+8. Every visible string of `gui/*.py` and `dsp/effects.py` needs an English source and a French
+   entry (`tests/test_locales.py` enforces it). Never translate identifiers, paths, model names,
+   prompts or user text.
+9. Evidence before claims: `platform-tested.json` and `data/reports/VALIDATION.md` only record
+   executions that really happened on this machine. Linux is declared, not tested. ASIO is out of
+   scope (no Steinberg SDK licence); VST2 is out of scope.
+10. The five superseded Tools (AudioGen, ACE-Step 1.5, FishSpeech S2 Pro, Piper TTS, Qwen3-TTS)
+   are gone: their weights live in `data/models/<backend>` (receipt
+   `data/reports/migration-legacy.json`) and their reference code in
+   `../runtime/backups/legacy-reference/`. Do not resurrect a dependency on them.
+
+## Commands
+
+```powershell
+cd <path>\CyTools_AudioStudio\app
+..\runtime\python\Scripts\python.exe -m unittest discover -s tests -v
+..\runtime\python\Scripts\python.exe tool.py describe
+..\runtime\python\Scripts\python.exe tool.py invoke generate_sfx --backend sfx_procedural --params "{\"prompt\": \"laser beep\"}"
+..\runtime\python\Scripts\python.exe scripts\validate_mcp.py
+..\runtime\python\Scripts\python.exe desktop.py --ui-test-tab=Editor
+powershell -ExecutionPolicy Bypass -File build_launcher.ps1
+```
+
+## Modular CyUI maintenance
+
+Read Docs/CyUIMigration.md before changing the standalone UI. The selected upstream
+files in cyui.py and cyui_modules/ are unchanged and pinned/hash-checked by
+cyui-source.json. Do not patch them in the application or reintroduce a private
+palette/widget implementation. Refresh from the recorded checkout with
+scripts/sync_cyui.py. Keep host adapters outside the library and import only used
+families. Domain validation, decoding/rendering, jobs, persistence, task ownership
+and Undo remain in this application. Preserve documented advanced-editor gaps and
+all existing interactions. Run tests/test_modular_ui.py and the relevant native
+UI tests; keep the root LICENCES/CyUI-MIT.txt and Options source attribution.
