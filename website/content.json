@@ -1,0 +1,196 @@
+{
+  "accent": "#b195ff",
+  "category": {
+    "en": "Audio / editing, effects & generation",
+    "fr": "Audio / montage, effets et génération"
+  },
+  "intro": {
+    "en": "Edit the take. Shape the sound.",
+    "fr": "Montez la prise. Façonnez le son."
+  },
+  "description": {
+    "en": "A multitrack workspace for audio editing, insert effects, reusable processing chains and optional sound, music and voice models.",
+    "fr": "Un espace multipiste pour monter l’audio, travailler les effets, réutiliser des chaînes de traitement et ajouter des modèles de son, de musique et de voix."
+  },
+  "audience": {
+    "en": "For sound designers, voice creators and editors who want hands-on audio tools alongside local generation.",
+    "fr": "Pour les sound designers, les créateurs de voix et les monteurs qui veulent associer outils audio et génération locale."
+  },
+  "tags": [
+    {
+      "en": "Multitrack",
+      "fr": "Multipiste"
+    },
+    {
+      "en": "DSP",
+      "fr": "DSP"
+    },
+    {
+      "en": "VST3",
+      "fr": "VST3"
+    },
+    {
+      "en": "Workflows",
+      "fr": "Workflows"
+    }
+  ],
+  "hero": "editor",
+  "heroCaption": {
+    "en": "Multitrack editor · waveform clips and a track graphic EQ.",
+    "fr": "Éditeur multipiste · clips audio et égaliseur graphique de piste."
+  },
+  "sections": [
+    {
+      "id": "editor",
+      "label": {
+        "en": "01 / Multitrack editing",
+        "fr": "01 / Montage multipiste"
+      },
+      "title": {
+        "en": "Work with clips, not flattened files.",
+        "fr": "Travaillez les clips, sans tout aplatir."
+      },
+      "body": {
+        "en": "Move clips between tracks, trim their boundaries, shape fades and record from the microphone. Keep sessions as folders and use undo/redo while editing.",
+        "fr": "Déplacez les clips entre pistes, ajustez leurs bords et leurs fondus, puis enregistrez depuis le microphone. Les sessions sont conservées dans des dossiers, avec annulation et rétablissement pendant le montage."
+      },
+      "points": [
+        {
+          "en": "Cut, split, reverse, copy and selection editing",
+          "fr": "Coupe, découpage, inversion, copie et édition de sélection"
+        },
+        {
+          "en": "Track and master insert chains",
+          "fr": "Chaînes d’effets par piste et sur le master"
+        },
+        {
+          "en": "Automation for track and insert parameters",
+          "fr": "Automation des paramètres de piste et d’effets"
+        }
+      ],
+      "image": "editor",
+      "caption": {
+        "en": "Graphic EQ on a track, with spectrum and waveform monitoring.",
+        "fr": "Égaliseur graphique sur une piste, avec spectre et forme d’onde."
+      },
+      "doc": "guide-lisez-moi"
+    },
+    {
+      "id": "effects",
+      "label": {
+        "en": "02 / Effects & monitoring",
+        "fr": "02 / Effets et analyse"
+      },
+      "title": {
+        "en": "See what the processing is doing.",
+        "fr": "Voyez ce que fait le traitement."
+      },
+      "body": {
+        "en": "Native effects expose useful visual controls: EQ curves, dynamics transfer curves, meters, scopes and spectra. Work on a track or the master bus and compare the result as it plays.",
+        "fr": "Les effets natifs proposent des contrôles visuels utiles : courbes d’égalisation et de dynamique, vumètres, oscilloscopes et spectres. Travaillez sur une piste ou le master et écoutez le résultat pendant la lecture."
+      },
+      "points": [
+        {
+          "en": "Dynamics, EQ, reverb, delay and modulation",
+          "fr": "Dynamique, égalisation, réverbération, délai et modulation"
+        },
+        {
+          "en": "Compatible VST3 effects in insert chains",
+          "fr": "Effets VST3 compatibles dans les chaînes"
+        },
+        {
+          "en": "Bypass, reorder and render the chain",
+          "fr": "Désactivation, réorganisation et rendu de la chaîne"
+        }
+      ],
+      "image": "compressor",
+      "caption": {
+        "en": "Master compressor · transfer curve, gain reduction and meters.",
+        "fr": "Compresseur du master · courbe de transfert, réduction de gain et vumètres."
+      },
+      "doc": "guide-lisez-moi"
+    },
+    {
+      "id": "generation",
+      "label": {
+        "en": "03 / Models & processing",
+        "fr": "03 / Modèles et traitements"
+      },
+      "title": {
+        "en": "Add generation when the project needs it.",
+        "fr": "Ajoutez la génération selon vos besoins."
+      },
+      "body": {
+        "en": "Create sound effects, music or speech with a compatible installed backend. Keep model setup separate from the editor. Save processing workflows and apply them to selections, tracks, files or batches.",
+        "fr": "Créez des effets sonores, de la musique ou de la parole avec un moteur compatible installé. L’installation des modèles reste distincte de l’éditeur. Enregistrez des workflows pour les sélections, pistes, fichiers ou lots."
+      },
+      "points": [
+        {
+          "en": "Procedural sound, AudioLDM and ACE-Step paths",
+          "fr": "Son procédural, AudioLDM et ACE-Step"
+        },
+        {
+          "en": "Piper, Qwen3-TTS and Fish Speech voice backends",
+          "fr": "Moteurs vocaux Piper, Qwen3-TTS et Fish Speech"
+        },
+        {
+          "en": "Render reverb and delay tails instead of cutting them",
+          "fr": "Conservation des fins de réverbération et de délai au rendu"
+        }
+      ],
+      "image": "generation",
+      "caption": {
+        "en": "Generation workspace · choose a family and configure the actual backend.",
+        "fr": "Espace de génération · choix de la famille et réglages du moteur."
+      },
+      "doc": "guide-lisez-moi"
+    }
+  ],
+  "limits": {
+    "en": "Windows x64 is tested; Linux is unvalidated. Editing, native DSP, VST3 hosting and Piper use the CPU. Other generation backends have their own CUDA and memory requirements. Engines and weights are separate downloads. ASIO and VST2 are not provided.",
+    "fr": "Windows x64 est testé ; Linux n’est pas validé. Le montage, le DSP natif, les VST3 et Piper utilisent le CPU. Les autres moteurs de génération ont leurs propres exigences CUDA et mémoire. Les moteurs et poids sont téléchargés séparément. ASIO et VST2 ne sont pas fournis."
+  },
+  "shortName": "AudioStudio",
+  "repository": "CyTools_AudioStudio",
+  "private": false,
+  "licence": "GPL-3.0-only",
+  "logo": "assets/showcase/logo.png",
+  "images": {
+    "editor": {
+      "file": "assets/showcase/editor.webp",
+      "width": 1500,
+      "height": 940,
+      "caption": {
+        "en": "Multitrack editor · waveform clips and a track graphic EQ.",
+        "fr": "Éditeur multipiste · clips audio et égaliseur graphique de piste."
+      }
+    },
+    "compressor": {
+      "file": "assets/showcase/compressor.webp",
+      "width": 1500,
+      "height": 940,
+      "caption": {
+        "en": "Master compressor · transfer curve, gain reduction and meters.",
+        "fr": "Compresseur du master · courbe de transfert, réduction de gain et vumètres."
+      }
+    },
+    "generation": {
+      "file": "assets/showcase/generation.webp",
+      "width": 1500,
+      "height": 940,
+      "caption": {
+        "en": "Generation workspace · choose a family and configure the actual backend.",
+        "fr": "Espace de génération · choix de la famille et réglages du moteur."
+      }
+    },
+    "workflow": {
+      "file": "assets/showcase/workflow.webp",
+      "width": 1500,
+      "height": 940,
+      "caption": {
+        "en": "Workflow workspace · reusable processing chains.",
+        "fr": "Espace workflows · chaînes de traitement réutilisables."
+      }
+    }
+  }
+}

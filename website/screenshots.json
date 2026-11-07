@@ -1,0 +1,26 @@
+[
+  {
+    "file": "assets/showcase/editor.webp",
+    "origin": "Repository screenshot: docs/screenshots/editor-track-graphic-eq.png",
+    "originalSha256": "87d54a1d42b69ad7a170daa6a747dd2ed10a6a09be76455d6c63202166de2cca",
+    "transform": "Full frame, converted to WebP; metadata omitted. No compositing or generative editing."
+  },
+  {
+    "file": "assets/showcase/compressor.webp",
+    "origin": "Repository screenshot: docs/screenshots/editor-master-compressor.png",
+    "originalSha256": "52e713af79f1a1379cb4e00742f6d1853c51fc61fd53c95b5dfa1b9c51b4dcf1",
+    "transform": "Full frame, converted to WebP; metadata omitted. No compositing or generative editing."
+  },
+  {
+    "file": "assets/showcase/generation.webp",
+    "origin": "Existing application UI smoke-test capture: ui-generate-en.png",
+    "originalSha256": "f5256db4f7d6441458c0f946d241e3c0a221668566894734146b4d9c31b8e398",
+    "transform": "Full frame, converted to WebP; metadata omitted. No compositing or generative editing."
+  },
+  {
+    "file": "assets/showcase/workflow.webp",
+    "origin": "Existing application UI smoke-test capture: ui-workflows-en.png",
+    "originalSha256": "324f989091bd2afdfa46393e0afba0bb988d620dd7218dc832bf3bfe269ce205",
+    "transform": "Full frame, converted to WebP; metadata omitted. No compositing or generative editing."
+  }
+]
