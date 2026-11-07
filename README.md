@@ -1,191 +1,153 @@
-# CyTools AudioStudio
+<table width="100%">
+  <tr>
+    <td width="300" align="left" valign="top">
+      <a href="https://mrmybal.github.io/CyTools_AudioStudio/">Website</a><br>
+      <a href="https://mrmybal.github.io/CyTools_AudioStudio/Documentation.html#/en/overview">Documentation</a><br>
+      <a href="https://github.com/MrMybal/CyTools_AudioStudio">GitHub</a><br><br>
+      <sub>README</sub><br>
+      <a href="README.md">English</a> · <a href="README.fr.md">Français</a>
+    </td>
+    <td width="400" align="center" valign="middle">
+      <a href="https://mrmybal.github.io/CyTools_AudioStudio/"><img src="app/assets/branding/logo.png" alt="CyTools AudioStudio logo" width="128"></a>
+    </td>
+    <td width="300" align="right" valign="top">
+      <p><sub>Application license</sub><br><a href="LICENSE"><strong>GPL-3.0-only</strong></a></p>
+      <p><sub>Application version</sub><br><a href="VERSION.md"><strong>0.1.5</strong></a><br><strong>EXPERIMENTAL</strong></p>
+      <p><a href="https://github.com/MrMybal/CyTools_AudioStudio/releases/download/v0.1.5/CyTools_AudioStudio-0.1.5-windows-x64.zip"><strong>Download</strong></a><br><sub>Windows x64 · portable</sub></p>
+    </td>
+  </tr>
+</table>
 
-[Documentation](https://mrmybal.github.io/CyTools_AudioStudio/#/en/overview) · [Website](https://mrmybal.github.io/CyTools_AudioStudio/) · [Français](https://mrmybal.github.io/CyTools_AudioStudio/#/fr/overview)
+<h1 align="center">CyTools AudioStudio</h1>
 
-<p align="center">
-  <img src="app/assets/branding/logo.png" alt="CyTools AudioStudio logo" width="160">
-</p>
 
-A standalone audio studio for Windows (desktop application, command line and MCP server on one
-runtime), built on the [CyToolsCore](https://github.com/MrMybal/CyToolsCore) SDK. French user
-guide: [LISEZ-MOI.md](LISEZ-MOI.md). Developer guide: [app/README.md](app/README.md).
+A multitrack workspace for audio editing, insert effects, reusable processing chains and optional sound, music and voice models. For sound designers, voice creators and editors who want hands-on audio tools alongside local generation.
 
-![Multitrack editor with a 10-band graphic EQ on a track: live scope and spectrum, response curve over the spectrum, band faders](docs/screenshots/editor-track-graphic-eq.png)
-*A track's insert chain: the graphic EQ with its live scope, spectrometer and response curve, while the session plays.*
+> **EXPERIMENTAL · 0.1.5**
+>
+> Published Windows build for evaluation; some engine paths remain unvalidated. Read the [version notes and known limitations](VERSION.md).
 
-![Compressor on the master bus: transfer curve, gain-reduction meter and history, input and output meters](docs/screenshots/editor-master-compressor.png)
-*The master bus chain: a compressor with its transfer curve, gain-reduction meter and history.*
+[![Multitrack editor · waveform clips and a track graphic EQ.](website/assets/showcase/editor.webp)](website/assets/showcase/editor.webp)
 
-## What it does
+*Multitrack editor · waveform clips and a track graphic EQ.*
 
-- **Multitrack editor** in the spirit of GoldWave / Audacity: waveforms per channel, several clips
-  per track that you can move (also onto another track, which then plays them through its own
-  effects), trim (non-destructively), fade from their corners, reverse from their right-click menu, selection editing (cut, copy,
-  paste, delete, trim, silence, split into two clips), undo / redo, recording from the microphone,
-  playback through the default output, sessions saved as folders.
-- **Interface** drawn with CyUI, the interface library of the Cy* applications (CyDAW 2, Shaderixel,
-  CyEngineHub), provided by pinned CyUI modules: five themes (mid grey, light grey, amber night,
-  violet, navy) and two densities chosen in Options, Segoe UI fonts with icon buttons, tooltips that
-  name each action and its shortcut, property tables in the forms, a status bar (last message,
-  running jobs with their progress and a cancel button, audio engine state) and notifications.
-- **Insert chains per track and on the master bus** with 106 native effects (92 of them real-time)
-  and VST3 plugins, each with its own interface: input / output meters, a live scope and a live
-  spectrometer of the audio entering and leaving the effect, transfer
-  curve and gain-reduction history for the dynamics, draggable bands over the live spectrum for the
-  parametric EQ, crossovers for the multiband processors, decay envelope for the reverbs, echo taps
-  for the delays, LFO views, goniometer, spectrum analyser, LUFS loudness meter, 16-step pattern
-  editor, pitch-correction gauge. Everything is heard while playing.
-- **Automation lanes** for volume, pan, mute and any parameter of any insert (native effect or
-  VST3), drawn over the track, edited with the mouse, or recorded live while playing.
-- **Effects belong to a track or to the master bus**, never to the whole editor: clicking a track
-  (or the master lane) shows its chain in the FX panel; add, remove, bypass, drag to reorder, bake it
-  into the clip, or send it to the Workflows tab.
-- **Drag and drop**: an audio file dropped on a track becomes a clip of that track, at the time under
-  the mouse when that place is free and after its last clip otherwise; dropped below the tracks it
-  becomes a new track; an empty track (**+ Track** button) simply takes it and keeps its inserts. A
-  session folder opens it, a workflow file loads it, an impulse response dropped on a convolution
-  effect is used by it. Clips move between tracks by dragging their title bar up or down (or with
-  *Move to track* in their right-click menu); inserts and chain items are reordered by dragging them.
-- **Search by text** in every effect and plugin picker (accent and case insensitive, name, category
-  and description; Enter picks the first match).
-- **Effects**: compressors (feed-forward, vintage opto / VCA / FET / vari-mu, multiband, dynamic EQ,
-  de-esser, transient shaper, look-ahead maximizer, gate, expander), equalisers and filters
-  (parametric, graphic, tilt, shelves, notch, ladder, auto-wah, formants, hum remover), reverbs
-  (JUCE, impulse-response hall / plate / room / chamber / cathedral / spring, convolution, shimmer,
-  gated), delays (tape, tempo-synced, ping-pong, multi-tap, dual, reverse), modulation (chorus,
-  ensemble, flanger, phaser, vibrato, tremolo, auto-pan, rotary speaker, ring modulator, frequency
-  shifter, doubler, resonator), saturation (tape, tube, overdrive, fuzz, wave folder, multiband,
-  guitar amp with cabinets, exciter, bit crusher, cassette, vinyl, telephone), vocal tools (vocoder,
-  real-time pitch shifter, pitch correction, harmoniser), stereo tools, restoration (real-time
-  spectral noise reduction, de-clicker), analysers and utilities.
-- **Workflows**: chains of effects, VST3 plugins and models saved as JSON, applied to a selection,
-  a track, a file or a folder, with **tail rendering** so reverb and delay tails are never cut.
-- **Generation** with several models per family, selectable in the interface: sound effects
-  (procedural synthesiser, AudioLDM), music (ACE-Step 1.5: songs, remix, repaint, lyrics), voices
-  (Piper, Qwen3-TTS, Fish Speech S2 Pro) with voice cloning from a file or the microphone, voice
-  presets that regenerate the same voice, an optional text assistant for TTS annotations, Whisper
-  transcription.
-- **Mastering**: loudness normalisation with a true-peak limiter, reference mastering (Matchering).
-- **Headless scripting**: `edit_session` and `batch_session` operations script the editor from
-  the command line or MCP (add / replace / remove tracks, chains, master, render), including
-  batches of sounds through one project.
-- **Models and engines** installed from the application (state, size, source, licence, download,
-  resume, repair, gated-model authorisation) and **GitHub update streams** for the application,
-  the engine sources and the model catalogue, with staging, verification and rollback.
 
-## Requirements
+## The application
 
-- Windows 10/11 x64 (the only platform executed by the author; a Linux launcher script is provided
-  but was never run), Python 3.11, Git on the PATH.
-- An NVIDIA GPU with CUDA for the generation models (AudioLDM, ACE-Step, Qwen3-TTS, Fish Speech —
-  Fish Speech needs about 20 GB of free VRAM). The editor, the effects, VST3 hosting and Piper run
-  on the CPU.
-- Model weights are **not** in this repository; they are downloaded from the Models tab.
+### Multitrack editing
 
-## Portable build (no Python to install)
+Move clips between tracks, trim their boundaries, shape fades and record from the microphone. Keep sessions as folders and use undo/redo while editing.
 
-Each [release](https://github.com/MrMybal/CyTools_AudioStudio/releases) ships
-`CyTools_AudioStudio-<version>-win64.zip`: unzip it anywhere (a path without accents is safest) and
-double-click `CyTools_AudioStudio.exe`. The archive contains the launcher, the application, the
-documentation, the licences (`LICENSE`, `LICENCES/`) and a private Python 3.11 (`runtime/python`, official python.org NuGet build) with
-the interface, the CLI, MCP, the effects and VST3 hosting already installed — about 210 MB. The
-generation engines (PyTorch, Piper) and the model weights are downloaded by the application from
-the Models tab (Git must be on the PATH for the engine sources). The same release also carries
-`cytools-app.zip` + `.sha256`, the application stream that the Updates tab installs in place, and
-the launcher alone. `SHA256SUMS.txt` lists every asset.
+### Effects & monitoring
 
-Version 0.1.1 moves to the CyToolsCore SDK 0.10.1 (MIT) and therefore to another private Python:
-coming from the portable 0.1.0, unzip the new archive next to the old folder and move `data/` (and
-`runtime/engines`, `runtime/sources` when engines were installed) into it; the old folder is the
-way back. Settings, sessions, workflows, presets and models are read unchanged. Details and the
-source-installation commands: [app/README.md](app/README.md#versions-and-sdk-updates).
+Native effects expose useful visual controls: EQ curves, dynamics transfer curves, meters, scopes and spectra. Work on a track or the master bus and compare the result as it plays.
 
-## Installation from source
+[![Master compressor · transfer curve, gain reduction and meters.](website/assets/showcase/compressor.webp)](website/assets/showcase/compressor.webp)
+
+*Master compressor · transfer curve, gain reduction and meters.*
+
+
+### Models & processing
+
+Create sound effects, music or speech with a compatible installed backend. Keep model setup separate from the editor. Save processing workflows and apply them to selections, tracks, files or batches.
+
+[![Generation workspace · choose a family and configure the actual backend.](website/assets/showcase/generation.webp)](website/assets/showcase/generation.webp)
+
+*Generation workspace · choose a family and configure the actual backend.*
+
+
+## Features
+
+- **Editing:** multitrack clips, trim/fades, selection editing, recording, track moves, sessions and undo/redo.
+- **Processing:** native dynamics, EQ, filters, reverb, delay, modulation, saturation, restoration and analysers; track/master chains, live meters and automation.
+- **Plugins and workflows:** compatible VST3 effects, saved processing chains, headless session editing and batch rendering. Reverb/delay tails are preserved.
+- **Generation:** procedural effects and optional AudioLDM, ACE-Step, Piper, Qwen3-TTS and Fish Speech paths. Parameters and availability depend on the installed engine.
+- **Mastering and voice presets:** loudness targets, reference mastering, reusable voice settings and compatible inline delivery annotations.
+
+**Desktop and automation:** English is the default interface language; French is selectable in Options. Save/load generation configurations, follow copyable application logs and use the declared operations through the CLI or MCP. The [manual](https://mrmybal.github.io/CyTools_AudioStudio/Documentation.html#/en/overview) describes the real parameters and output contracts.
+
+---
+
+## Installation
+
+The published application build is **Windows x64**. The portable ZIP includes its private Python runtime and base UI/media dependencies. Models and optional heavy engines are separate downloads.
+
+1. [Download CyTools AudioStudio 0.1.5](https://github.com/MrMybal/CyTools_AudioStudio/releases/download/v0.1.5/CyTools_AudioStudio-0.1.5-windows-x64.zip).
+2. Extract the complete ZIP into a writable folder. Keep `app/` and `runtime/` beside the launcher.
+3. Open **CyTools_AudioStudio.exe**. Use the installation/model workspace for the components you need; review each component licence and any provider access conditions before download.
+
+No machine Python is needed just to open the portable application. Source setup and some optional engine installers require additional tools such as Git. Keep the full release folder; the standalone `.exe` or an `app` update ZIP alone is not a complete installation.
+
+Windows x64 is tested; Linux is unvalidated. Editing, native DSP, VST3 hosting and Piper use the CPU. Other generation backends have their own CUDA and memory requirements. Engines and weights are separate downloads. ASIO and VST2 are not provided.
+
+### Updates and data
+
+For an existing compatible installation, use its Updates page and the matching application update package. Keep `data/`, installed engines and models. An update for another runtime ABI must not be forced. If the required runtime changes, use the complete portable release in a separate folder and follow the migration instructions.
+
+## Source, build and required libraries
+
+<details>
+<summary>Windows source setup and optional build tools</summary>
+
+
+Use Python **3.11** for the base source environment. Git is needed for cloning and pinned Git requirements. Building the launcher needs the MSVC x64 Build Tools; use a developer command prompt.
 
 ```powershell
 git clone https://github.com/MrMybal/CyTools_AudioStudio.git
 cd CyTools_AudioStudio
-# 1. private Python environment of the application (interface, CLI, MCP, DSP, VST3)
-C:\Users\<you>\AppData\Local\Programs\Python\Python311\python.exe -m venv runtime\python
-.\runtime\python\Scripts\python.exe -m pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@a8d200f2d0baaade1633e0683663b4506c595f74"
-.\runtime\python\Scripts\python.exe -m pip install --keyring-provider disabled -r app\requirements.txt
-# 2. engines (heavy, private): PyTorch CUDA 12.8 stack + pinned Fish Speech / ACE-Step sources, and Piper
-.\runtime\python\Scripts\python.exe app\setup_engine.py torch      # add --cpu-only without an NVIDIA GPU
-.\runtime\python\Scripts\python.exe app\setup_engine.py piper
-# 3. Windows launcher (MSVC Build Tools)
-powershell -ExecutionPolicy Bypass -File app\build_launcher.ps1
+py -3.11 -m venv runtime\python
+runtime\python\Scripts\python.exe -m pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@a8d200f2d0baaade1633e0683663b4506c595f74"
+runtime\python\Scripts\python.exe -m pip install -r app\requirements.txt
+runtime\python\Scripts\python.exe app\scripts\build_plugin_host.py
+powershell -File app\build_launcher.ps1
+.\CyTools_AudioStudio.exe
 ```
 
-Then double-click `CyTools_AudioStudio.exe`, or run `runtime\python\Scripts\python.exe app\desktop.py`.
-Both engines can also be installed from the Models tab.
+The exact base requirements are in [app/requirements.txt](app/requirements.txt). Engines use their own environments and model catalogues; installing the base environment does not install them. Follow the [developer setup](app/README.md) for the detailed build and optional components.
 
-## Command line and MCP
+The isolated native plugin worker additionally needs CMake and a C++20 compiler; NASM is optional. Its separate licence and dependency choices are described in [app/native/README.md](app/native/README.md).
 
-```powershell
-.\runtime\python\Scripts\python.exe app\tool.py describe
-.\runtime\python\Scripts\python.exe app\tool.py invoke process_audio --params "{\"input\": \"D:/x.wav\", \"workflow_name\": \"my chain\"}"
-.\runtime\python\Scripts\python.exe app\tool.py invoke batch_session --params "{\"session\": \"D:/.../data/sessions/template\", \"inputs\": [\"D:/sounds/a.wav\"], \"slot\": {\"track\": \"Voice\"}, \"output_dir\": \"D:/renders\"}"
-.\runtime\python\Scripts\python.exe app\tool.py --data-dir data\jobs-mcp mcp     # MCP stdio server (40 operations)
-```
+</details>
 
-Input paths must be absolute. Operations that download need the `network` permission
-(`create-client --permission network`, token in `CYTOOLS_TOKEN`); the interface has it.
+---
 
-## Repository layout
+## License
 
-```
-CyTools_AudioStudio.exe   Windows launcher (built locally, not in git)
-CyTools_AudioStudio.sh    Linux launcher (never executed by the author)
-LISEZ-MOI.md              user guide (French)
-LICENSE                   GNU GPL v3, licence of the application
-LICENCES/                 SDK licence (MIT), sources, third-party notices
-app/                      code, manifest (CyTool.json), interface, workers, tests, docs, scripts
-data/                     inputs, models, jobs, sessions, workflows, presets, settings, logs (not in git)
-runtime/                  private Python, engines, vendored sources, updates, backups (not in git)
-```
+**CyTools AudioStudio is licensed under [GPL-3.0-only](LICENSE).** CyToolsCore, CyUI and CyDoc remain MIT components; their licences do not change the application licence. Optional engines, plugins and model weights retain their own terms.
 
-Tests (fixtures only, no GPU): `cd app && ..\runtime\python\Scripts\python.exe -m unittest discover -s tests`.
-Release assets are built by `app/scripts/build_release.py` and published by `app/scripts/publish_release.py`
-(token from `GITHUB_TOKEN` only).
-Evidence of what was actually executed lives in `data/reports/VALIDATION.md` of an installation and
-is summarised in [app/Docs/CapabilityCoverage.md](app/Docs/CapabilityCoverage.md).
+### Main components and third-party libraries
 
-## Licence
+| Library · source | License · terms | Use / scope |
+| --- | --- | --- |
+| [CyToolsCore 0.10.1](https://github.com/MrMybal/CyToolsCore) | [MIT](LICENCES/CyToolsCore-MIT.txt) | SDK/runtime: jobs, sessions, resources, CLI and MCP. |
+| [CyUI 1.2.0](https://github.com/MrMybal/CyUI) | [MIT](LICENCES/CyUI-MIT.txt) | Selected bundled Python UI modules. |
+| [CyDoc 0.1.0](https://github.com/MrMybal/CyDoc) | [MIT](LICENCES/CyDoc-MIT.txt) | Bundled offline reader; Node/npm are authoring/build tools only. |
+| [Dear ImGui / imgui-bundle](https://github.com/pthom/imgui_bundle) | [MIT + component notices](https://github.com/pthom/imgui_bundle/blob/main/LICENSE) | Desktop renderer and its bundled native components. |
+| [CPython 3.11](https://www.python.org/) | [PSF + component notices](https://docs.python.org/3.11/license.html) | Private runtime included in the Windows portable archive. |
+| [pedalboard](https://github.com/spotify/pedalboard) | [GPL-3.0](app/licenses.json) | Base native DSP and VST3 hosting; retains its JUCE notices. |
+| [Isolated native plugin host / JUCE 8](app/native/README.md) | [AGPL-3.0; JUCE also offers commercial terms](app/native/licenses/JUCE-LICENSE.md) | Separate worker executable, not the GPL Python application. CMake/C++20 build; CLAP/ysfx dependencies keep their notices. |
+| [NumPy / SciPy / PyAV / sounddevice](app/requirements.txt) | [BSD / MIT + native component notices](LICENCES/ThirdParty-Notices.txt) | Base processing, decoding, playback and recording. |
+| [pyloudnorm / Matchering](app/requirements.txt) | [MIT / GPL-3.0](LICENCES/ThirdParty-Notices.txt) | Loudness measurement and reference mastering. |
+| [Piper / ONNX Runtime](app/requirements-engine-piper.txt) | [GPL-3.0-or-later / MIT](https://github.com/OHF-Voice/piper1-gpl/blob/main/COPYING) | Optional CPU voice engine; voice weights retain their own licences. |
+| [PyTorch and generation engines](app/engines.json) | [Component-specific; separate model terms](app/licenses.json) | Optional AudioLDM, ACE-Step, Qwen3-TTS and Fish Speech engines. Fish Speech weights have research restrictions. |
 
-The application code is free software under the **GNU General Public License v3.0**
-([LICENSE](LICENSE)), like pedalboard / JUCE it depends on. The CyToolsCore SDK 0.10.1 it is built
-on is under the **MIT** licence, which does not change the licence of this product. Engines and
-model weights keep their own licences, listed in [app/licenses.json](app/licenses.json) and shown
-in the Options tab; the Models tab asks for acceptance before downloading a gated or
-non-commercial model.
+This table indexes the main components; it does not replace their complete transitive notices. Retain [LICENCES/](LICENCES/), [app/licenses.json](app/licenses.json), the licences beside installed packages and the notices in each optional engine/model. CUDA libraries, when installed, also retain NVIDIA’s terms.
 
-The [LICENCES](LICENCES) folder travels with every copy of the product (repository, portable
-archive, application stream): `CyToolsCore-MIT.txt` (full text, Copyright (c) 2026 Cyberalien),
-`LICENSE-CyToolsCore.txt` (scaffold notice), `SOURCES.txt` (repositories, pinned SDK revision,
-guides), `ThirdParty-Notices.txt` (components and their licences) and, in the portable archive,
-`PythonPackages.txt` (every package of `runtime/python` with the licence files kept in the
-archive). They are generated by `app/scripts/build_licences.py` from the SDK that is installed.
+The Python application is GPL-3.0-only. The isolated native worker is a separate AGPL-3.0 executable; retain its [JUCE licence](app/native/licenses/JUCE-LICENSE.md) and bundled dependency notices. Piper 1.8.0 uses GPL-3.0-or-later; ONNX Runtime and individual voices have separate terms.
 
+## References and links
 
-### CLAP, LV2 and JSFX
+- [Documentation](https://mrmybal.github.io/CyTools_AudioStudio/Documentation.html#/en/overview)
+- [Website](https://mrmybal.github.io/CyTools_AudioStudio/)
+- [Source repository](https://github.com/MrMybal/CyTools_AudioStudio) · [Releases and checksums](https://github.com/MrMybal/CyTools_AudioStudio/releases)
+- [Issue tracker](https://github.com/MrMybal/CyTools_AudioStudio/issues) · [Version notes](VERSION.md)
+- [Developer setup](app/README.md)
 
-CLAP, LV2 and JSFX effects load in the Plugins tab and can be used as track/master inserts
-and in workflows. An EEL2 editor is available under Plugins > JSFX script editor.
-The new formats use an isolated native worker. From a source clone, build it with
-`runtime/python/Scripts/python.exe app/scripts/build_plugin_host.py` (from the product root).
-See [the format guide](app/Docs/PluginFormats.md).
+<details>
+<summary><strong>AI Usage</strong></summary>
 
-## Modular CyUI
+- [Start here: project agent guide](app/AGENTS.md) — product rules and important files.
+- [Operations and AI integration](app/Documentation/DocAI.md) — actual tool contracts and task usage.
+- [Build this application](app/README.md) — source setup and application-specific commands.
 
-The standalone interface uses the pinned, selected CyUI 1.2 modules. See
-[the migration and validation notes](app/Docs/CyUIMigration.md) for replacements, retained host
-adaptations, source hashes and reproducible refresh instructions.
-
-CyUI: MIT. Full license: LICENCES/CyUI-MIT.txt.
-Upstream license: https://github.com/MrMybal/CyUI/blob/main/LICENSE
-Repository: https://github.com/MrMybal/CyUI (currently private; no upstream access required to run this application).
-
-
-## Local documentation
-
-Open **Options → Open local manual (F1)** or press **F1** in the application. The complete offline reader is shipped in `app/Documentation/Documentation.html`. [Regenerate the manual](app/.CyDocBuild/README.md).
+</details>
