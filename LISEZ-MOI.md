@@ -1,6 +1,6 @@
 # CyTools AudioStudio
 
-[Documentation](https://mrmybal.github.io/CyTools_AudioStudio/#/fr/overview) · [English](https://mrmybal.github.io/CyTools_AudioStudio/#/en/overview)
+[Documentation](https://mrmybal.github.io/CyTools_AudioStudio/#/fr/overview) · [Site web](https://mrmybal.github.io/CyTools_AudioStudio/?lang=fr) · [English](https://mrmybal.github.io/CyTools_AudioStudio/#/en/overview)
 
 Studio audio autonome : éditeur multipiste avec inserts par piste (106 effets natifs dont 92 en
 temps réel, plugins VST3, chacun avec son interface), automation, bus master, effets et plugins

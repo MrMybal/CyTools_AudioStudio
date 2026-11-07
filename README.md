@@ -1,6 +1,6 @@
 # CyTools AudioStudio
 
-[Documentation](https://mrmybal.github.io/CyTools_AudioStudio/#/en/overview) · [Français](https://mrmybal.github.io/CyTools_AudioStudio/#/fr/overview)
+[Documentation](https://mrmybal.github.io/CyTools_AudioStudio/#/en/overview) · [Website](https://mrmybal.github.io/CyTools_AudioStudio/) · [Français](https://mrmybal.github.io/CyTools_AudioStudio/#/fr/overview)
 
 <p align="center">
   <img src="app/assets/branding/logo.png" alt="CyTools AudioStudio logo" width="160">
