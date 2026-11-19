@@ -65,7 +65,7 @@ build or test the application: the test-suite uses synthetic fixtures only.
 cd <path>\CyTools_AudioStudio
 # 1. base environment (interface, CLI, MCP, DSP, VST3) — Python 3.11
 C:\Users\<you>\AppData\Local\Programs\Python\Python311\python.exe -m venv runtime\python
-.\runtime\python\Scripts\python.exe -m pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@a8d200f2d0baaade1633e0683663b4506c595f74"   # SDK 0.10.1 (MIT), pinned to its commit; git must be on the PATH
+.\runtime\python\Scripts\python.exe -m pip install "cytools-core @ https://github.com/MrMybal/CyToolsCore/releases/download/v0.11.0/cytools_core-0.11.0-py3-none-win_amd64.whl"   # SDK 0.10.1 (MIT), pinned to its commit; git must be on the PATH
 .\runtime\python\Scripts\python.exe -m pip install --keyring-provider disabled -r app\requirements.txt
 # 2. engines (heavy, private): PyTorch CUDA 12.8 stack + vendored Fish Speech / ACE-Step sources, and Piper
 .\runtime\python\Scripts\python.exe app\setup_engine.py torch      # ~12 GB, needs git; add --cpu-only without NVIDIA GPU
@@ -316,7 +316,7 @@ sessions, workflows, presets, jobs, models): nothing has to be converted.
 
 ```powershell
 git pull
-.\runtime\python\Scripts\python.exe -m pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@a8d200f2d0baaade1633e0683663b4506c595f74"
+.\runtime\python\Scripts\python.exe -m pip install "cytools-core @ https://github.com/MrMybal/CyToolsCore/releases/download/v0.11.0/cytools_core-0.11.0-py3-none-win_amd64.whl"
 .\runtime\python\Scripts\python.exe -m pip install --keyring-provider disabled -r app\requirements.txt
 .\runtime\python\Scripts\python.exe -c "import importlib.metadata as m; d = m.distribution('cytools-core'); print(d.version, d.metadata['License-Expression'])"   # 0.10.1 MIT
 ```
@@ -396,3 +396,31 @@ Voir [Docs/PluginFormats.md](Docs/PluginFormats.md).
 The standalone interface uses the pinned, selected CyUI 1.2 modules. See
 [the migration and validation notes](Docs/CyUIMigration.md) for replacements, retained host
 adaptations, source hashes and reproducible refresh instructions.
+
+
+## Native distribution
+
+Windows x64 source installation uses the pinned native platform wheel:
+
+```powershell
+python -m pip install "cytools-core @ https://github.com/MrMybal/CyToolsCore/releases/download/v0.11.0/cytools_core-0.11.0-py3-none-win_amd64.whl"
+```
+
+The same wheel and SHA-256 are included in `app/packages/native-core.json`.
+For an offline upgrade use the private interpreter to install that wheel with `--no-deps`.
+Do not use a source ZIP as if it contained compiled native binaries. On Linux/macOS,
+build Core Native/ with CMake and a compatible CyMCPSDK checkout first; those platforms
+have not been validated by this Windows migration.
+
+After testing and committing source changes, compile the launcher with the existing
+`app/build_launcher` script. Build a fresh Windows package with:
+
+```powershell
+python app/scripts/build_native_release.py --python runtime/python/Scripts/python.exe
+```
+
+The build Python needs `packaging` (or pip); the product interpreter is supplied
+explicitly by `--python`. The builder reads committed application sources, verifies
+the official Python archive, selects the tested base dependencies, includes the
+native Core library and notices, and excludes user data and optional model engines.
+No GitHub workflow is required.

@@ -28,7 +28,7 @@ class InstalledSdkTests(unittest.TestCase):
 
     def test_pins_agree(self):
         requirements = (APP / 'requirements.txt').read_text('utf-8')
-        self.assertIn('cytools-core[mcp]==' + build_licences.SDK_VERSION, requirements)
+        self.assertIn('/v' + build_licences.SDK_VERSION + '/cytools_core-', requirements)
         for path in (APP / 'requirements.txt', APP / 'README.md', ROOT / 'README.md'):
             self.assertIn(build_licences.SDK_REQUIREMENT, path.read_text('utf-8'), path.name)
         abi = json.loads((APP / 'release.json').read_text('utf-8'))['runtime_abi']

@@ -4,12 +4,12 @@
 
 ## Published application
 
-**0.1.5 · EXPERIMENTAL · Windows x64**
+**0.1.6 · EXPERIMENTAL · Windows x64**
 
 This is the application version, not the version of its SDK or UI library. This experimental release is intended for evaluation.
 
-- [Published release and checksums](https://github.com/MrMybal/CyTools_AudioStudio/releases/tag/v0.1.5)
-- [Portable Windows download](https://github.com/MrMybal/CyTools_AudioStudio/releases/download/v0.1.5/CyTools_AudioStudio-0.1.5-windows-x64.zip)
+- [Published release and checksums](https://github.com/MrMybal/CyTools_AudioStudio/releases/tag/v0.1.6)
+- [Portable Windows download](https://github.com/MrMybal/CyTools_AudioStudio/releases/download/v0.1.6/CyTools_AudioStudio-0.1.6-windows-x64.zip)
 
 ## Changes in this binary release
 
@@ -23,7 +23,7 @@ The product showcase, README layout and repository navigation were added after t
 
 | Component | Version | Role |
 | --- | --- | --- |
-| CyTools AudioStudio | 0.1.5 | Application |
+| CyTools AudioStudio | 0.1.6 | Application |
 | CyToolsCore | 0.10.1 | SDK / runtime |
 | CyUI | 1.2.0 | Selected UI modules |
 | CyDoc | 0.1.0 | Bundled reader |
@@ -42,3 +42,6 @@ The current release notes do not publish a bug-by-bug ticket list. Use the issue
 - [All releases](https://github.com/MrMybal/CyTools_AudioStudio/releases)
 
 For a compatible existing installation, use its update stream and preserve data/models. A runtime ABI change requires its matching complete distribution; do not force an incompatible app-only update.
+
+
+Native CLI / JSONL / HTTP / MCP through CyMCPSDK 0.7.1, packaged Core 0.11.0, complete AI capability discovery, task export and cleanup instructions.

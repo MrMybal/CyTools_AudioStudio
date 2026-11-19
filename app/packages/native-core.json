@@ -1,0 +1,8 @@
+{
+  "version": "0.11.0",
+  "cymcp": "0.7.1",
+  "wheel": "cytools_core-0.11.0-py3-none-win_amd64.whl",
+  "sha256": "c7a8c6e24b695042ec37b5df23d157dfa3da7809f710096ea79a3d5c33e3667f",
+  "source": "https://github.com/MrMybal/CyToolsCore",
+  "platform": "win_amd64"
+}

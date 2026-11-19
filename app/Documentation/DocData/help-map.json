@@ -508,7 +508,8 @@
         "cli",
         "mcp",
         "task-files",
-        "operations"
+        "operations",
+        "native-communication"
       ],
       "locale": "fr"
     },

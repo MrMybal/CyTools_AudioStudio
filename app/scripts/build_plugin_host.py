@@ -11,13 +11,14 @@ APP = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--build-dir', type=Path, help='Fresh build folder for an independent native build')
     parser.add_argument('--cmake', default=shutil.which('cmake'))
     parser.add_argument('--juce-source', type=Path, help='Optional offline JUCE 8.0.15 source directory')
     parser.add_argument('--nasm', type=Path, help='Optional NASM executable for native EEL2 compilation on MSVC')
     args = parser.parse_args()
     if not args.cmake:
         parser.error('CMake is required; set --cmake to its executable')
-    build = APP.parent / 'runtime/build/plugin-host'
+    build = args.build_dir or APP.parent / 'runtime/build/plugin-host'
     machine = platform.machine()
     if machine.lower() in ('amd64', 'x86_64'):
         machine = 'AMD64' if sys.platform == 'win32' else 'x86_64'

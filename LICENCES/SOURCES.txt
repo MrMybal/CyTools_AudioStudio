@@ -1,4 +1,4 @@
-CyTools_AudioStudio 0.1.5 - sources and references of the delivered components
+CyTools_AudioStudio 0.1.6 - sources and references of the delivered components
 ====================================================================================
 
 Product
@@ -6,12 +6,12 @@ Product
   Source code    https://github.com/MrMybal/CyTools_AudioStudio
   Components     LICENCES/ThirdParty-Notices.txt (same list as the Options tab, app/licenses.json)
 
-CyToolsCore SDK 0.10.1 (runtime, jobs, CLI / JSONL / HTTP / MCP transports, scaffold)
+CyToolsCore SDK 0.11.0 (runtime, jobs, CLI / JSONL / HTTP / MCP transports, scaffold)
   Licence        MIT, Copyright (c) 2026 Cyberalien; full text in LICENCES/CyToolsCore-MIT.txt
   Scaffold       LICENCES/LICENSE-CyToolsCore.txt (also app/LICENSE-CyToolsCore.txt)
   Repository     https://github.com/MrMybal/CyToolsCore
-  Revision       a8d200f2d0baaade1633e0683663b4506c595f74
-  Install        pip install "cytools-core[mcp] @ git+https://github.com/MrMybal/CyToolsCore.git@a8d200f2d0baaade1633e0683663b4506c595f74"
+  Revision       v0.11.0
+  Install        pip install "cytools-core @ https://github.com/MrMybal/CyToolsCore/releases/download/v0.11.0/cytools_core-0.11.0-py3-none-win_amd64.whl"
   Guides         creating a CyTool        https://github.com/MrMybal/CyToolsCore/blob/main/Docs/AgentGuide.md
                  standalone delivery      https://github.com/MrMybal/CyToolsCore/blob/main/Docs/StandaloneDelivery.md
                  updating a product       https://github.com/MrMybal/CyToolsCore/blob/main/Docs/UpdateExistingProducts.md
@@ -47,5 +47,10 @@ Engines, vendored sources and model weights
 CyDoc 0.1.0 (offline documentation reader)
   Licence        MIT; full text in LICENCES/CyDoc-MIT.txt
   Repository     https://github.com/MrMybal/CyDoc
+
+CyMCPSDK 0.7.1 (native CLI / JSONL / HTTP / MCP)
+  Licence        MIT; full text in LICENCES/CyMCPSDK-MIT.txt
+  Repository     https://github.com/MrMybal/CyMCPSDK
+  Dependencies   nlohmann-json-MIT.txt, cpp-httplib-MIT.txt, PicoSHA2-MIT.txt
 
 A link or the word MIT never replaces a licence text: keep this folder with every copy of the product.

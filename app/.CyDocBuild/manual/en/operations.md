@@ -5,7 +5,7 @@ description: Connect a client and inspect the available operations.
 section: Reference
 order: 80
 parent: overview
-revision: 1a923e0b044103da
+revision: 59f0ffbc5770965a
 ---
 
 ## Command line {#cli}
@@ -71,3 +71,22 @@ Local file inputs accept absolute readable paths and are imported into the task 
 - [`install_engine`](doc:operation-install-engine)
 - [`diagnose_backend`](doc:operation-diagnose-backend)
 - [`release_workers`](doc:operation-release-workers)
+
+
+## Native communication {#native-communication}
+
+The Windows package includes CyToolsCore 0.11.0 and the native CyMCPSDK 0.7.1
+communication library. The same complete operation parameters are available to AI
+clients and the standalone application. Run `ai_communication_status` with
+`includeOperations: true` to inspect the effective catalogue. This does not contact
+an AI provider or generate content.
+
+CLI-generated files are temporary by default. Add `--export-dir` followed by an
+absolute destination outside the job store when you want to keep them. In MCP,
+export with `cy_export_job` before `cy_finish_task`. The original input file, installed
+models, conversations and project documents are not removed by task cleanup.
+
+For the first upgrade from a 0.10.x Core, install the full Windows package.
+Application-only updates cannot add the required native library to an older runtime.
+Model and provider integrations keep their existing compatibility and permissions;
+this upgrade does not make an unsupported model or platform supported.

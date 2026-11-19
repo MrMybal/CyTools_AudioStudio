@@ -5,7 +5,7 @@ description: Connectez un client et consultez les opérations disponibles.
 section: Référence
 order: 80
 parent: overview
-sourceRevision: 1a923e0b044103da
+sourceRevision: 59f0ffbc5770965a
 ---
 
 ## Ligne de commande {#cli}
@@ -71,3 +71,24 @@ Les entrées locales acceptent des chemins absolus lisibles et sont importées a
 - [`install_engine`](doc:operation-install-engine)
 - [`diagnose_backend`](doc:operation-diagnose-backend)
 - [`release_workers`](doc:operation-release-workers)
+
+
+## Communication native {#native-communication}
+
+Le paquet Windows contient CyToolsCore 0.11.0 et la bibliothèque de communication
+native CyMCPSDK 0.7.1. Les mêmes paramètres complets des opérations sont disponibles
+pour les clients IA et l’application autonome. Lancez `ai_communication_status` avec
+`includeOperations: true` pour consulter le catalogue effectif. Cette opération ne
+contacte aucun fournisseur IA et ne génère pas de contenu.
+
+Les fichiers générés par la CLI sont temporaires par défaut. Ajoutez `--export-dir`
+suivi d’un dossier absolu hors du stockage des jobs pour les conserver. Par MCP,
+exportez avec `cy_export_job` avant `cy_finish_task`. Le nettoyage des tâches ne
+supprime pas les entrées originales, modèles installés, conversations et documents
+de projet persistants.
+
+Pour la première migration depuis Core 0.10.x, installez le paquet Windows complet.
+Une mise à jour de l’application seule ne peut pas ajouter la bibliothèque native
+au précédent runtime. Les intégrations de modèles et de fournisseurs conservent
+leurs compatibilités et permissions : cette mise à jour ne rend pas compatible un
+modèle ou une plateforme non pris en charge.
