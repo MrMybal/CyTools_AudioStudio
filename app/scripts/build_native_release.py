@@ -94,6 +94,7 @@ def main():
    target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(archive.read(m))
  pth=next(scripts.glob('python*._pth'));pth.write_text(pth.stem+'.zip\n.\n../Lib/site-packages\n../../../app\nimport site\n',encoding='ascii')
  site=runtime/'python/Lib/site-packages';site.mkdir(parents=True)
+ (scripts/'sitecustomize.py').write_text('import site, sys\nfrom pathlib import Path\nsys.dont_write_bytecode = True\nsite.addsitedir(str(Path(__file__).resolve().parent.parent / \'Lib/site-packages\'))\n',encoding='utf-8')
  oldsite=Path(raw['site']);notices=[]
  for key,d in sorted(selected.items()):
   notices.append({'name':d['name'],'version':d['version'],'license':d['license']})
