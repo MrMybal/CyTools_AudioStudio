@@ -9,9 +9,9 @@ et ferme les ressources qu'elle possède.
 | Native | Runtime et LocalClient | Client Python dans le processus |
 | Structured CLI | CyMCPSDK C++ / run_cli binding | Commande invoke avec résultat JSON |
 | JSONL stdio | CyMCPSDK C++ / commande stdio | Une requête/réponse JSON par ligne, processus persistant |
-| HTTP local | CyMCPSDK C++ / commande serve | POST /v1 avec Bearer token, runtime partagé |
+| HTTP local | CyMCPSDK C++ / commande serve | POST /v1, profil Free par défaut, runtime partagé |
 | MCP stdio | CyMCPSDK C++ | Catalogue dynamique d'opérations + contrôles jobs |
-| MCP vers service partagé | --connect URL mcp | Pont stdio/HTTP, identité par token |
+| MCP vers service partagé | --connect URL mcp | Pont stdio/HTTP, accès selon le profil |
 | IPC natif / WebSocket | contrat d'adaptateur | Pas de serveur livré |
 | HTTP distant | HTTPClient HTTPS | Gateway TLS/auth et transfert d'artefacts à fournir |
 
@@ -19,10 +19,14 @@ Les messages JSONL utilisent le protocole CyTools, pas MCP. `mcp` utilise le pro
 MCP géré par CyMCPSDK natif. Ne pas relier un client MCP à la commande `stdio`.
 
 Le serveur livré écoute uniquement 127.0.0.1. Il refuse les Origins de navigateur,
-exige un Bearer, limite les requêtes à 1 MiB et impose un délai de lecture. Il n'est
+exige un Bearer dans les profils Jeton seul/Protégé, limite les requêtes à 1 MiB et impose un délai de lecture. Il n'est
 pas un serveur Internet public : ajouter quotas, TLS, supervision et politique réseau
 avant une exposition distante. La CLI ne modifie aucune configuration de client IA.
 
 
 Voir NativeCommunication.md pour le SDK C++/ABI C, le build des wheels natifs et
 la migration des commandes. Le dispatcher métier Python reste interne au runtime.
+
+
+Depuis 0.12.0 : MCP HTTP natif sur `/mcp`. Connexion par adresse seule en Free ;
+Local contrôlé, Jeton seul et Protégé restent disponibles. Voir [LocalAccess.md](LocalAccess.md).

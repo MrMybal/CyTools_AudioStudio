@@ -5,7 +5,7 @@ description: Connect a client and inspect the available operations.
 section: Reference
 order: 80
 parent: overview
-revision: 59f0ffbc5770965a
+revision: 8631ed0fe7a84f2f
 ---
 
 ## Command line {#cli}
@@ -75,7 +75,7 @@ Local file inputs accept absolute readable paths and are imported into the task 
 
 ## Native communication {#native-communication}
 
-The Windows package includes CyToolsCore 0.11.0 and the native CyMCPSDK 0.7.1
+The Windows package includes CyToolsCore 0.12.0 and the native CyMCPSDK 0.7.1
 communication library. The same complete operation parameters are available to AI
 clients and the standalone application. Run `ai_communication_status` with
 `includeOperations: true` to inspect the effective catalogue. This does not contact
@@ -90,3 +90,37 @@ For the first upgrade from a 0.10.x Core, install the full Windows package.
 Application-only updates cannot add the required native library to an older runtime.
 Model and provider integrations keep their existing compatibility and permissions;
 this upgrade does not make an unsupported model or platform supported.
+
+
+## Local MCP access {#local-mcp-access}
+
+Core **0.12.0** embeds native CyMCPSDK commit **`34d4bca`**. From the Tool root, start
+the local service explicitly:
+
+```powershell
+runtime/python/Scripts/python.exe app/tool.py --data-dir data/jobs serve --port 8766
+```
+
+Free is the initial profile: connect using only `http://127.0.0.1:8766/mcp`. All exposed
+operations are callable without a token or additional transport approval. Arguments,
+licence acceptance and explicit destructive-action confirmations remain business rules.
+The portable API is at `/v1`; the listener binds only to 127.0.0.1.
+
+Missing choices migrate to Free; explicit profiles are preserved. Use the server option
+`--access-profile free`, `--access-profile local_controlled`, `--access-profile token_only`
+or `--access-profile protected_access`. Local controlled applies host-selected permissions.
+Token only and Protected require a valid token; Protected retains credential permissions.
+With the command above, the choice persists in `data/jobs/communication.json`. Restart
+the service to change the active profile. CLI/embedded and chat-provider permissions
+are unchanged. Use `ai_communication_status` with `includeOperations: true` for discovery.
+
+Install the full Windows package for this native runtime update; app-only updates reject
+the old runtime ABI. For a local source upgrade, install the bundled wheel:
+
+```powershell
+runtime/python/Scripts/python.exe -m pip install --no-deps app/packages/cytools_core-0.12.0-py3-none-win_amd64.whl
+```
+
+Export wanted task files before `cy_finish_task`. Task cleanup preserves original inputs,
+installed models, conversations and persistent project documents. Windows x64 is the
+validated platform for this update; Linux/macOS native builds require target validation.

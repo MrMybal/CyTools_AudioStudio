@@ -1,4 +1,4 @@
-CyTools_AudioStudio 0.1.6 - third-party notices
+CyTools_AudioStudio 0.1.7 - third-party notices
 ====================================================
 
 Components used by the application, with their licence and their source. Generated from
@@ -13,7 +13,7 @@ LICENCES/CyToolsCore-MIT.txt (SDK), and for each Python package its own .dist-in
            pedalboard / JUCE are GPL-3.0 as well); model weights and engines keep their own
            licences listed below. Sources and notices: LICENCES folder.
 
-[SDK] CyToolsCore 0.11.0 - runtime, jobs, transports (CLI, MCP), scaffold
+[SDK] CyToolsCore 0.12.0 - runtime, jobs, transports (CLI, MCP), scaffold
   Licence: MIT
   Source:  https://github.com/MrMybal/CyToolsCore
   Notes:   Copyright (c) 2026 Cyberalien. Full text in LICENCES/CyToolsCore-MIT.txt, scaffold

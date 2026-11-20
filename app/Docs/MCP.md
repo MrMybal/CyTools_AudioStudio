@@ -39,3 +39,13 @@ du processus ferme son runtime et demande l'annulation des jobs restants.
 La suite de tests initialise un client officiel réel, découvre op_echo, l'appelle,
 consulte le résultat et vérifie une entrée invalide. Cela valide l'échange SDK-à-SDK
 local ; cela ne prétend pas avoir modifié ni testé la configuration de tous les clients IA.
+
+
+## MCP HTTP et profils locaux (0.12.0)
+
+`cytool-test --data-dir ./service-data serve --port 8766` expose le vrai endpoint
+`http://127.0.0.1:8766/mcp`, Free par défaut, sans jeton ni confirmation de transport.
+Les autres profils et leurs réglages sont décrits dans [LocalAccess.md](LocalAccess.md).
+Pour l’isolation par identité de l’exemple précédent, choisir explicitement
+`--access-profile protected_access`. Les validations et droits métier de ce profil
+restent appliqués. Par HTTP, terminer explicitement les tâches avec `cy_finish_task`.

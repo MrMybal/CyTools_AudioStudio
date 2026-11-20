@@ -509,7 +509,8 @@
         "mcp",
         "task-files",
         "operations",
-        "native-communication"
+        "native-communication",
+        "local-mcp-access"
       ],
       "locale": "fr"
     },

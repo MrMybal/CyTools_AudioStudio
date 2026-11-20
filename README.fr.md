@@ -12,8 +12,8 @@
     </td>
     <td width="300" align="right" valign="top">
       <p><sub>Licence de l’application</sub><br><a href="LICENSE"><strong>GPL-3.0-only</strong></a></p>
-      <p><sub>Version de l’application</sub><br><a href="VERSION.fr.md"><strong>0.1.6</strong></a><br><strong>EXPÉRIMENTAL</strong></p>
-      <p><a href="https://github.com/MrMybal/CyTools_AudioStudio/releases/download/v0.1.6/CyTools_AudioStudio-0.1.6-windows-x64.zip"><strong>Télécharger</strong></a><br><sub>Windows x64 · portable</sub></p>
+      <p><sub>Version de l’application</sub><br><a href="VERSION.fr.md"><strong>0.1.7</strong></a><br><strong>EXPÉRIMENTAL</strong></p>
+      <p><a href="https://github.com/MrMybal/CyTools_AudioStudio/releases/download/v0.1.7/CyTools_AudioStudio-0.1.7-windows-x64.zip"><strong>Télécharger</strong></a><br><sub>Windows x64 · portable</sub></p>
     </td>
   </tr>
 </table>
@@ -23,7 +23,7 @@
 
 Un espace multipiste pour monter l’audio, travailler les effets, réutiliser des chaînes de traitement et ajouter des modèles de son, de musique et de voix. Pour les sound designers, les créateurs de voix et les monteurs qui veulent associer outils audio et génération locale.
 
-> **EXPÉRIMENTAL · 0.1.6**
+> **EXPÉRIMENTAL · 0.1.7**
 >
 > Version Windows publiée pour évaluation ; certains parcours des moteurs restent à valider. Consultez les [notes de version et limites connues](VERSION.fr.md).
 
@@ -72,7 +72,7 @@ Créez des effets sonores, de la musique ou de la parole avec un moteur compatib
 
 La version applicative publiée est pour **Windows x64**. Le ZIP portable inclut son Python privé et les dépendances de base de l’interface et des médias. Les modèles et moteurs lourds facultatifs se téléchargent séparément.
 
-1. [Téléchargez CyTools AudioStudio 0.1.6](https://github.com/MrMybal/CyTools_AudioStudio/releases/download/v0.1.6/CyTools_AudioStudio-0.1.6-windows-x64.zip).
+1. [Téléchargez CyTools AudioStudio 0.1.7](https://github.com/MrMybal/CyTools_AudioStudio/releases/download/v0.1.7/CyTools_AudioStudio-0.1.7-windows-x64.zip).
 2. Extrayez le ZIP complet dans un dossier accessible en écriture. Gardez `app/` et `runtime/` à côté du lanceur.
 3. Lancez **CyTools_AudioStudio.exe**. Utilisez l’espace d’installation/modèles pour les composants nécessaires ; consultez leurs licences et conditions d’accès avant le téléchargement.
 
@@ -96,8 +96,8 @@ Utilisez Python **3.11** pour l’environnement de base depuis les sources. Git 
 git clone https://github.com/MrMybal/CyTools_AudioStudio.git
 cd CyTools_AudioStudio
 py -3.11 -m venv runtime\python
-runtime\python\Scripts\python.exe -m pip install "cytools-core @ https://github.com/MrMybal/CyToolsCore/releases/download/v0.11.0/cytools_core-0.11.0-py3-none-win_amd64.whl"
-runtime\python\Scripts\python.exe -m pip install -r app\requirements.txt
+runtime\python\Scripts\python.exe -m pip install "cytools-core @ https://github.com/MrMybal/CyToolsCore/releases/download/v0.12.0/cytools_core-0.12.0-py3-none-win_amd64.whl"
+runtime\python\Scripts\python.exe -m pip install --find-links app/packages -r app\requirements.txt
 runtime\python\Scripts\python.exe app\scripts\build_plugin_host.py
 powershell -File app\build_launcher.ps1
 .\CyTools_AudioStudio.exe
@@ -119,7 +119,7 @@ Le worker natif de plugins nécessite aussi CMake et un compilateur C++20 ; NASM
 
 | Bibliothèque · sources | Licence · texte | Utilisation / périmètre |
 | --- | --- | --- |
-| [CyToolsCore 0.11.0](https://github.com/MrMybal/CyToolsCore) | [MIT](LICENCES/CyToolsCore-MIT.txt) | SDK/runtime : jobs, sessions, ressources, CLI et MCP. |
+| [CyToolsCore 0.12.0](https://github.com/MrMybal/CyToolsCore) | [MIT](LICENCES/CyToolsCore-MIT.txt) | SDK/runtime : jobs, sessions, ressources, CLI et MCP. |
 | [CyMCPSDK 0.7.1](https://github.com/MrMybal/CyMCPSDK) | [MIT](LICENCES/CyMCPSDK-MIT.txt) | CLI, JSONL, HTTP et MCP natifs. |
 | [CyUI 1.2.0](https://github.com/MrMybal/CyUI) | [MIT](LICENCES/CyUI-MIT.txt) | Modules Python d’interface sélectionnés et inclus. |
 | [CyDoc 0.1.0](https://github.com/MrMybal/CyDoc) | [MIT](LICENCES/CyDoc-MIT.txt) | Lecteur local inclus ; Node/npm servent uniquement à la rédaction/génération. |
@@ -156,4 +156,41 @@ L’application Python est GPL-3.0-only. Le worker natif isolé est un exécutab
 
 ## Communication IA native
 
-CyToolsCore **0.11.0** utilise **CyMCPSDK 0.7.1** pour la CLI, JSONL, HTTP et MCP natifs. Consultez toutes les options effectives avec `ai_communication_status` (`includeOperations: true`). Exportez les résultats à conserver avant le nettoyage des tâches. Cette première migration nécessite le paquet Windows complet ; les mises à jour de l’application seule concernent les installations ayant déjà le runtime natif.
+CyToolsCore **0.12.0** utilise **CyMCPSDK 0.7.1** pour la CLI, JSONL, HTTP et MCP natifs. Consultez toutes les options effectives avec `ai_communication_status` (`includeOperations: true`). Exportez les résultats à conserver avant le nettoyage des tâches. Cette première migration nécessite le paquet Windows complet ; les mises à jour de l’application seule concernent les installations ayant déjà le runtime natif.
+
+
+## Accès MCP local
+
+Core **0.12.0** embarque CyMCPSDK natif au commit **`34d4bca`**. Depuis la racine du
+Tool, démarrez explicitement le service local :
+
+```powershell
+runtime/python/Scripts/python.exe app/tool.py --data-dir data/jobs serve --port 8766
+```
+
+Free est le profil initial : connectez-vous avec seulement `http://127.0.0.1:8766/mcp`.
+Toutes les opérations exposées sont accessibles sans jeton ni confirmation de transport.
+La validation des arguments, l’acceptation des licences et les confirmations explicites
+des actions destructives restent des règles métier. L’API portable reste sur `/v1` ;
+le serveur écoute uniquement sur 127.0.0.1.
+
+Un choix absent devient Free ; les profils explicites sont conservés. L’option du serveur
+accepte `--access-profile free`, `--access-profile local_controlled`,
+`--access-profile token_only` ou `--access-profile protected_access`. Local contrôlé
+applique les permissions choisies par l’hôte. Jeton seul et Protégé exigent un jeton
+valide ; Protégé conserve les permissions de l’identité. Avec la commande ci-dessus,
+le choix persiste dans `data/jobs/communication.json`. Redémarrez le service pour changer
+le profil actif. Les droits CLI/embarqués et du fournisseur de chat sont inchangés.
+Utilisez `ai_communication_status` avec `includeOperations: true` pour la découverte.
+
+Installez le paquet Windows complet pour remplacer le runtime natif ; les mises à jour
+de l’application seule refusent l’ancien ABI. Pour une mise à niveau locale des sources :
+
+```powershell
+runtime/python/Scripts/python.exe -m pip install --no-deps app/packages/cytools_core-0.12.0-py3-none-win_amd64.whl
+```
+
+Exportez les résultats voulus avant `cy_finish_task`. Le nettoyage préserve les entrées
+originales, modèles installés, conversations et documents de projet persistants.
+Cette mise à jour est validée sur Windows x64 ; les builds natifs Linux/macOS restent
+à vérifier sur leur plateforme.

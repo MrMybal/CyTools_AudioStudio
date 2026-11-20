@@ -5,7 +5,7 @@ description: Connectez un client et consultez les opérations disponibles.
 section: Référence
 order: 80
 parent: overview
-sourceRevision: 59f0ffbc5770965a
+sourceRevision: 8631ed0fe7a84f2f
 ---
 
 ## Ligne de commande {#cli}
@@ -75,7 +75,7 @@ Les entrées locales acceptent des chemins absolus lisibles et sont importées a
 
 ## Communication native {#native-communication}
 
-Le paquet Windows contient CyToolsCore 0.11.0 et la bibliothèque de communication
+Le paquet Windows contient CyToolsCore 0.12.0 et la bibliothèque de communication
 native CyMCPSDK 0.7.1. Les mêmes paramètres complets des opérations sont disponibles
 pour les clients IA et l’application autonome. Lancez `ai_communication_status` avec
 `includeOperations: true` pour consulter le catalogue effectif. Cette opération ne
@@ -92,3 +92,40 @@ Une mise à jour de l’application seule ne peut pas ajouter la bibliothèque n
 au précédent runtime. Les intégrations de modèles et de fournisseurs conservent
 leurs compatibilités et permissions : cette mise à jour ne rend pas compatible un
 modèle ou une plateforme non pris en charge.
+
+
+## Accès MCP local {#local-mcp-access}
+
+Core **0.12.0** embarque CyMCPSDK natif au commit **`34d4bca`**. Depuis la racine du
+Tool, démarrez explicitement le service local :
+
+```powershell
+runtime/python/Scripts/python.exe app/tool.py --data-dir data/jobs serve --port 8766
+```
+
+Free est le profil initial : connectez-vous avec seulement `http://127.0.0.1:8766/mcp`.
+Toutes les opérations exposées sont accessibles sans jeton ni confirmation de transport.
+La validation des arguments, l’acceptation des licences et les confirmations explicites
+des actions destructives restent des règles métier. L’API portable reste sur `/v1` ;
+le serveur écoute uniquement sur 127.0.0.1.
+
+Un choix absent devient Free ; les profils explicites sont conservés. L’option du serveur
+accepte `--access-profile free`, `--access-profile local_controlled`,
+`--access-profile token_only` ou `--access-profile protected_access`. Local contrôlé
+applique les permissions choisies par l’hôte. Jeton seul et Protégé exigent un jeton
+valide ; Protégé conserve les permissions de l’identité. Avec la commande ci-dessus,
+le choix persiste dans `data/jobs/communication.json`. Redémarrez le service pour changer
+le profil actif. Les droits CLI/embarqués et du fournisseur de chat sont inchangés.
+Utilisez `ai_communication_status` avec `includeOperations: true` pour la découverte.
+
+Installez le paquet Windows complet pour remplacer le runtime natif ; les mises à jour
+de l’application seule refusent l’ancien ABI. Pour une mise à niveau locale des sources :
+
+```powershell
+runtime/python/Scripts/python.exe -m pip install --no-deps app/packages/cytools_core-0.12.0-py3-none-win_amd64.whl
+```
+
+Exportez les résultats voulus avant `cy_finish_task`. Le nettoyage préserve les entrées
+originales, modèles installés, conversations et documents de projet persistants.
+Cette mise à jour est validée sur Windows x64 ; les builds natifs Linux/macOS restent
+à vérifier sur leur plateforme.

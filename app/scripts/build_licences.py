@@ -24,9 +24,9 @@ APP = Path(__file__).resolve().parents[1]
 ROOT = APP.parent
 LICENCES = ROOT / 'LICENCES'
 SDK_REPOSITORY = 'https://github.com/MrMybal/CyToolsCore'
-SDK_VERSION = '0.11.0'
-SDK_REVISION = 'v0.11.0'
-SDK_REQUIREMENT = 'cytools-core @ https://github.com/MrMybal/CyToolsCore/releases/download/v0.11.0/cytools_core-0.11.0-py3-none-win_amd64.whl'
+SDK_VERSION = '0.12.0'
+SDK_REVISION = 'v0.12.0'
+SDK_REQUIREMENT = 'cytools-core==0.12.0'
 UNREAL_SDK_REPOSITORY = 'https://github.com/MrMybal/CyUEMCPSDK'
 PRODUCT_REPOSITORY = 'https://github.com/MrMybal/CyTools_AudioStudio'
 COPYRIGHT = 'Copyright (c) 2026 Cyberalien'
@@ -107,6 +107,7 @@ def sources_text(version):
         CyMCPSDK 0.7.1 (native CLI / JSONL / HTTP / MCP)
           Licence        MIT; full text in LICENCES/CyMCPSDK-MIT.txt
           Repository     https://github.com/MrMybal/CyMCPSDK
+          Revision       34d4bcae126bc83d1a2925b5047dac36e3d09d92
           Dependencies   nlohmann-json-MIT.txt, cpp-httplib-MIT.txt, PicoSHA2-MIT.txt
 
         A link or the word MIT never replaces a licence text: keep this folder with every copy of the product.

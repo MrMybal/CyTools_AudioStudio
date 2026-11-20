@@ -26,7 +26,7 @@ def git(*args):return subprocess.check_output(['git','-c','safe.directory='+ROOT
 def included(name):
  parts=Path(name).parts
  if Path(name).name in {'AGENTS.md','CyToolsGuide.md'} or name in {'app/Docs/AgentGuide.md','app/Docs/AgentPrompt.md'}:return False
- return not any(x in SKIP for x in parts) and not name.startswith(('.github/','website/')) and Path(name).suffix not in {'.pyc','.pyo','.obj','.pdb','.log','.tmp','.bak'} and '.env' not in parts
+ return Path(name).name not in {'AGENTS.md','CyToolsGuide.md'} and name not in {'app/Docs/AgentGuide.md','app/Docs/AgentPrompt.md'} and not any(x in SKIP for x in parts) and not name.startswith(('.github/','website/')) and Path(name).suffix not in {'.pyc','.pyo','.obj','.pdb','.log','.tmp','.bak'} and '.env' not in parts
 
 def dependencies(python):
  code='''import importlib.metadata as m,json,sys,sysconfig
@@ -34,7 +34,7 @@ from pathlib import Path
 site=Path(sysconfig.get_paths()['purelib']).resolve()
 rows=[]
 for d in m.distributions():
- rows.append({'name':d.metadata['Name'],'version':d.version,'requires':d.requires or [],'license':d.metadata.get('License-Expression') or d.metadata.get('License') or 'See included notices','files':[str(d.locate_file(f).resolve()) for f in d.files or []]})
+ rows.append({'name':d.metadata['Name'],'version':d.version,'requires':d.requires or [],'license':d.metadata.get('License-Expression') or d.metadata.get('License') or 'See included notices','site':str(Path(d.locate_file('')).resolve()),'files':[str(d.locate_file(f).resolve()) for f in d.files or []]})
 print(json.dumps({'python':'.'.join(map(str,sys.version_info[:2])),'site':str(site),'distributions':rows}))'''
  raw=json.loads(subprocess.check_output([str(python),'-c',code],cwd=ROOT,text=True,encoding='utf-8'))
  installed={canonicalize_name(d['name']):d for d in raw['distributions']}
@@ -59,7 +59,7 @@ print(json.dumps({'python':'.'.join(map(str,sys.version_info[:2])),'site':str(si
   for requirement in d['requires']:
    r=Requirement(requirement)
    if not r.marker or r.marker.evaluate(context):pending.append(canonicalize_name(r.name))
- if selected['cytools-core']['version']!='0.11.0':raise RuntimeError('Native Core 0.11.0 required')
+ if selected['cytools-core']['version']!='0.12.0':raise RuntimeError('Native Core 0.12.0 required')
  return raw,selected
 
 def main():
@@ -98,10 +98,12 @@ def main():
  oldsite=Path(raw['site']);notices=[]
  for key,d in sorted(selected.items()):
   notices.append({'name':d['name'],'version':d['version'],'license':d['license']})
+  distribution_site=Path(d['site'])
+  if not distribution_site.is_relative_to((ROOT/'runtime/python').resolve()):raise RuntimeError('Base dependencies must be installed in the private Python runtime')
   for name in d['files']:
    f=Path(name)
-   if not f.is_file() or not f.is_relative_to(oldsite):continue
-   relative=f.relative_to(oldsite)
+   if not f.is_file() or not f.is_relative_to(distribution_site):continue
+   relative=f.relative_to(distribution_site)
    if any(part in SKIP for part in relative.parts) or f.suffix in {'.pyc','.pyo'} or f.name=='direct_url.json' or relative.parts[0]=='bin':continue
    target=site/relative;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(f,target)
  # Metadata paths and generated console entry points are not portable payload.
@@ -135,8 +137,8 @@ def main():
   with zipfile.ZipFile(uv) as z:
    matches=[m for m in z.namelist() if Path(m).name=='uv.exe'];assert len(matches)==1
    target=runtime/'uv/uv.exe';target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(z.read(matches[0]))
- (runtime/'portable.json').write_text(json.dumps({'version':version,'commit':commit,'core':'0.11.0','cymcp':'0.7.1','python':raw['python'],'pythonSource':url,'pythonSha256':digest},indent=2)+'\n',encoding='utf-8')
- check='import cytools_core;from cytools_core.transports._native import library;assert cytools_core.__version__=="0.11.0";print(library().cytools_native_info().decode())'
+ (runtime/'portable.json').write_text(json.dumps({'version':version,'commit':commit,'core':'0.12.0','cymcp':'0.7.1','cymcpRevision':'34d4bcae126bc83d1a2925b5047dac36e3d09d92','python':raw['python'],'pythonSource':url,'pythonSha256':digest},indent=2)+'\n',encoding='utf-8')
+ check='import cytools_core,json,jsonschema,psutil,imgui_bundle;from cytools_core.transports._native import library;assert cytools_core.__version__=="0.12.0";info=json.loads(library().cytools_native_info());assert info["cymcpRevision"]=="34d4bcae126bc83d1a2925b5047dac36e3d09d92";print(json.dumps(info))'
  run([scripts/'python.exe','-c',check],cwd=stage,env={**os.environ,'PYTHONPATH':'','PYTHONNOUSERSITE':'1','PATH':str(scripts)})
  app_name=f'{NAME}-{version}-app.zip' if NAME in {'CyTools_AIChat','CyTools_MeshStudio'} else 'cytools-app.zip'
  assets=[]

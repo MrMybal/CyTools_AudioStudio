@@ -121,8 +121,8 @@ def build_portable_python(destination, nupkg):
     env = dict(os.environ, PIP_DISABLE_PIP_VERSION_CHECK='1', PYTHONDONTWRITEBYTECODE='1')
     subprocess.run([str(python), '-m', 'ensurepip', '--upgrade'], check=True, env=env)
     subprocess.run([str(python), '-m', 'pip', 'install', '--no-warn-script-location', '--upgrade', 'pip'], check=True, env=env)
-    subprocess.run([str(python), '-m', 'pip', 'install', '--no-warn-script-location', SDK_REQUIREMENT], check=True, env=env)
-    subprocess.run([str(python), '-m', 'pip', 'install', '--no-warn-script-location', '--keyring-provider', 'disabled', '-r', str(APP / 'requirements.txt')], check=True, env=env)
+    subprocess.run([str(python), '-m', 'pip', 'install', '--no-warn-script-location', '--find-links', str(APP / 'packages'), SDK_REQUIREMENT], check=True, env=env)
+    subprocess.run([str(python), '-m', 'pip', 'install', '--no-warn-script-location', '--keyring-provider', 'disabled', '--find-links', str(APP / 'packages'), '-r', str(APP / 'requirements.txt')], check=True, env=env)
     # bytecode written during pip's own run is dead weight
     for cache in destination.rglob('__pycache__'):
         shutil.rmtree(cache, ignore_errors=True)

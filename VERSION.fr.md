@@ -4,12 +4,12 @@
 
 ## Application publiée
 
-**0.1.6 · EXPÉRIMENTAL · Windows x64**
+**0.1.7 · EXPÉRIMENTAL · Windows x64**
 
 Il s’agit de la version de l’application, pas de son SDK ni de sa bibliothèque d’interface. Cette release expérimentale est destinée à l’évaluation.
 
-- [Release publiée et sommes de contrôle](https://github.com/MrMybal/CyTools_AudioStudio/releases/tag/v0.1.6)
-- [Téléchargement Windows portable](https://github.com/MrMybal/CyTools_AudioStudio/releases/download/v0.1.6/CyTools_AudioStudio-0.1.6-windows-x64.zip)
+- [Release publiée et sommes de contrôle](https://github.com/MrMybal/CyTools_AudioStudio/releases/tag/v0.1.7)
+- [Téléchargement Windows portable](https://github.com/MrMybal/CyTools_AudioStudio/releases/download/v0.1.7/CyTools_AudioStudio-0.1.7-windows-x64.zip)
 
 ## Changements de cette release binaire
 
@@ -23,7 +23,7 @@ La vitrine, la présentation du README et la navigation du dépôt ont été ajo
 
 | Composant | Version | Rôle |
 | --- | --- | --- |
-| CyTools AudioStudio | 0.1.6 | Application |
+| CyTools AudioStudio | 0.1.7 | Application |
 | CyToolsCore | 0.10.1 | SDK / runtime |
 | CyUI | 1.2.0 | Modules d’interface sélectionnés |
 | CyDoc | 0.1.0 | Lecteur inclus |
@@ -45,3 +45,6 @@ Pour une installation compatible, utilisez son flux de mise à jour et préserve
 
 
 CLI / JSONL / HTTP / MCP natifs via CyMCPSDK 0.7.1, Core 0.11.0 inclus, découverte des capacités IA complètes, instructions d’export et de nettoyage des tâches.
+
+
+Core 0.12.0 : CyMCPSDK natif 34d4bca, Free par défaut ; profils explicites conservés.

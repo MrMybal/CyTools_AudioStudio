@@ -206,3 +206,16 @@ Core/CyMCPSDK versions, lifecycle rules and, with `includeOperations: true`, the
 complete effective operation schemas, permissions and resources. It does not start
 a server, call a provider or grant permissions. The scaffold includes this registration.
 MCP catalogues are paginated: follow `nextCursor` to inspect every operation.
+
+
+## Profils MCP locaux — SDK 0.12.0
+
+Lire [LocalAccess.md](LocalAccess.md). Intégrer CyMCPSDK au commit
+`34d4bcae126bc83d1a2925b5047dac36e3d09d92` ou un descendant compatible vérifié.
+Free est le choix initial sans jeton sur 127.0.0.1, avec toutes les opérations
+enregistrées et validation conservée. Migrer les choix absents vers Free ; garder
+les profils explicites Local contrôlé, Jeton seul et Protégé. Ne pas augmenter les
+droits des clients CLI/embarqués ou des identités protégées lors de cette migration.
+Le profil HTTP est une décision de l’hôte et les paramètres métier ne choisissent
+jamais cette identité ou ce profil. Tester lecture/écriture sans jeton et refus de
+Protégé sans jeton, puis les parcours CLI/chat existants, sans workflow GitHub.

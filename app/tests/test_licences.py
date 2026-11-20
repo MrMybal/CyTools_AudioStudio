@@ -28,7 +28,11 @@ class InstalledSdkTests(unittest.TestCase):
 
     def test_pins_agree(self):
         requirements = (APP / 'requirements.txt').read_text('utf-8')
-        self.assertIn('/v' + build_licences.SDK_VERSION + '/cytools_core-', requirements)
+        lock = json.loads((APP / 'packages/native-core.json').read_text('utf-8'))
+        self.assertEqual(lock['version'], build_licences.SDK_VERSION)
+        self.assertEqual(lock['cymcpRevision'], '34d4bcae126bc83d1a2925b5047dac36e3d09d92')
+        import hashlib
+        self.assertEqual(hashlib.sha256((APP / 'packages' / lock['wheel']).read_bytes()).hexdigest(), lock['sha256'])
         for path in (APP / 'requirements.txt', APP / 'README.md', ROOT / 'README.md'):
             self.assertIn(build_licences.SDK_REQUIREMENT, path.read_text('utf-8'), path.name)
         abi = json.loads((APP / 'release.json').read_text('utf-8'))['runtime_abi']

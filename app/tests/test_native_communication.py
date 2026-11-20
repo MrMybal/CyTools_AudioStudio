@@ -23,7 +23,7 @@ class NativeCommunicationTests(unittest.TestCase):
      result=runtime.wait(actor,job['jobId'])
      self.assertEqual(result['state'],'Completed',result.get('error'))
      status=result['outputs']
-     self.assertEqual(status['native'],{'abi':1,'version':'0.11.0','cymcp':'0.7.1'})
+     self.assertEqual(status['native'],{'abi':1,'version':'0.12.0','cymcp':'0.7.1','cymcpRevision':'34d4bcae126bc83d1a2925b5047dac36e3d09d92'})
      self.assertEqual(status['operations'],runtime.descriptor['operations'])
      self.assertTrue(status['taskFiles']['exportBeforeFinish'])
     self.assertTrue(runtime.get_job(actor,job['jobId'])['artifactsDeleted'])
