@@ -194,3 +194,6 @@ Exportez les résultats voulus avant `cy_finish_task`. Le nettoyage préserve le
 originales, modèles installés, conversations et documents de projet persistants.
 Cette mise à jour est validée sur Windows x64 ; les builds natifs Linux/macOS restent
 à vérifier sur leur plateforme.
+
+
+Le paquet portable utilise directement son interpréteur Python privé pour les opérations ; aucun Python système dans le PATH n’est requis.

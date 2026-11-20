@@ -61,6 +61,20 @@ class LocalMCPProfileTests(unittest.TestCase):
      self.assertTrue(Path(exported['directory']).is_dir())
     finally:server.shutdown();server.server_close()
 
+ def test_private_interpreter_satisfies_python_dependency_without_path(self):
+  from unittest import mock
+  with mock.patch.dict(os.environ,{'PATH':''}):
+   with tempfile.TemporaryDirectory() as temp:
+    with create_runtime(Path(temp)/'jobs') as runtime:
+     server=make_server(runtime)
+     try:
+      client=HTTPClient(f'http://127.0.0.1:{server.server_port}/v1')
+      task=client.call('CreateSession')['sessionId']
+      job=client.call('SubmitJob',sessionId=task,operationId='ai_communication_status',parameters={})
+      self.wait(client,job)
+      client.call('FinishTask',sessionId=task)
+     finally:server.shutdown();server.server_close()
+
  def test_explicit_protected_product_profile_preserved_and_requires_token(self):
   with tempfile.TemporaryDirectory() as temp:
    base=Path(temp);jobs=base/'jobs';jobs.mkdir()

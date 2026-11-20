@@ -195,3 +195,6 @@ installed models, conversations and persistent project documents. Windows x64 is
 validated platform for this update; Linux/macOS native builds require target validation.
 
 Windows source dependency: `cytools-core==0.12.0`; install using `--find-links app/packages`.
+
+
+The portable package resolves its private Python interpreter directly for operations; no system Python in PATH is required.

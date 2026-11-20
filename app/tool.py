@@ -30,6 +30,11 @@ def create_runtime(data_dir, **options):
     from audiostudio.paths import ensure_data_layout, INPUTS
     ensure_data_layout()
     descriptor = load_manifest(APP / 'CyTool.json')
+    # The running private interpreter satisfies this dependency, including portable
+    # installations with no system Python or Python directory in PATH.
+    for dependency in descriptor.get('runtimeRequirements', []):
+        if dependency['id'] == 'python':
+            dependency['executable'] = sys.executable
     runtime = Runtime(descriptor, data_dir, **options)
     runtime.configure_inputs(INPUTS, max_bytes=8 * 1024 ** 3, fields=INPUT_FIELDS)
     from audiostudio.operations import register_all

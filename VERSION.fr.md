@@ -48,3 +48,6 @@ CLI / JSONL / HTTP / MCP natifs via CyMCPSDK 0.7.1, Core 0.11.0 inclus, découve
 
 
 Core 0.12.0 : CyMCPSDK natif 34d4bca, Free par défaut ; profils explicites conservés.
+
+
+Les opérations portables utilisent l’interpréteur embarqué même sans Python dans le PATH.
