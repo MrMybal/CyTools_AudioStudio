@@ -64,7 +64,7 @@ build or test the application: the test-suite uses synthetic fixtures only.
 ```powershell
 cd <path>\CyTools_AudioStudio
 # 1. base environment (interface, CLI, MCP, DSP, VST3) — Python 3.11
-C:\Users\<you>\AppData\Local\Programs\Python\Python311\python.exe -m venv runtime\python
+py -3.11 -m venv runtime\python
 .\runtime\python\Scripts\python.exe -m pip install "cytools-core==0.12.0" --find-links app/packages   # SDK 0.12.0 (MIT), pinned to its commit; git must be on the PATH
 .\runtime\python\Scripts\python.exe -m pip install --keyring-provider disabled --find-links app/packages -r app\requirements.txt
 # 2. engines (heavy, private): PyTorch CUDA 12.8 stack + vendored Fish Speech / ACE-Step sources, and Piper
@@ -105,6 +105,55 @@ MCP client configuration (absolute paths):
 {"mcpServers": {"audiostudio": {"command": "<path>/CyTools_AudioStudio/runtime/python/Scripts/python.exe",
                                 "args": ["<path>/CyTools_AudioStudio/app/tool.py", "--data-dir", "<path>/CyTools_AudioStudio/data/jobs-mcp", "mcp"]}}}
 ```
+
+## Whisper ZML
+
+`transcribe_audio` accepts `runtime=auto|torch|zml` while `device` selects CPU or CUDA.
+With `auto`, the AudioStudio process selects ZML when `CYTOOLS_WHISPER_ZML_CONFIG`
+is set and PyTorch otherwise. The Generate panel uses the same default. CLI, MCP and
+Advanced operations can select either runtime explicitly. An unavailable configured
+ZML runtime fails the job. The result includes `runtime`, the detected or requested
+`language`, and, for ZML, the verified `placement` with its PJRT platform and device.
+
+1. Install `whisper-large-v3-turbo` through the Models tab or the model catalogue.
+2. From the local `zml_lib` checkout, build `//libraries/whisper:whisper_probe`
+   with the Windows backend flags and DLL paths in its Whisper README. Prepare the
+   two ZML SafeTensors files from the same installed `model.safetensors` using
+   `libraries/whisper/prepare.py`. Keep the converted files in a persistent directory
+   of your choice.
+3. Save an operator-owned JSON file using absolute paths. The `expected_cuda_device`
+   field is optional.
+
+```json
+{
+  "launcher": "D:/AI/zml_lib/libraries/whisper/transcribe.py",
+  "probe": "D:/AI/zml_lib/validation-output/bin/libraries/whisper/whisper_probe.exe",
+  "weights": "D:/models/whisper-large-v3-turbo-zml",
+  "expected_cuda_device": "RTX 3090"
+}
+```
+
+Start the Tool from the environment that sets the PJRT DLLs requested by your ZML
+build and `CYTOOLS_WHISPER_ZML_CONFIG`. Example from the AudioStudio root:
+
+```powershell
+$env:CYTOOLS_WHISPER_ZML_CONFIG = 'D:\models\whisper-zml.json'
+@{input = 'D:/audio/voice.wav'; runtime = 'zml'; device = 'cuda'} |
+    ConvertTo-Json | Set-Content -Encoding UTF8 .\whisper-request.json
+& .\runtime\python\Scripts\python.exe .\app\tool.py invoke transcribe_audio --params-file .\whisper-request.json
+```
+
+The worker runs the launcher in AudioStudio's Torch engine environment, where
+Transformers, Torch, SoundFile and SciPy provide audio preprocessing and greedy
+token selection. PyAV handles the fallback for formats unavailable in SoundFile.
+Inference runs in Zig/ZML with FP32 weights. ZML keeps the model loaded across a
+recording's windows and releases it when the job ends. The worker creates temporary
+files inside the job workspace and cleans them on completion.
+
+The Windows x64 CLI was verified with the official Whisper checkpoint on
+`cpu:0` (5.45 s, two segments) and on an RTX 3090 via `iree_cuda` (35.45 s,
+four segments, automatic English detection). Both returned the expected text
+and timestamps.
 
 ## Operations (43)
 
@@ -424,3 +473,7 @@ explicitly by `--python`. The builder reads committed application sources, verif
 the official Python archive, selects the tested base dependencies, includes the
 native Core library and notices, and excludes user data and optional model engines.
 No GitHub workflow is required.
+
+## Optional local ZML synthesis
+
+Set CYTOOLS_QWEN3_TTS_ZML_CONFIG to the absolute path of the local JSON configuration documented in zml_lib/libraries/qwen3_tts/README.md. With that configuration, the desktop and voice_qwen3tts use ZML in auto mode. The CLI and MCP also accept runtime=zml or runtime=torch. Generation reports and new voice presets store the resolved runtime. ZML uses prepared local weights and PCM at 24 kHz. For ICL cloning, provide the reference text and the prepared Mimi encoder in the configuration. Host the job workspace on a drive other than C. The synthesis worker passed Colab L4 tests with both CustomVoice checkpoints, 0.6B Base in ICL and 1.7B Base with the speaker embedding. The ICL WAV differed from the direct ZML launcher by at most one PCM unit. Native Windows CUDA inference remains to be verified.

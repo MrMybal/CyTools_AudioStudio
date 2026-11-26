@@ -4224,6 +4224,16 @@
               "advanced": true
             }
           },
+          "runtime": {
+            "enum": [
+              "auto",
+              "torch",
+              "zml"
+            ],
+            "description": "Qwen3-TTS inference runtime",
+            "default": "auto",
+            "x-cy-kind": "Enum"
+          },
           "device": {
             "enum": [
               "cuda",
@@ -5251,6 +5261,19 @@
             "description": "Compute device",
             "default": "cuda",
             "x-cy-kind": "Enum"
+          },
+          "runtime": {
+            "enum": [
+              "auto",
+              "torch",
+              "zml"
+            ],
+            "description": "Inference runtime. Auto selects ZML when configured on this host and PyTorch otherwise.",
+            "default": "auto",
+            "x-cy-kind": "Enum",
+            "x-cy-ui": {
+              "advanced": true
+            }
           }
         },
         "additionalProperties": false,
@@ -5289,6 +5312,49 @@
             "description": "Processing time",
             "default": 0.0,
             "x-cy-kind": "Float"
+          },
+          "runtime": {
+            "enum": [
+              "torch",
+              "zml"
+            ],
+            "description": "Inference runtime used",
+            "default": "torch",
+            "x-cy-kind": "Enum"
+          },
+          "placement": {
+            "type": "object",
+            "properties": {
+              "backend": {
+                "type": "string",
+                "description": "ZML device backend",
+                "x-cy-kind": "String"
+              },
+              "pjrt": {
+                "type": "string",
+                "description": "PJRT platform",
+                "x-cy-kind": "String"
+              },
+              "device": {
+                "type": "string",
+                "description": "Actual ZML output device",
+                "x-cy-kind": "String"
+              },
+              "shards": {
+                "type": "integer",
+                "description": "Output shard count",
+                "default": 1,
+                "x-cy-kind": "Integer",
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "backend",
+              "pjrt",
+              "device",
+              "shards"
+            ]
           }
         },
         "additionalProperties": true,

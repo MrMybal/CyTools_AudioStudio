@@ -60,11 +60,12 @@ present, not validated by a real run; **not exposed** = engine capability delibe
 | Native capability | Operation | Standalone | Status |
 |---|---|---|---|
 | Piper: 177 voices catalogue, speaker index, length/noise/noise_w/volume/normalise/threads | `voice_piper`, `list_voices`, `install_model piper.<key>` | Generate > Voices > Piper; Models | tested fr_FR-siwis-medium (CLI, MCP, preset); other voices downloadable, not tested |
-| Qwen3-TTS custom (9 speakers, instruction), clone (reference + transcription or x-vector), design (description); 5 variants; device; delivery split; sampling; seed | `voice_qwen3tts` | Generate > Voices > Qwen3-TTS | tested custom 0.6B/1.7B with annotations (CLI/MCP); clone and design implemented (validated in the former Tool), not rerun |
+| Qwen3-TTS CustomVoice, Base cloning and VoiceDesign over five variants. Tone instructions and inline annotations are available with 1.7B CustomVoice. | `voice_qwen3tts` with the `runtime` selector | Generate > Voices > Qwen3-TTS uses the configured runtime | ZML worker verified on Colab L4 with both CustomVoice checkpoints, Base 0.6B ICL and Base 1.7B speaker embeddings. Windows regression tests used no GPU. |
 | Inline annotations [tone]/[pause] | `text_annotations` | checkbox | tested (5 segments) |
 | Fish Speech S2 Pro: turns with speaker index and expression, references with transcription, sampling, chunk length, precision | `voice_fishspeech` | Generate > Voices > Fish Speech (single turn; dialogues via Advanced/MCP) | tested 2 turns without reference (CLI); cloning implemented, not run |
 | Voice presets: save/list/delete, regenerate with new text, reference change detection | `save_voice_preset`, `list_voice_presets`, `delete_voice_preset`, `generate_voice` | Generate > Voices > Save as preset / Saved preset | tested (Piper preset round trip) |
 | Text preparation: heuristic; LLM Qwen3-1.7B per target, validation and fallback | `prepare_tts_text` | Advanced operations (MCP/CLI oriented) | tested (heuristic 3 targets; LLM qwen3tts paragraph mode, fishspeech turns, piper) |
+| Whisper Large v3 Turbo with timestamps, automatic language and CPU/CUDA selection | `transcribe_audio`, `runtime=auto\|torch\|zml` | Generate uses the configured default. Advanced operations selects the runtime. | ZML Windows CLI verified with official weights on CPU and RTX 3090. |
 
 ## Models, engines, maintenance
 
