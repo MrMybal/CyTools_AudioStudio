@@ -13,7 +13,6 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from workers._protocol import serve, WorkerError, inside, memory_report  # noqa: E402
-from workers import qwen_tts_zml  # noqa: E402
 
 _model = None
 _model_key = None
@@ -59,20 +58,12 @@ def unload(request, reporter):
 def synthesize(request, reporter):
     import numpy as np
     import soundfile as sf
+    import torch
     from audiostudio.voice.annotations import build_plan, render_plan, AnnotationError
     started = time.monotonic()
     device = request.get('device', 'cuda')
-    selected = qwen_tts_zml.runtime(request)
-    zml = selected == 'zml'
-    if zml:
-        if _model is not None:
-            unload({}, reporter)
-        session = qwen_tts_zml.load()
-    else:
-        import torch
-
-        model = _load(request['model_path'], device, reporter)
-        torch.manual_seed(int(request.get('seed', 42)))
+    model = _load(request['model_path'], device, reporter)
+    torch.manual_seed(int(request.get('seed', 42)))
     mode = request.get('mode', 'custom')
     try:
         plan = build_plan(request['text'], enabled=bool(request.get('text_annotations', False)), delivery=request.get('delivery', 'paragraphs'),
@@ -83,7 +74,7 @@ def synthesize(request, reporter):
                   top_p=float(request.get('top_p', 1.0)), repetition_penalty=float(request.get('repetition_penalty', 1.05)),
                   max_new_tokens=int(request.get('max_new_tokens', 2048)), do_sample=True)
     prompt = None
-    if mode == 'clone' and not zml:
+    if mode == 'clone':
         reference = request.get('reference_audio') or ''
         if not Path(reference).is_file():
             raise WorkerError('MissingInput', 'Reference audio not found: ' + reference)
@@ -99,8 +90,6 @@ def synthesize(request, reporter):
 
     def synthesize_item(item):
         reporter.progress(5 + 90 * len(chunks) / max(1, len(plan)), step='Generating passage', message=item['text'][:80])
-        if zml:
-            return qwen_tts_zml.render(session, request, item)
         if mode == 'custom':
             wavs, rate = model.generate_custom_voice(text=item['text'], speaker=request.get('speaker', 'Ryan'), instruct=item['instruction'], **common)
         elif mode == 'design':
@@ -126,8 +115,7 @@ def synthesize(request, reporter):
     reporter.progress(100, step='Done')
     return {'file': str(output), 'sampleRate': int(rate), 'durationSeconds': float(len(audio)) / rate, 'channels': 1,
             'chunks': chunks, 'segments': timeline, 'passages': len(speech_items), 'mode': mode, 'model': request.get('model', ''),
-            'runtime': selected, 'generationSeconds': round(time.monotonic() - started, 3),
-            **({} if zml else memory_report())}
+            'generationSeconds': round(time.monotonic() - started, 3), **memory_report()}
 
 
 def diagnose(request, reporter):

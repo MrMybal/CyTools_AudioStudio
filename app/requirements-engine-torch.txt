@@ -5,7 +5,6 @@
 numpy>=1.26,<3
 scipy>=1.10.1
 soundfile>=0.13.1
-av>=12,<16
 librosa>=0.10.1
 huggingface-hub
 transformers>=4.51,<4.58

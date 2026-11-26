@@ -1,5 +1,4 @@
 """Voice operations: Piper, Qwen3-TTS, Fish Speech, presets and the voice catalogue."""
-import os
 from pathlib import Path
 
 from cytools_core import CyToolError
@@ -71,7 +70,6 @@ def register(runtime, services):
         payload = {'model_path': str(model_catalog.directory(model)), 'model': variant, 'mode': mode, 'text': parameters['text'], 'language': parameters.get('language', 'French'),
                    'speaker': parameters.get('speaker', 'Ryan'), 'instruction': parameters.get('instruction', ''), 'reference_audio': reference,
                    'reference_text': parameters.get('reference_text', ''), 'x_vector_only': bool(parameters.get('x_vector_only', False)),
-                   'runtime': parameters.get('runtime', 'auto'),
                    'device': parameters.get('device', 'cuda'), 'delivery': parameters.get('delivery', 'paragraphs'), 'temperature': float(parameters.get('temperature', 0.9)),
                    'top_k': int(parameters.get('top_k', 50)), 'top_p': float(parameters.get('top_p', 1.0)), 'repetition_penalty': float(parameters.get('repetition_penalty', 1.05)),
                    'max_new_tokens': int(parameters.get('max_new_tokens', 2048)), 'seed': int(parameters.get('seed', 42)),
@@ -79,9 +77,7 @@ def register(runtime, services):
         context.progress(1, currentStep='Starting')
         result = services.run(context, 'qwen3tts', 'synthesize', payload, progress_scale=0.9)
         _observe(context, result)
-        preset_params = {k: v for k, v in parameters.items() if k != 'text'}
-        preset_params['runtime'] = result.get('runtime', parameters.get('runtime', 'auto'))
-        return _finish_voice(services, context, parameters, 'qwen3tts', model_id, result, preset_params)
+        return _finish_voice(services, context, parameters, 'qwen3tts', model_id, result, {k: v for k, v in parameters.items() if k != 'text'})
 
     def voice_fishspeech(context, parameters):
         model = model_catalog.require_installed('fishspeech-s2-pro')
@@ -262,21 +258,13 @@ def register(runtime, services):
         context.progress(1, currentStep='Starting')
         result = services.run(context, 'whisper', 'transcribe', {'model_dir': str(model_catalog.directory(model)), 'input': str(source),
                                                                   'language': parameters.get('language', ''), 'device': parameters.get('device', 'cuda'),
-                                                                  'runtime': parameters.get('runtime', 'auto'), 'timestamps': True}, progress_scale=0.98)
+                                                                  'timestamps': True}, progress_scale=0.98)
         _observe(context, result)
         context.progress(100, currentStep='Done')
-        details = {'placement': result['placement']} if 'placement' in result else {}
         return {'text': result['text'], 'segments': result.get('segments', []), 'durationSeconds': result.get('durationSeconds', 0.0),
-                'language': result.get('language') or parameters.get('language') or 'auto', 'seconds': result.get('seconds', 0.0),
-                'runtime': result.get('runtime', 'torch'), **details}
+                'language': parameters.get('language', '') or 'auto', 'seconds': result.get('seconds', 0.0)}
 
     def estimate_transcribe(parameters, backend, model):
-        selected = parameters.get('runtime', 'auto')
-        zml = selected == 'zml' or (selected == 'auto' and os.environ.get('CYTOOLS_WHISPER_ZML_CONFIG'))
-        if zml:
-            cuda = parameters.get('device', 'cuda') == 'cuda'
-            return {'ramBytes': 8 * GiB, 'vramBytes': {'auto': 8 * GiB} if cuda else {},
-                    'cpuThreads': 4 if cuda else 8, 'diskBytes': 256 * MiB}
         if parameters.get('device', 'cuda') == 'cuda':
             return {'ramBytes': int(4 * GiB), 'vramBytes': {'auto': int(3 * GiB)}, 'cpuThreads': 4, 'diskBytes': 8 * MiB}
         return {'ramBytes': int(6 * GiB), 'vramBytes': {}, 'cpuThreads': 8, 'diskBytes': 8 * MiB}

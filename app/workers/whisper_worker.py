@@ -1,16 +1,14 @@
 """Whisper worker (engine 'torch'): speech recognition with timestamps. Model stays resident.
 
 transcribe {"model_dir": "<dir>", "input": "<audio>", "language": "" (auto) | "fr" | ..., "device": "cuda|cpu",
-            "runtime": "auto|torch|zml", "timestamps": true, "workspace": "..."}
+            "timestamps": true, "workspace": "..."}
 """
-import os
 from pathlib import Path
 import sys
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from workers._protocol import serve, WorkerError, memory_report  # noqa: E402
-from workers import whisper_zml  # noqa: E402
 
 _state = {}
 
@@ -52,22 +50,13 @@ def unload(request, reporter):
 
 
 def transcribe(request, reporter):
+    import numpy as np
+    import soundfile as sf
+    from scipy.signal import resample_poly
     started = time.monotonic()
     source = Path(request['input'])
     if not source.is_file():
         raise WorkerError('MissingInput', 'Audio not found: ' + str(source))
-    runtime = request.get('runtime', 'auto')
-    if runtime == 'zml' or (runtime == 'auto' and os.environ.get(whisper_zml.CONFIG_ENV)):
-        if _state:
-            unload({}, reporter)
-        result = whisper_zml.transcribe(request, reporter)
-        reporter.progress(100, step='Done')
-        return {**result, 'seconds': round(time.monotonic() - started, 3)}
-
-    import numpy as np
-    import soundfile as sf
-    from scipy.signal import resample_poly
-
     pipe = _load(request['model_dir'], request.get('device', 'cuda'), reporter)
     reporter.progress(20, step='Reading audio')
     try:
